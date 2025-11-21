@@ -9,7 +9,7 @@
 
     <application
         android:usesCleartextTraffic="true"
-        android:label="live_app"
+        android:label="XO"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

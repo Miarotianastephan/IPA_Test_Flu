@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 import '../../provider/my_post_providers.dart';
 import '../../provider/my_video_providers.dart';
@@ -100,6 +101,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
+    final localizations = AppLocalizations.of(context)!;
 
     final videoProvider = userVideoListProvider((
       type: _videoType,
@@ -137,8 +139,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
             duration: const Duration(milliseconds: 100),
             curve: Curves.easeInOut,
             alignment: _isVideoTab ? Alignment.centerLeft : Alignment.center,
-            child: const Text(
-              "观看历史",
+            child: Text(
+              localizations.watchHistory,
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -156,9 +158,9 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(text: "视频"),
-            Tab(text: "帖子"),
+          tabs: [
+            Tab(text: localizations.video),
+            Tab(text: localizations.post),
           ],
         ),
       ),

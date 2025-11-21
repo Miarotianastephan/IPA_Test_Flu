@@ -128,9 +128,11 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
     _videoPlayerController.initialize().then((_) {
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController,
-        showControls: true,
+        showControls: false,
         autoPlay: kIsWeb,
         looping: true,
+        allowFullScreen: false,
+        allowPlaybackSpeedChanging: false,
       );
       setState(() {});
     });
@@ -193,7 +195,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                               height: height,
                               transitionController: _transitionController,
                               onTapClose: () async {
-                               await _transitionController.reverse();
+                                await _transitionController.reverse();
                                 entry.remove();
                                 setState(() {
                                   _modalOpen = false;
@@ -374,6 +376,214 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                 );
               },
             ),
+
+            if (_chewieController != null)
+              Positioned.fill(
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _videoPlayerController,
+                    builder: (context, child) {
+                      final isBuffering =
+                          _videoPlayerController.value.isBuffering;
+                      if (!isBuffering) return const SizedBox.shrink();
+
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+            if (_chewieController != null)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (_videoPlayerController.value.isPlaying) {
+                        _videoPlayerController.pause();
+                      } else {
+                        _videoPlayerController.play();
+                      }
+                    });
+                  },
+                  child: Container(
+                    color: Colors.transparent,
+                    child: Center(
+                      child: AnimatedOpacity(
+                        opacity: _videoPlayerController.value.isPlaying
+                            ? 0.0
+                            : 1.0,
+                        duration: const Duration(milliseconds: 300),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                final currentPosition =
+                                    _videoPlayerController.value.position;
+                                final newPosition =
+                                    currentPosition -
+                                    const Duration(seconds: 10);
+                                _videoPlayerController.seekTo(
+                                  newPosition < Duration.zero
+                                      ? Duration.zero
+                                      : newPosition,
+                                );
+                              },
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.replay_10,
+                                  color: Colors.white,
+                                  size: 25,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 15),
+
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _videoPlayerController.value.isPlaying
+                                    ? Icons.pause
+                                    : Icons.play_arrow,
+                                color: Colors.white,
+                                size: 40,
+                              ),
+                            ),
+
+                            const SizedBox(width: 15),
+
+                            GestureDetector(
+                              onTap: () {
+                                final currentPosition =
+                                    _videoPlayerController.value.position;
+                                final duration =
+                                    _videoPlayerController.value.duration;
+                                final newPosition =
+                                    currentPosition +
+                                    const Duration(seconds: 10);
+                                _videoPlayerController.seekTo(
+                                  newPosition > duration
+                                      ? duration
+                                      : newPosition,
+                                );
+                              },
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.forward_10,
+                                  color: Colors.white,
+                                  size: 25,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            if (_chewieController != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (details) {
+                    final RenderBox box =
+                        context.findRenderObject() as RenderBox;
+                    final Offset localPosition = box.globalToLocal(
+                      details.globalPosition,
+                    );
+                    final double width = box.size.width;
+                    final double tapPosition = (localPosition.dx / width).clamp(
+                      0.0,
+                      1.0,
+                    );
+                    final Duration duration =
+                        _videoPlayerController.value.duration;
+                    final Duration newPosition = duration * tapPosition;
+                    _videoPlayerController.seekTo(newPosition);
+                  },
+                  onHorizontalDragUpdate: (details) {
+                    final RenderBox box =
+                        context.findRenderObject() as RenderBox;
+                    final Offset localPosition = box.globalToLocal(
+                      details.globalPosition,
+                    );
+                    final double width = box.size.width;
+                    final double dragPosition = (localPosition.dx / width)
+                        .clamp(0.0, 1.0);
+                    final Duration duration =
+                        _videoPlayerController.value.duration;
+                    final Duration newPosition = duration * dragPosition;
+                    _videoPlayerController.seekTo(newPosition);
+                  },
+                  child: Container(
+                    height: 6.5,
+                    padding: const EdgeInsets.only(top: 2.5),
+                    color: Colors.transparent,
+                    child: AnimatedBuilder(
+                      animation: _videoPlayerController,
+                      builder: (context, child) {
+                        final position = _videoPlayerController.value.position;
+                        final duration = _videoPlayerController.value.duration;
+                        final progress = duration.inMilliseconds > 0
+                            ? position.inMilliseconds / duration.inMilliseconds
+                            : 0.0;
+
+                        return Container(
+                          height: 3,
+                          margin: const EdgeInsets.symmetric(horizontal: 0),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.3,
+                            ),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color.fromARGB(255, 54, 174, 244),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
 
             Positioned(
               top: 0,

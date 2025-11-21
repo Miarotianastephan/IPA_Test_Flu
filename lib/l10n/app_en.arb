@@ -12,7 +12,7 @@
   "noSignature": "No personal signature yet",
   "copyId": "Copy ID",
   "idCopied": "ID copied",
-  "userInfo": "User Info",
+  "userInfo": "User Info", 
   "favorites": "My Favorites",
   "history": "Watch History",
   "likes": "My Likes",
@@ -133,5 +133,14 @@
   "nickname": "Nickname",
   "bio": "Biography",
   "phone": "Phone", 
-  "mustConnect": "You must be connected"
+  "mustConnect": "You must be connected",
+  "longVideo": "Long video",
+  "shortVideo": "Short video",
+  "watchHistory": "Watch history",
+  "qrCodeSaved": "QR code has been saved to the album",
+  "qrCodeSaveFailed": "Save failed, please check album/gallery permissions",
+  "contentCopied": "Content copied",
+  "myCredentials": "My credentials",
+  "copyLoginCredentials": "Copy login credentials",
+  "saveLoginCredentials": "Save login credentials"
 }

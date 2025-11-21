@@ -909,6 +909,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You must be connected'**
   String get mustConnect;
+
+  /// No description provided for @longVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Long video'**
+  String get longVideo;
+
+  /// No description provided for @shortVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Short video'**
+  String get shortVideo;
+
+  /// No description provided for @watchHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch history'**
+  String get watchHistory;
+
+  /// No description provided for @qrCodeSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code has been saved to the album'**
+  String get qrCodeSaved;
+
+  /// No description provided for @qrCodeSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed, please check album/gallery permissions'**
+  String get qrCodeSaveFailed;
+
+  /// No description provided for @contentCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Content copied'**
+  String get contentCopied;
+
+  /// No description provided for @myCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'My credentials'**
+  String get myCredentials;
+
+  /// No description provided for @copyLoginCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy login credentials'**
+  String get copyLoginCredentials;
+
+  /// No description provided for @saveLoginCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Save login credentials'**
+  String get saveLoginCredentials;
 }
 
 class _AppLocalizationsDelegate

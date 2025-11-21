@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 class VideoTypeToggleButton extends StatelessWidget {
   final bool isLongVideo;
@@ -12,12 +13,13 @@ class VideoTypeToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return TextButton(
       onPressed: onToggle,
       child: Row(
         children: [
           Text(
-            isLongVideo ? "长视频" : "短视频",
+            isLongVideo ? localizations.longVideo : localizations.shortVideo,
             style: const TextStyle(color: Colors.white),
           ),
           const SizedBox(width: 6),

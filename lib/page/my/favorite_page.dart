@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 import '../../provider/my_post_providers.dart';
 import '../../provider/my_video_providers.dart';
@@ -100,6 +101,7 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
+    final localizations = AppLocalizations.of(context)!;
 
     final videoProvider = userVideoListProvider((
       type: _videoType,
@@ -137,7 +139,7 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
             duration: const Duration(milliseconds: 100),
             curve: Curves.easeInOut,
             alignment: _isVideoTab ? Alignment.centerLeft : Alignment.center,
-            child: const Text("我的收藏", style: TextStyle(color: Colors.white)),
+            child: Text(localizations.favorites, style: TextStyle(color: Colors.white)),
           ),
         ),
         centerTitle: !_isVideoTab,
@@ -153,9 +155,9 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(text: "视频"),
-            Tab(text: "帖子"),
+          tabs: [
+            Tab(text: localizations.video),
+            Tab(text: localizations.post),
           ],
         ),
       ),

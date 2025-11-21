@@ -58,7 +58,6 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
             showControls: true,
             autoPlay: kIsWeb,
             looping: true,
-            aspectRatio: 16 / 9,
           );
           setState(() {
             _isVideoInitialized = true;

@@ -415,4 +415,32 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get mustConnect => 'Debes iniciar sesión';
+
+  @override
+  String get longVideo => 'Video larga';
+
+  @override
+  String get shortVideo => 'Video corta';
+
+  @override
+  String get watchHistory => 'Historial de visualización';
+
+  @override
+  String get qrCodeSaved => 'El código QR se ha guardado en el álbum';
+
+  @override
+  String get qrCodeSaveFailed =>
+      'Error al guardar, por favor verifica los permisos del álbum';
+
+  @override
+  String get contentCopied => 'Contenido copiado';
+
+  @override
+  String get myCredentials => 'Mis credenciales';
+
+  @override
+  String get copyLoginCredentials => 'Copiar credenciales de inicio de sesión';
+
+  @override
+  String get saveLoginCredentials => 'Guardar credenciales de inicio de sesión';
 }

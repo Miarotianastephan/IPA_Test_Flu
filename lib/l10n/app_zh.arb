@@ -133,5 +133,14 @@
   "nickname": "昵称",
   "bio": "简介",
   "phone": "电话",
-  "mustConnect": "您必须登录"
+  "mustConnect": "您必须登录",
+  "longVideo": "长视频",
+  "shortVideo": "短视频",
+  "watchHistory": "观看历史",
+  "qrCodeSaved": "二维码已保存到相册",
+  "qrCodeSaveFailed": "保存失败，请检查相册权限",
+  "contentCopied": "Contenido copiado",
+  "myCredentials": "我的凭证",
+  "copyLoginCredentials": "复制登录凭证",
+  "saveLoginCredentials": "保存登录凭证"
 }

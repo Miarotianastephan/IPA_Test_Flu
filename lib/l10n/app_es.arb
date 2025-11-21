@@ -133,5 +133,14 @@
   "nickname": "Apodo",
   "bio": "Biografía",
   "phone": "Teléfono",
-  "mustConnect": "Debes iniciar sesión"
+  "mustConnect": "Debes iniciar sesión",
+  "longVideo": "Video larga",
+  "shortVideo": "Video corta",
+  "watchHistory": "Historial de visualización",
+  "qrCodeSaved": "El código QR se ha guardado en el álbum",
+  "qrCodeSaveFailed": "Error al guardar, por favor verifica los permisos del álbum",
+  "contentCopied": "Contenido copiado",
+  "myCredentials": "Mis credenciales",
+  "copyLoginCredentials": "Copiar credenciales de inicio de sesión",
+  "saveLoginCredentials": "Guardar credenciales de inicio de sesión"
 }

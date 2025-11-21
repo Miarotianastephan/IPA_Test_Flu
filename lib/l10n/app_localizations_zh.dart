@@ -412,4 +412,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mustConnect => '您必须登录';
+
+  @override
+  String get longVideo => '长视频';
+
+  @override
+  String get shortVideo => '短视频';
+
+  @override
+  String get watchHistory => '观看历史';
+
+  @override
+  String get qrCodeSaved => '二维码已保存到相册';
+
+  @override
+  String get qrCodeSaveFailed => '保存失败，请检查相册权限';
+
+  @override
+  String get contentCopied => 'Contenido copiado';
+
+  @override
+  String get myCredentials => '我的凭证';
+
+  @override
+  String get copyLoginCredentials => '复制登录凭证';
+
+  @override
+  String get saveLoginCredentials => '保存登录凭证';
 }

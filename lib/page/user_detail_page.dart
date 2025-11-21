@@ -56,8 +56,10 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
     postProvider = userPostListProvider(widget.user.id);
 
     // 加载帖子 & 视频
-    ref.read(videoProvider.notifier).fetch(refresh: true);
-    ref.read(postProvider.notifier).fetch(refresh: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(videoProvider.notifier).fetch(refresh: true);
+      ref.read(postProvider.notifier).fetch(refresh: true);
+    });
   }
 
   @override

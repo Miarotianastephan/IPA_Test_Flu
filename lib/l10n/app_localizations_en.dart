@@ -412,4 +412,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mustConnect => 'You must be connected';
+
+  @override
+  String get longVideo => 'Long video';
+
+  @override
+  String get shortVideo => 'Short video';
+
+  @override
+  String get watchHistory => 'Watch history';
+
+  @override
+  String get qrCodeSaved => 'QR code has been saved to the album';
+
+  @override
+  String get qrCodeSaveFailed =>
+      'Save failed, please check album/gallery permissions';
+
+  @override
+  String get contentCopied => 'Content copied';
+
+  @override
+  String get myCredentials => 'My credentials';
+
+  @override
+  String get copyLoginCredentials => 'Copy login credentials';
+
+  @override
+  String get saveLoginCredentials => 'Save login credentials';
 }

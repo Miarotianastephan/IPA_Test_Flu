@@ -7,6 +7,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gallery_saver_plus/gallery_saver.dart';
+import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/widgets/auto_scroll_elevated_button.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 
@@ -74,13 +76,15 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
       final bool? success = await GallerySaver.saveImage(file.path);
 
       if (success == true) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("二维码已保存到相册")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.qrCodeSaved)),
+        );
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("保存失败，请检查相册权限")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.qrCodeSaveFailed),
+          ),
+        );
       }
       setState(() => _showContent = false);
     } catch (e) {
@@ -97,18 +101,21 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
   void _copyText() {
     if (_userInfo == null) return;
     Clipboard.setData(ClipboardData(text: _userInfo!.credential.toString()));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("内容已复制")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context)!.contentCopied)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final qrData = _userInfo?.credential.toString() ?? "";
-
+    final localisations = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(title: const Text("我的凭证"), backgroundColor: Colors.black),
+      appBar: AppBar(
+        title: Text(localisations.myCredentials),
+        backgroundColor: Colors.black,
+      ),
       body: Padding(
         padding: const EdgeInsets.only(top: 100),
         child: Column(
@@ -158,7 +165,12 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
                                 : _maskedContent,
                             style: const TextStyle(color: Colors.black),
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            // setState(() {
+                            //   _showContent =
+                            //       !_showContent;
+                            // });
+                          },
                         ),
                       ],
                     ),
@@ -171,30 +183,16 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                  ),
-                  icon: const Icon(Icons.copy, color: Colors.black),
-                  label: const Text(
-                    "复制登录凭证",
-                    style: TextStyle(color: Colors.black),
-                  ),
+                AutoScrollButton(
+                  text: localisations.copyLoginCredentials,
                   onPressed: _copyText,
+                  icon: Icons.copy,
                 ),
-                const SizedBox(width: 30),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                  ),
-                  icon: const Icon(Icons.save, color: Colors.black),
-                  label: const Text(
-                    "保存登录凭证",
-                    style: TextStyle(color: Colors.black),
-                  ),
+                const SizedBox(width: 20),
+                AutoScrollButton(
+                  text: localisations.saveLoginCredentials,
                   onPressed: _saveQRCode,
+                  icon: Icons.save,
                 ),
               ],
             ),

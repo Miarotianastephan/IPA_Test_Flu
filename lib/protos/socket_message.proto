@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package socket;
+
+option go_package = "live-app-api/models/websocket;websocket";
+
+// =========================================
+// 通用基础类型
+// =========================================
+enum MessageCategory {
+  CATEGORY_UNKNOWN = 0;
+  CATEGORY_CONTROL = 1;
+  CATEGORY_BUSINESS = 2;
+}
+
+enum BusinessType {
+  BUSINESS_UNKNOWN = 0;
+  BUSINESS_IM = 1;       // 包含 Chat / Event / Bot
+  BUSINESS_SYSTEM = 2;
+  BUSINESS_LIVE = 3;
+}
+
+enum ControlType {
+  CONTROL_UNKNOWN = 0;
+  CONTROL_HANDSHAKE = 1;
+  CONTROL_HEARTBEAT = 2;
+  CONTROL_ACK = 3;
+}
+
+enum TargetScope {
+  SCOPE_UNKNOWN = 0;
+  SCOPE_USER = 1;
+  SCOPE_GROUP = 2;
+  SCOPE_ROOM = 3;
+  SCOPE_ALL = 4;
+}
+
+// =========================================
+// 元信息
+// =========================================
+message MessageMeta {
+  string message_id = 1;
+  uint64 from_user = 2;
+  uint64 to_target = 3;
+  TargetScope scope = 4;
+  string node_id = 5;
+  int64 timestamp = 6;
+  string trace_id = 7;
+  int32 version = 8;
+  MessageCategory category = 9;
+}
+
+// =========================================
+// 控制类消息
+// =========================================
+message Handshake {
+  string token = 1;
+  string client_version = 2;
+  string platform = 3;
+  string device_id = 4;
+}
+
+message Heartbeat {
+  int64 seq = 1;
+  int64 timestamp = 2;
+}
+
+message Ack {
+  string ack_id = 1;
+  bool success = 2;
+  string reason = 3;
+  int64 timestamp = 4;
+}
+
+// =========================================
+// 业务类消息
+// =========================================
+message ChatMessage {
+  string text = 1;
+  string content_type = 2;
+  repeated uint64 mentions = 3;
+  map<string, string> ext = 4;
+}
+
+message EventMessage {
+  string event_type = 1;       // 事件类型：加入群聊 / 拍一拍 / 被踢等
+  uint64 actor_id = 2;         // 触发事件的用户ID
+  string actor_name = 3;
+  uint64 target_id = 4;        // 事件目标ID（用户/群）
+  string target_name = 5;
+  string description = 6;      // 可读描述
+  map<string, string> metadata = 7;
+}
+
+message BotMessage {
+  uint64 bot_id = 1;
+  string bot_name = 2;
+  string text = 3;
+  string message_type = 4; // text/card/image 等
+  map<string, string> metadata = 5;
+}
+
+message BotCommand {
+  uint64 bot_id = 1;
+  string command = 2;
+  map<string, string> args = 3;
+}
+
+message SystemNotification {
+  string title = 1;
+  string body = 2;
+  string level = 3;
+  map<string, string> metadata = 4;
+}
+
+message LiveChatMessage {
+  uint64 room_id = 1;
+  uint64 sender_id = 2;
+  string nickname = 3;
+  string text = 4;
+  bool is_gift = 5;
+  map<string, string> ext = 6;
+}
+
+// =========================================
+// 封装层
+// =========================================
+message ControlBody {
+  oneof control {
+    Handshake handshake = 1;
+    Heartbeat heartbeat = 2;
+    Ack ack = 3;
+  }
+}
+
+// 统一 IMBody，包含 Chat / Event / Bot 消息
+message IMBody {
+  oneof im {
+    ChatMessage chat = 1;
+    EventMessage event = 2;
+    BotMessage bot_message = 3;
+    BotCommand bot_command = 4;
+  }
+}
+
+message BusinessBody {
+  oneof business {
+    IMBody im = 1;                    // 所有 IM 类型消息
+    SystemNotification system = 2;
+    LiveChatMessage live = 3;
+  }
+}
+
+message MessageBody {
+  oneof body {
+    ControlBody control = 1;
+    BusinessBody business = 2;
+  }
+}
+
+message SocketEnvelope {
+  MessageMeta meta = 1;
+  MessageBody body = 2;
+}

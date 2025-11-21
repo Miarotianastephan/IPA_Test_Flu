@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "7540872012",
+    "project_id": "bogoapp-40882",
+    "storage_bucket": "bogoapp-40882.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7540872012:android:aa1c2e969cc9e24dc175e9",
+        "android_client_info": {
+          "package_name": "live.bogo.app.live_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDr-XnxVGCq-U1MMOnNdE-Xba1bSb1y7qM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

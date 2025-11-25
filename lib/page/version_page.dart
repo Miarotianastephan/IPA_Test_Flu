@@ -1,7 +1,10 @@
-import 'package:dio/dio.dart';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:live_app/api/services/version_component.dart';
 import 'package:live_app/l10n/app_localizations.dart';
-import 'package:package_info_plus/package_info_plus.dart';
+import 'package:live_app/models/version.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 class VersionPage extends StatefulWidget {
@@ -12,46 +15,14 @@ class VersionPage extends StatefulWidget {
 }
 
 class _VersionPageState extends State<VersionPage> {
-  late Future<Map<String, dynamic>> versionFuture;
+  late Future<Version?> versionFuture;
+  late Future<String> currentVersionFuture;
 
   @override
   void initState() {
+    versionFuture = VersionComponent.fetchVersion();
+    currentVersionFuture = VersionComponent.getCurrentVersion();
     super.initState();
-    versionFuture = fetchVersion();
-  }
-
-  Future<Map<String, dynamic>> fetchVersion() async {
-    try {
-      final info = await PackageInfo.fromPlatform();
-      final currentVersion = info.version;
-      final dio = Dio();
-      final response = await dio.get("http://localhost/api/user/getAllVersion");
-
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final latestData = data["data"];
-
-        final latestVersion = latestData["version_number"].toString();
-        final description = latestData["description"] ?? "N/A";
-        final releaseDate = latestData["date_release"] ?? "N/A";
-        final urlAndroid = latestData["url_android"] ?? "";
-        final urlIos = latestData["url_ios"] ?? "";
-        final isUpdateAvailable = latestVersion != currentVersion;
-
-        return {
-          "latestVersion": latestVersion,
-          "description": description,
-          "releaseDate": releaseDate,
-          "urlAndroid": urlAndroid,
-          "urlIos": urlIos,
-          "updateAvailable": isUpdateAvailable,
-        };
-      } else {
-        throw Exception("Erreur serveur: ${response.statusCode}");
-      }
-    } catch (e) {
-      throw Exception("Erreur réseau: $e");
-    }
   }
 
   @override
@@ -63,78 +34,85 @@ class _VersionPageState extends State<VersionPage> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            icon: Icon(Icons.cancel_outlined),
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.cancel_outlined),
           ),
         ],
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: versionFuture,
+      body: FutureBuilder<List<dynamic>>(
+        future: Future.wait([versionFuture, currentVersionFuture]),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text("Erreur: ${snapshot.error}"));
+            return Center(child: Text("Error: ${snapshot.error}"));
           } else if (!snapshot.hasData) {
-            return const Center(child: Text("Aucune donnée"));
+            return Center(child: Text(AppLocalizations.of(context)!.noData));
           }
 
-          final data = snapshot.data!;
-          final latestVersion = data["latestVersion"];
-          final description = data["description"];
-          final releaseDate = data["releaseDate"];
-          final urlAndroid = data["urlAndroid"];
-          final urlIos = data["urlIos"];
-          final updateAvailable = data["updateAvailable"] as bool;
+          final results = snapshot.data!;
+          final version = results[0] as Version?;
+          final currentVersion = results[1] as String;
+          debugPrint("version $version");
+          debugPrint("currentVersion $currentVersion");
+          if (version == null) {
+            return Center(child: Text(AppLocalizations.of(context)!.noData));
+          }
+
+          final updateAvailable = VersionComponent.isUpdateAvailable(
+            version.versionNumber,
+            currentVersion,
+          );
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: ListView(
               children: [
+                InfoField(label: "Current version", value: currentVersion),
+                const SizedBox(height: 12),
                 InfoField(
-                  label: AppLocalizations.of(context)!.versionName,
-                  value: latestVersion,
+                  label: "Latest version",
+                  value: version.versionNumber,
                 ),
                 const SizedBox(height: 12),
                 InfoField(
                   label: AppLocalizations.of(context)!.description,
-                  value: description,
+                  value: version.description ?? "N/A",
                 ),
                 const SizedBox(height: 12),
                 InfoField(
                   label: AppLocalizations.of(context)!.releaseDate,
-                  value: releaseDate,
+                  value: version.dateRelease ?? "N/A",
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 30),
                 if (updateAvailable)
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       const Text(
-                        "An update is available :",
+                        "A new version is available!",
                         style: TextStyle(
                           color: Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      ElevatedButton(
-                        onPressed: () {
-                          launchUrl(
-                            Uri.parse(urlAndroid),
-                          );
-                        },
-                        child: const Text("Update on Android"),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          launchUrl(Uri.parse(urlIos));
-                        },
-                        child: const Text("Update on iOS"),
-                      ),
+                      const SizedBox(height: 12),
+                      if (Platform.isAndroid &&
+                          version.urlAndroid != null &&
+                          version.urlAndroid!.isNotEmpty)
+                        DownloadButton(
+                          label: "Download",
+                          icon: const Icon(Icons.android, color: Colors.green),
+                          url: version.urlAndroid,
+                        ),
+
+                      if (Platform.isIOS &&
+                          version.urlIos != null &&
+                          version.urlIos!.isNotEmpty)
+                        DownloadButton(
+                          label: "Download",
+                          icon: const Icon(Icons.apple, color: Colors.white),
+                          url: version.urlIos,
+                        ),
                     ],
                   )
                 else
@@ -169,6 +147,47 @@ class InfoField extends StatelessWidget {
         const SizedBox(height: 4),
         Text(value, style: const TextStyle(fontSize: 14)),
       ],
+    );
+  }
+}
+
+class DownloadButton extends StatelessWidget {
+  final String label;
+  final Icon icon;
+  final String? url;
+
+  const DownloadButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.url,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: theme.colorScheme.onSecondary,
+        foregroundColor: Colors.white,
+        minimumSize: const Size.fromHeight(56),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      onPressed: () async {
+        if (url != null && url!.isNotEmpty) {
+          final baseUrl = dotenv.env['R2_URL'];
+          final uri = Uri.parse("$baseUrl$url");
+
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            debugPrint("error URL : $uri");
+          }
+        }
+      },
+      icon: icon,
+      label: Text(label),
     );
   }
 }

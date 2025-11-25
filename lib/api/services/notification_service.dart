@@ -1,14 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart' as fln;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'
+    as fln;
 import 'package:firebase_messaging/firebase_messaging.dart' as fcm;
 import 'package:huawei_push/huawei_push.dart' as hms;
 import 'package:pushy_flutter/pushy_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'version_component.dart';
 
 class NotificationService {
   final fcm.FirebaseMessaging _messaging = fcm.FirebaseMessaging.instance;
-  final fln.FlutterLocalNotificationsPlugin _localNotifications =
+  static final fln.FlutterLocalNotificationsPlugin localNotifications =
       fln.FlutterLocalNotificationsPlugin();
 
   final VersionComponent _version = VersionComponent();
@@ -17,19 +19,34 @@ class NotificationService {
   String? _token;
 
   Future<void> init() async {
-    const androidSettings = fln.AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = fln.AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = fln.DarwinInitializationSettings();
     const initSettings = fln.InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
 
-    await _localNotifications.initialize(
+    await localNotifications.initialize(
       initSettings,
-      onDidReceiveNotificationResponse: (fln.NotificationResponse response) {
-        final payload = response.payload;
-        debugPrint("Payload: $payload");
-      },
+      onDidReceiveNotificationResponse:
+          (fln.NotificationResponse response) async {
+            final payload = response.payload;
+            if (payload != null && payload.isNotEmpty) {
+              try {
+                final uri = Uri.parse(payload);
+
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  debugPrint("Unable to open URL: $payload");
+                }
+              } catch (e) {
+                debugPrint("Error while opening payload: $e");
+              }
+            }
+          },
     );
 
     try {
@@ -45,7 +62,7 @@ class NotificationService {
 
         debugPrint("Pushy message: $title - $body");
 
-        _showCustomLocalNotification(title ?? "Notification", body ?? "");
+        showCustomLocalNotification(title ?? "Notification", body ?? "", "");
       });
     } catch (e) {
       debugPrint("Error Pushy: $e");
@@ -74,7 +91,8 @@ class NotificationService {
         hms.Push.getToken("");
       }
     }
-    await _version.check(_localNotifications);
+    // ignore: use_build_context_synchronously
+    await _version.check(localNotifications);
   }
 
   void _listenForegroundMessages() {
@@ -85,26 +103,35 @@ class NotificationService {
   }
 
   void _listenOpenedAppMessages() {
-    fcm.FirebaseMessaging.onMessageOpenedApp.listen((fcm.RemoteMessage message) {
+    fcm.FirebaseMessaging.onMessageOpenedApp.listen((
+      fcm.RemoteMessage message,
+    ) {
       debugPrint("App open in FCM: ${message.notification?.title}");
     });
   }
 
   void _listenBackgroundMessages() {
-    fcm.FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    fcm.FirebaseMessaging.onBackgroundMessage(
+      _firebaseMessagingBackgroundHandler,
+    );
   }
 
   Future<void> _showLocalNotification(fcm.RemoteMessage message) async {
     final notification = message.notification;
     if (notification == null) return;
 
-    _showCustomLocalNotification(
-      notification.title ?? "Notification",
+    showCustomLocalNotification(
+      notification.title ?? "Notification Firebase",
       notification.body ?? "",
+      "",
     );
   }
 
-  Future<void> _showCustomLocalNotification(String title, String body) async {
+  static Future<void> showCustomLocalNotification(
+    String title,
+    String body,
+    payload,
+  ) async {
     const androidDetails = fln.AndroidNotificationDetails(
       'default_channel',
       'Notifications',
@@ -119,18 +146,20 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    await _localNotifications.show(
+    await localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,
       body,
       details,
-      payload: "open_home",
+      payload: payload,
     );
   }
 
   String get provider => _usingFCM ? "FCM" : "HMS";
 }
 
-Future<void> _firebaseMessagingBackgroundHandler(fcm.RemoteMessage message) async {
+Future<void> _firebaseMessagingBackgroundHandler(
+  fcm.RemoteMessage message,
+) async {
   debugPrint("FCM background: ${message.notification?.title}");
 }

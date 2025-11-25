@@ -185,7 +185,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                             child: ImageSequencePlayer(
                               directory: "lib/assets/splash_animation/",
                               prefix: "seq_0_",
-                              frameCount: 125,
+                              frameCount: 60,
                               fps: 30,
                               loop: true,
                             ),
@@ -268,10 +268,8 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                           textStyle: const TextStyle(
                             fontSize: 50,
                             color: Colors.white,
-                            height:
-                                0.9, 
-                            letterSpacing:
-                                10, 
+                            height: 0.9,
+                            letterSpacing: 10,
                           ),
                         ),
                       ),

@@ -254,7 +254,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                     AspectRatio(
                                       aspectRatio: 16 / 9,
                                       child: Image.network(
-                                        video.thumbnailUrl ?? "",
+                                        video.thumbnailUrl ??
+                                            "https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg",
                                         fit: BoxFit.cover,
                                       ),
                                     ),
@@ -262,7 +263,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                       child: Center(
                                         child: Icon(
                                           Icons.play_circle_fill,
-                                          color: Colors.white70,
+                                          color: Colors.black45,
                                           size: 50,
                                         ),
                                       ),
@@ -292,7 +293,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                               8,
                                             ),
                                             child: Image.network(
-                                              video.thumbnailUrl ?? "",
+                                              video.thumbnailUrl ??
+                                                  "https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg",
                                               fit: BoxFit.cover,
                                               width: 160,
                                               height: 120,
@@ -302,7 +304,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                             child: Center(
                                               child: Icon(
                                                 Icons.play_circle_fill,
-                                                color: Colors.white70,
+                                                color: Colors.black45,
                                                 size: 40,
                                               ),
                                             ),

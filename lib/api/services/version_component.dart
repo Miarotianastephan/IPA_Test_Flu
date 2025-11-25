@@ -1,63 +1,96 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:live_app/api/services/notification_service.dart';
+import 'package:live_app/models/version.dart';
+import 'package:live_app/models/version_response.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
     as fln;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class VersionComponent {
   Future<void> check(fln.FlutterLocalNotificationsPlugin local) async {
-    final current = await _getCurrentVersion();
-    final latestData = await _getLatestVersionFromServer();
+    final current = await getCurrentVersion();
+    // ignore: use_build_context_synchronously
+    final latestVersionObj = await fetchVersion();
 
-    final latestVersion = latestData["version_number"].toString();
-    final urlAndroid = latestData["url_android"];
-    final urlIos = latestData["url_ios"];
+    if (latestVersionObj == null) {
+      debugPrint("Unable to retrieve the latest version");
+      return;
+    }
 
-    if (latestVersion != current) {
-      const androidDetails = fln.AndroidNotificationDetails(
-        'updates_channel',
-        'Mises à jour',
-        importance: fln.Importance.high,
-        priority: fln.Priority.high,
-      );
-      const iosDetails = fln.DarwinNotificationDetails();
-      const details = fln.NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
+    final latestVersion = latestVersionObj.versionNumber;
 
-      await local.show(
-        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    if (isUpdateAvailable(latestVersion, current)) {
+      NotificationService.showCustomLocalNotification(
         "New version available",
         "Upgrade to version $latestVersion to enjoy the new features.",
-        details,
-        payload: urlAndroid ?? urlIos ?? "open_update_page",
+        "https://landing.99sq20.fun/",
       );
     } else {
-      debugPrint("Application update : $current");
+      debugPrint("Application is up to date: $current");
     }
   }
 
-  Future<String> _getCurrentVersion() async {
+  static Future<String> getCurrentVersion() async {
     final info = await PackageInfo.fromPlatform();
-    debugPrint("VERSION CURRENT : ${info.version}");
+    debugPrint("CURRENT VERSION: ${info.version}");
     return info.version;
   }
 
-  Future<Map<String, dynamic>> _getLatestVersionFromServer() async {
+  static Future<Version?> fetchVersion() async {
     try {
       final dio = Dio();
-      final response = await dio.get("http://localhost/api/user/getAllVersion");
+      final baseUrl = dotenv.env['API_BASE_URL'];
+      if (baseUrl == null || baseUrl.isEmpty) {
+        throw Exception("API_BASE_URL is not defined in .env");
+      }
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final versionData = data["data"];
-        return versionData;
+      final response = await dio.post("$baseUrl/api/user/getCurrentVersion");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final rawData = response.data;
+        final decoded = rawData is String ? jsonDecode(rawData) : rawData;
+
+        if (decoded is Map<String, dynamic>) {
+          final versionResponse = VersionResponse.fromJson(decoded);
+          debugPrint("Latest version: ${versionResponse.data}");
+          return versionResponse.data;
+        } else {
+          debugPrint("Unexpected JSON format: $decoded");
+          return null;
+        }
       } else {
-        throw Exception("Error server: ${response.statusCode}");
+        throw Exception("Server error: ${response.statusCode}");
       }
     } catch (e) {
-      throw Exception("Error network: $e");
+      debugPrint("fetchVersion error: $e");
+      throw Exception("Network error: $e");
     }
+  }
+
+  static bool isUpdateAvailable(String latest, String current) {
+    final latestParts = latest
+        .split('.')
+        .map((e) => int.tryParse(e) ?? 0)
+        .toList();
+    final currentParts = current
+        .split('.')
+        .map((e) => int.tryParse(e) ?? 0)
+        .toList();
+
+    final maxLength = latestParts.length > currentParts.length
+        ? latestParts.length
+        : currentParts.length;
+
+    for (int i = 0; i < maxLength; i++) {
+      final latestPart = i < latestParts.length ? latestParts[i] : 0;
+      final currentPart = i < currentParts.length ? currentParts[i] : 0;
+
+      if (latestPart > currentPart) return true;
+      if (latestPart < currentPart) return false;
+    }
+    return false;
   }
 }

@@ -203,7 +203,7 @@ class ForumPostCard extends StatelessWidget {
                                                 children: [
                                                   Image.network(
                                                     attachment.thumbnailUrl ??
-                                                        "",
+                                                        "https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg",
                                                     fit: BoxFit.cover,
                                                   ),
                                                   Container(

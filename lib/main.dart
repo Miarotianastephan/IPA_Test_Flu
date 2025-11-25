@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/api/services/notification_service.dart';
 import 'package:live_app/page/splash_page.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:toastification/toastification.dart';
@@ -16,15 +17,13 @@ import 'utils/window_manager_wrapper.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  // final notificationService = NotificationService();
-  // await notificationService.init();
+  await dotenv.load(fileName: ".env");
+  final notificationService = NotificationService();
+  await notificationService.init();
   MediaKit.ensureInitialized();
   await initWindowManager();
   await StorageService.instance.init();
-  await dotenv.load(fileName: ".env");
-  runApp(
-    const ProviderScope(child: MyApp()),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {

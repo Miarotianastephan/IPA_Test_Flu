@@ -55,6 +55,8 @@ class NotificationService {
     );
     debugPrint("Notification plugin initialized");
 
+    // === PUSHY DISABLED (prevent infinite loop & duplicates) ===
+    /*
     try {
       String deviceToken = await Pushy.register();
       _token = deviceToken;
@@ -73,6 +75,7 @@ class NotificationService {
     } catch (e) {
       debugPrint("Error Pushy: $e");
     }
+    */
 
     if (Platform.isAndroid) {
       try {
@@ -111,6 +114,9 @@ class NotificationService {
         _token = await _messaging.getAPNSToken();
         debugPrint("APNs token: $_token");
 
+        String? tokenFCM = await _messaging.getToken();
+        debugPrint("FCM token: $tokenFCM");
+
         _listenForegroundMessages();
         _listenOpenedAppMessages();
         _listenBackgroundMessages();
@@ -122,12 +128,6 @@ class NotificationService {
     }
     // ignore: use_build_context_synchronously
     try {
-      await showCustomLocalNotification(
-        "PLUGIN READY",
-        "Local notification plugin working",
-        "",
-      );
-      debugPrint("PLUGIN READY triggered");
       await _version.check(localNotifications);
     } catch (e) {
       debugPrint("Version check failed: $e");

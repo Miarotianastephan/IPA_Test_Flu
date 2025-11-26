@@ -478,12 +478,14 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
               Expanded(
                 child: GestureDetector(
                   onTap: () {
-                    toUserDetailPage(
-                      context: context,
-                      userId: post?.user?.id,
-                      url: post?.user?.avatar,
-                      nickname: post?.user?.nickname,
-                    );
+                    if (post?.user != null) {
+                      toUserDetailPage(
+                        context: context,
+                        userId: post?.user?.id,
+                        url: post?.user?.avatar,
+                        nickname: post?.user?.nickname,
+                      );
+                    }
                   },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

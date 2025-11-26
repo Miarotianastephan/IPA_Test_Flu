@@ -44,6 +44,7 @@ class UserInfoRow extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () {
+                  // Utiliser l'objet UserInfo complet s'il est disponible
                   toUserDetailPage(
                     context: context,
                     userId: userId,

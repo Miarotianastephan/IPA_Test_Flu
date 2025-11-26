@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+
+import '/page/home_tab/forum_page.dart';
+// 引入子页面
+import '/page/home_tab/home_page.dart';
+import '/page/home_tab/profile_page.dart';
+import '/page/home_tab/video_page.dart';
+import '/provider/theme_provider.dart';
 import '../provider/cureent_video_user_provider.dart';
 import '../widgets/blur_widget.dart';
 import '../widgets/empty_widget.dart';
 import '../widgets/tiktok_scaffold.dart';
-import '/provider/theme_provider.dart';
-
-// 引入子页面
-import '/page/home_tab/home_page.dart';
-import '/page/home_tab/video_page.dart';
-import '/page/home_tab/forum_page.dart';
-import '/page/home_tab/profile_page.dart';
 import 'home_tab/message_page.dart';
 import 'user_detail_page.dart';
 

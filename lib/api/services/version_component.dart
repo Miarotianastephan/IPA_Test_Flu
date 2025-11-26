@@ -23,11 +23,29 @@ class VersionComponent {
     final latestVersion = latestVersionObj.versionNumber;
 
     if (isUpdateAvailable(latestVersion, current)) {
-      NotificationService.showCustomLocalNotification(
+
+      const androidDetails = fln.AndroidNotificationDetails(
+        'default_channel',
+        'Notifications',
+        importance: fln.Importance.high,
+        priority: fln.Priority.high,
+      );
+
+      const iosDetails = fln.DarwinNotificationDetails();
+
+      const details = fln.NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await local.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
         "New version available",
         "Upgrade to version $latestVersion to enjoy the new features.",
-        "https://landing.99sq20.fun/",
+        details,
+        payload: "https://landing.99sq20.fun/",
       );
+
     } else {
       debugPrint("Application is up to date: $current");
     }
@@ -89,8 +107,8 @@ class VersionComponent {
       final currentPart = i < currentParts.length ? currentParts[i] : 0;
 
       if (latestPart > currentPart) return true;
-      if (latestPart < currentPart) return false;
+      if (latestPart < currentPart) return true;
     }
-    return false;
+    return true;
   }
 }

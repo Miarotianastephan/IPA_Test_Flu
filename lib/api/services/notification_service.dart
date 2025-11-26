@@ -22,7 +22,12 @@ class NotificationService {
     const androidSettings = fln.AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
-    const iosSettings = fln.DarwinInitializationSettings();
+    // const iosSettings = fln.DarwinInitializationSettings();
+    const iosSettings = fln.DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
     const initSettings = fln.InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
@@ -48,6 +53,7 @@ class NotificationService {
             }
           },
     );
+    debugPrint("Notification plugin initialized");
 
     try {
       String deviceToken = await Pushy.register();
@@ -91,8 +97,41 @@ class NotificationService {
         hms.Push.getToken("");
       }
     }
+    // ===== iOS PERMISSION FIX =====
+    if (Platform.isIOS) {
+      try {
+        final settings = await _messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+        debugPrint("iOS permission: ${settings.authorizationStatus}");
+
+        _token = await _messaging.getAPNSToken();
+        debugPrint("APNs token: $_token");
+
+        _listenForegroundMessages();
+        _listenOpenedAppMessages();
+        _listenBackgroundMessages();
+
+        _usingFCM = true;
+      } catch (e) {
+        debugPrint("iOS Firebase error: $e");
+      }
+    }
     // ignore: use_build_context_synchronously
-    await _version.check(localNotifications);
+    try {
+      await showCustomLocalNotification(
+        "PLUGIN READY",
+        "Local notification plugin working",
+        "",
+      );
+      debugPrint("PLUGIN READY triggered");
+      await _version.check(localNotifications);
+    } catch (e) {
+      debugPrint("Version check failed: $e");
+    }
   }
 
   void _listenForegroundMessages() {
@@ -139,7 +178,12 @@ class NotificationService {
       priority: fln.Priority.high,
     );
 
-    const iosDetails = fln.DarwinNotificationDetails();
+    // const iosDetails = fln.DarwinNotificationDetails();
+    const iosDetails = fln.DarwinNotificationDetails(
+      presentAlert: true,
+      presentSound: true,
+      presentBadge: true,
+    );
 
     const details = fln.NotificationDetails(
       android: androidDetails,

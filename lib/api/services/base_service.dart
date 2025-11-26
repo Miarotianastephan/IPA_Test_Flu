@@ -13,7 +13,7 @@ abstract class BaseService {
     dynamic body,
   }) async {
     final data = await client.post(endpoint, data: body);
-    
+
     // http code 已经在 Dio 层会抛 DioError，这里只需要业务逻辑判断
     final response = ApiResponse<T>.fromJson(
       data,
@@ -25,7 +25,7 @@ abstract class BaseService {
 
       // 抛出异常，调用方可以 catch
       throw Exception(response.msg);
-    } 
+    }
 
     return response;
   }

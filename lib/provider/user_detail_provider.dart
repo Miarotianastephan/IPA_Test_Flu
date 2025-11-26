@@ -12,11 +12,16 @@ class UserDetailState {
 
   UserDetailState({this.user, this.loading = false, this.error});
 
-  UserDetailState copyWith({UserInfo? user, bool? loading, String? error}) {
+  UserDetailState copyWith({
+    UserInfo? user,
+    bool? loading,
+    String? error,
+    bool clearError = false,
+  }) {
     return UserDetailState(
       user: user ?? this.user,
       loading: loading ?? this.loading,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
@@ -25,29 +30,35 @@ class UserDetailState {
 class UserDetailNotifier extends StateNotifier<UserDetailState> {
   final Ref ref;
 
-  UserDetailNotifier(this.ref) : super(UserDetailState());
+  UserDetailNotifier(this.ref, {UserInfo? initialUser})
+    : super(UserDetailState(user: initialUser));
+
+  /// 初始化用户信息
+  void initUser(UserInfo user) {
+    state = UserDetailState(user: user);
+  }
 
   /// 加载用户详情
   Future<void> loadUserDetail(int userId) async {
-    state = state.copyWith(loading: true, error: null);
+    state = state.copyWith(loading: true, clearError: true);
 
     try {
       final userService = ref.read(userServiceProvider);
       final res = await userService.getInfoById(userId);
       final user = res.data;
 
-      state = state.copyWith(user: user);
+      state = state.copyWith(user: user, loading: false);
     } catch (e) {
-      state = state.copyWith(error: e.toString());
-    } finally {
-      state = state.copyWith(loading: false);
+      state = state.copyWith(error: e.toString(), loading: false);
     }
   }
 
   /// 关注 / 取消关注
   Future<void> toggleFollow() async {
     final user = state.user;
-    if (user == null) return;
+    if (user == null) {
+      return;
+    }
 
     final userService = ref.read(userServiceProvider);
     final isCurrentlyFollowed = user.isFollowed;
@@ -69,14 +80,34 @@ class UserDetailNotifier extends StateNotifier<UserDetailState> {
   }
 }
 
+/// 用户详情 Provider 参数
+class UserDetailProviderParam {
+  final int userId;
+  final UserInfo? initialUser;
+  // 使用唯一的实例 ID，确保每个页面实例都有自己的 provider
+  final String instanceId;
+
+  UserDetailProviderParam(this.userId, {this.initialUser})
+    : instanceId = '${userId}_${DateTime.now().microsecondsSinceEpoch}';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserDetailProviderParam &&
+          runtimeType == other.runtimeType &&
+          instanceId == other.instanceId;
+
+  @override
+  int get hashCode => instanceId.hashCode;
+}
+
 /// 用户详情 Provider
 final userDetailProvider =
-    StateNotifierProvider.family<UserDetailNotifier, UserDetailState, int>((
-      ref,
-      userId,
-    ) {
-      final notifier = UserDetailNotifier(ref);
-      // 可选：初始化时立即加载用户信息
-      notifier.loadUserDetail(userId);
+    StateNotifierProvider.family<
+      UserDetailNotifier,
+      UserDetailState,
+      UserDetailProviderParam
+    >((ref, param) {
+      final notifier = UserDetailNotifier(ref, initialUser: param.initialUser);
       return notifier;
     });

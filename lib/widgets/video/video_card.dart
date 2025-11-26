@@ -3,9 +3,9 @@ import 'package:live_app/widgets/encrypted_image.dart';
 
 import '../../models/video_info.dart';
 import '../../page/long_video_detail_page.dart';
-import '../../page/user_detail_page.dart';
 import '../../utils/responsive_utils.dart';
 import '../../utils/text_util.dart';
+import '../../utils/utils.dart';
 
 class VideoCard extends StatefulWidget {
   const VideoCard({super.key, required this.video, this.onUserTap});
@@ -15,15 +15,6 @@ class VideoCard extends StatefulWidget {
   /// 用户点击头像/昵称事件，可选
 
   final Function(VideoInfo videoInfo)? onUserTap;
-
-  /// 默认方法
-  void defaultOnUserTap(BuildContext context, int userId) {
-    // 这里可以打开用户详情页
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => UserDetailPage(user: video.user)),
-    );
-  }
 
   @override
   State<VideoCard> createState() => _VideoCardState();
@@ -40,17 +31,13 @@ class _VideoCardState extends State<VideoCard> {
   }
 
   void _handleUserTap() {
-    if (widget.onUserTap != null) {
-      widget.onUserTap!(widget.video);
-    } else {
-      // 默认行为
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => UserDetailPage(user: widget.video.user),
-        ),
-      );
-    }
+    // 默认行为：使用 userId 打开用户详情页，强制从 API 加载最新数据
+    toUserDetailPage(
+      context: context,
+      userId: widget.video.user.id,
+      url: widget.video.user.avatar,
+      nickname: widget.video.user.nickname,
+    );
   }
 
   @override
@@ -194,9 +181,7 @@ class _VideoCardState extends State<VideoCard> {
                     children: [
                       UserAvatar(
                         userId: widget.video.userId,
-                        url:
-                            widget.video.user.avatar ??
-                            "https://i.pravatar.cc/350",
+                        url: widget.video.user.avatar,
                         nickname: widget.video.user.nickname,
                         size: responsive.videoCardAvatarSize,
                         onTap: _handleUserTap,

@@ -6,20 +6,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/api/services/notification_service.dart';
 import 'package:live_app/page/splash_page.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:toastification/toastification.dart';
 
 import 'config/storage_config.dart';
 import 'l10n/app_localizations.dart';
 import 'provider/locale_provider.dart';
 import 'provider/theme_provider.dart';
+import 'utils/toast_util.dart';
 import 'utils/window_manager_wrapper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await dotenv.load(fileName: ".env");
-  // final notificationService = NotificationService();
-  // await notificationService.init();
+  final notificationService = NotificationService();
+  await notificationService.init();
   MediaKit.ensureInitialized();
   await initWindowManager();
   await StorageService.instance.init();
@@ -33,24 +33,23 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(currentThemeProvider);
     final locale = ref.watch(localeProvider);
-    return ToastificationWrapper(
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Bogo App',
-        locale: locale,
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        themeMode: theme.themeMode,
-        theme: theme.toThemeData(),
-        darkTheme: theme.toThemeData(),
-        home: const SplashPage(),
-        // home: TestPage(),
-      ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Bogo App',
+      locale: locale,
+      scaffoldMessengerKey: ToastUtil.scaffoldMessengerKey,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      themeMode: theme.themeMode,
+      theme: theme.toThemeData(),
+      darkTheme: theme.toThemeData(),
+      home: const SplashPage(),
+      // home: TestPage(),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+
 import '../../provider/api_provider.dart';
 import '../../utils/toast_util.dart';
 
@@ -72,156 +73,165 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
     final theme = Theme.of(context);
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text(""), centerTitle: true),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              localizations.bindPassword,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 32),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                localizations.changePassword,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 32),
 
-            // 密码输入
-            TextField(
-              controller: _oldPasswordController,
-              obscureText: _obscurePassword,
-              cursorColor: theme.colorScheme.onSurface,
-              decoration: InputDecoration(
-                labelText: localizations.oldPassword,
-                labelStyle: TextStyle(
-                  color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
-                ),
-                floatingLabelStyle: TextStyle(
-                  color: theme.colorScheme.onSurface, // 聚焦时 labelText 颜色
-                ),
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+              // 密码输入
+              TextField(
+                controller: _oldPasswordController,
+                obscureText: _obscurePassword,
+                cursorColor: theme.colorScheme.onSurface,
+                decoration: InputDecoration(
+                  labelText: localizations.oldPassword,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.onSurface,
-                    width: 1,
+                  floatingLabelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface, // 聚焦时 labelText 颜色
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.onSurface,
-                    width: 2,
+                  prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _newPasswordController,
-              obscureText: _obscurePassword,
-              cursorColor: theme.colorScheme.onSurface,
-              decoration: InputDecoration(
-                labelText: localizations.newPassword,
-                labelStyle: TextStyle(
-                  color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
-                ),
-                floatingLabelStyle: TextStyle(
-                  color: theme.colorScheme.onSurface, // 聚焦时 labelText 颜色
-                ),
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.onSurface,
+                      width: 1,
+                    ),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.onSurface,
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.onSurface,
-                    width: 2,
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.onSurface,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _checkPasswordController,
-              obscureText: _obscurePassword,
-              cursorColor: theme.colorScheme.onSurface,
-              decoration: InputDecoration(
-                labelText: localizations.confirmPassword,
-                labelStyle: TextStyle(
-                  color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
-                ),
-                floatingLabelStyle: TextStyle(
-                  color: theme.colorScheme.onSurface, // 聚焦时 labelText 颜色
-                ),
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+              const SizedBox(height: 16),
+              TextField(
+                controller: _newPasswordController,
+                obscureText: _obscurePassword,
+                cursorColor: theme.colorScheme.onSurface,
+                decoration: InputDecoration(
+                  labelText: localizations.newPassword,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.onSurface,
-                    width: 1,
+                  floatingLabelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface, // 聚焦时 labelText 颜色
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.onSurface,
-                    width: 2,
+                  prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.onSurface,
+                      width: 1,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.onSurface,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _checkPasswordController,
+                obscureText: _obscurePassword,
+                cursorColor: theme.colorScheme.onSurface,
+                decoration: InputDecoration(
+                  labelText: localizations.confirmPassword,
+                  labelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
+                  ),
+                  floatingLabelStyle: TextStyle(
+                    color: theme.colorScheme.onSurface, // 聚焦时 labelText 颜色
+                  ),
+                  prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.onSurface,
+                      width: 1,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: theme.colorScheme.onSurface,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
 
-            // 登录按钮
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.onSecondary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(56),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+              // 登录按钮
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.onSecondary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
+                onPressed: () {
+                  _bind(context);
+                },
+                child: Text(localizations.bind, style: TextStyle(fontSize: 18)),
               ),
-              onPressed: () {
-                _bind(context);
-              },
-              child: Text(localizations.bind, style: TextStyle(fontSize: 18)),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

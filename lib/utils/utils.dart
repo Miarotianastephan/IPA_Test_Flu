@@ -7,16 +7,17 @@ import '../page/user_detail_page.dart';
 
 void toUserDetailPage({
   required BuildContext context,
-  required int? userId,
-  required String? url,
-  required String? nickname,
+  int? userId,
+  String? url,
+  String? nickname,
 }) {
+  // 否则，从参数构建一个基础的 UserInfo
   if (userId == null) {
     debugPrint("头像被点击: $url");
     return;
   }
 
-  final userInfo = UserInfo(
+  final basicUserInfo = UserInfo(
     id: userId,
     displayId: userId,
     username: null,
@@ -43,6 +44,6 @@ void toUserDetailPage({
 
   Navigator.push(
     context,
-    MaterialPageRoute(builder: (_) => UserDetailPage(user: userInfo)),
+    MaterialPageRoute(builder: (_) => UserDetailPage(user: basicUserInfo)),
   );
 }

@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/utils/profile_utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../config/storage_config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/userinfo.dart';
 import '../../provider/api_provider.dart';
+import '../../utils/toast_util.dart';
 import '../../widgets/count_item.dart';
 import '../../widgets/encrypted_image.dart';
 import '../login/bind_password.dart';
@@ -72,23 +74,7 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
     }
   }
 
-  void showToast(
-    BuildContext context,
-    String message, {
-    Duration duration = const Duration(seconds: 2),
-  }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: duration,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      ),
-    );
-  }
-
   Future<void> logout() async {
-    debugPrint("Logging out user...");
     final userService = ref.read(userServiceProvider);
     final value = await userService.visitorLogin();
     if (value.data != null) {
@@ -197,7 +183,7 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
                                         text: _userInfo!.displayId.toString(),
                                       ),
                                     );
-                                    showToast(context, localizations.idCopied);
+                                    ToastUtil.success(localizations.idCopied);
                                   },
                                 ),
                             ],
@@ -205,7 +191,7 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
                           const SizedBox(height: 8),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _userInfo!.isVisitor
+                              backgroundColor: (_userInfo?.isVisitor ?? true)
                                   ? theme.colorScheme.onSecondary
                                   : theme.colorScheme.error,
                               foregroundColor: Colors.white,
@@ -215,7 +201,7 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
                               ),
                             ),
                             onPressed: () async {
-                              if (_userInfo!.isVisitor) {
+                              if (_userInfo?.isVisitor ?? true) {
                                 _navigate(
                                   context,
                                   const LoginWithUsernamePage(),
@@ -225,7 +211,7 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
                               }
                             },
                             child: Text(
-                              _userInfo!.isVisitor
+                              (_userInfo?.isVisitor ?? true)
                                   ? localizations.login
                                   : localizations.logout,
                             ),
@@ -269,49 +255,56 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
               leading: const Icon(Icons.person),
               title: Text(localizations.userInfo),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _userInfo!.isVisitor
-                  ? showToast(context, localizations.mustConnect)
-                  : _navigate(context, UserInfoPage(user: _userInfo!)),
+              onTap: () => requireLogin(
+                localizations: localizations,
+                action: () => _navigate(context, UserInfoPage(user: _userInfo!)),
+                userInfo: _userInfo,
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.favorite),
               title: Text(localizations.favorites),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _userInfo!.isVisitor
-                  ? showToast(context, localizations.mustConnect)
-                  : _navigate(context, const FavoritePage()),
+              onTap: () => requireLogin(
+                localizations: localizations,
+                action: () => _navigate(context, const FavoritePage()),
+                userInfo: _userInfo,
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.history),
               title: Text(localizations.history),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _userInfo!.isVisitor
-                  ? showToast(context, localizations.mustConnect)
-                  : _navigate(context, const HistoryPage()),
+              onTap: () => requireLogin(
+                localizations: localizations,
+                action: () => _navigate(context, const HistoryPage()),
+                userInfo: _userInfo,
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.thumb_up),
               title: Text(localizations.likes),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _userInfo!.isVisitor
-                  ? showToast(context, localizations.mustConnect)
-                  : _navigate(context, const LikePage()),
+              onTap: () => requireLogin(
+                localizations: localizations,
+                action: () => _navigate(context, const LikePage()),
+                userInfo: _userInfo,
+              ),
             ),
-            if (!_userInfo!.isVisitor)
+
+            if (!isVisitorUser(_userInfo))
               ListTile(
                 leading: const Icon(Icons.lock),
                 title: Text(localizations.changePassword),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _navigate(context, const ChangePasswordPage()),
               ),
-            if (_userInfo!.isVisitor)
+            if (isVisitorUser(_userInfo))
               ListTile(
                 leading: const Icon(Icons.vpn_key),
                 title: Text(localizations.bindPassword),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _userInfo!.isVisitor
-                    ? showToast(context, localizations.mustConnect)
-                    : _navigate(context, const BindPasswordPage()),
+                onTap: () => _navigate(context, const BindPasswordPage()),
               ),
             const Divider(),
             ListTile(

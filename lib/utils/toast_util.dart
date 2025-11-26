@@ -1,73 +1,82 @@
-import 'package:flutter/cupertino.dart';
-import 'package:toastification/toastification.dart';
+import 'package:flutter/material.dart';
+
+enum SnackBarType { success, error, warning, info }
 
 class ToastUtil {
-  static void _show(
-    String msg,
-    int duration,
-    ToastificationType type,
-    Alignment alignment,
-  ) {
-    toastification.show(
-      title: Text(msg),
-      alignment: alignment,
-      type: type,
-      autoCloseDuration: Duration(seconds: duration),
-      closeOnClick: true,
-      dragToClose: true,
-      style: ToastificationStyle.flatColored,
-      closeButton: ToastCloseButton(showType: CloseButtonShowType.none),
-      animationDuration: const Duration(milliseconds: 300),
-      animationBuilder: (context, animation, alignment, child) {
-        final curved = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutBack,
-        );
-        final offsetAnimation = Tween<Offset>(
-          begin: const Offset(0, -0.2),
-          end: Offset.zero,
-        ).animate(curved);
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
-        return SlideTransition(
-          position: offsetAnimation,
-          child: FadeTransition(
-            opacity: animation,
-            child: ScaleTransition(scale: curved, child: child),
+  static void _show(String msg, int duration, SnackBarType type) {
+    final colors = _getColors(type);
+    final icon = _getIcon(type);
+
+    scaffoldMessengerKey.currentState
+        ?.showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(icon, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(msg, style: const TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+            backgroundColor: colors,
+            duration: Duration(seconds: duration),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(5),
+            dismissDirection: DismissDirection.down,
           ),
-        );
-      },
-    );
+        )
+        .closed
+        .then((_) {
+          scaffoldMessengerKey.currentState?.clearSnackBars();
+        });
   }
 
-  static void success(
-    String msg, {
-    int duration = 3,
-    Alignment alignment = Alignment.center,
-  }) {
-    _show(msg, duration, ToastificationType.success, alignment);
+  static Color _getColors(SnackBarType type) {
+    switch (type) {
+      case SnackBarType.success:
+        return Colors.green;
+      case SnackBarType.error:
+        return Colors.red;
+      case SnackBarType.warning:
+        return Colors.orange;
+      case SnackBarType.info:
+        return Colors.blue;
+    }
   }
 
-  static void error(
-    String msg, {
-    int duration = 3,
-    Alignment alignment = Alignment.center,
-  }) {
-    _show(msg, duration, ToastificationType.error, alignment);
+  static IconData _getIcon(SnackBarType type) {
+    switch (type) {
+      case SnackBarType.success:
+        return Icons.check_circle;
+      case SnackBarType.error:
+        return Icons.error;
+      case SnackBarType.warning:
+        return Icons.warning;
+      case SnackBarType.info:
+        return Icons.info;
+    }
   }
 
-  static void warning(
-    String msg, {
-    int duration = 3,
-    Alignment alignment = Alignment.center,
-  }) {
-    _show(msg, duration, ToastificationType.warning, alignment);
+  static void success(String msg, {int duration = 3}) {
+    _show(msg, duration, SnackBarType.success);
   }
 
-  static void info(
-    String msg, {
-    int duration = 3,
-    Alignment alignment = Alignment.center,
-  }) {
-    _show(msg, duration, ToastificationType.info, alignment);
+  static void error(String msg, {int duration = 3}) {
+    _show(msg, duration, SnackBarType.error);
+  }
+
+  static void warning(String msg, {int duration = 3}) {
+    _show(msg, duration, SnackBarType.warning);
+  }
+
+  static void info(String msg, {int duration = 3}) {
+    _show(msg, duration, SnackBarType.info);
   }
 }

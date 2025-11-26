@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:live_app/utils/utils.dart';
 
 import '../../models/video_info.dart';
 import '../Animation/follow_splash_animation.dart';
@@ -230,12 +231,17 @@ class _VideoOverlayActionsState extends State<VideoOverlayActions>
                           alignment: Alignment.topCenter,
                           children: [
                             UserAvatar(
-                              url:
-                                  widget.video.user.avatar ??
-                                  "https://i.pravatar.cc/350",
+                              url: widget.video.user.avatar,
                               nickname: widget.video.user.nickname,
                               size: 48,
-                              onTap: () => widget.onUserTap.call(widget.video),
+                              onTap: () {
+                                toUserDetailPage(
+                                  context: context,
+                                  userId: widget.video.userId,
+                                  url: widget.video.user.avatar,
+                                  nickname: widget.video.user.nickname,
+                                );
+                              },
                             ),
                             if (!widget.isFollowed)
                               Positioned(

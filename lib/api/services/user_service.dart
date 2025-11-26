@@ -17,7 +17,7 @@ class UserService extends BaseService {
     );
   }
 
-  Future<ApiResponse<UserInfo>> visitorLogin([String code = ""]) { 
+  Future<ApiResponse<UserInfo>> visitorLogin([String code = ""]) {
     return post<UserInfo>(
       UserApi.visitorLogin,
       body: {"code": code},
@@ -36,7 +36,7 @@ class UserService extends BaseService {
   Future<ApiResponse<UserInfo>> updateInfo(FormData formData) {
     return post<UserInfo>(
       UserApi.updateInfo,
-      body: formData, 
+      body: formData,
       fromJson: (json) => UserInfo.fromJson(json),
     );
   }
@@ -67,18 +67,18 @@ class UserService extends BaseService {
     );
   }
 
-  Future<ApiResponse<String>> follow(int id) {
+  Future<ApiResponse<String>> follow(int userId) {
     return post<String>(
       UserApi.follow,
-      body: {"id": id},
+      body: {"user_id": userId.toString()},
       fromJson: (json) => json.toString(),
     );
   }
 
-  Future<ApiResponse<String>> unfollow(int id) {
+  Future<ApiResponse<String>> unfollow(int userId) {
     return post<String>(
       UserApi.unfollow,
-      body: {"id": id},
+      body: {"user_id": userId.toString()},
       fromJson: (json) => json.toString(),
     );
   }

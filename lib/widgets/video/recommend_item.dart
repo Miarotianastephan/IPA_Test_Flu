@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../../models/video_info.dart';
 import '../../utils/text_util.dart';
 import '../encrypted_image.dart';
@@ -126,7 +127,7 @@ class RecommendedVideoItem extends StatelessWidget {
                       children: [
                         UserAvatar(
                           userId: video.userId,
-                          url: video.user.avatar ??"https://i.pravatar.cc/350",
+                          url: video.user.avatar ?? "https://i.pravatar.cc/350",
                           nickname: video.user.nickname,
                           size: 20,
                         ),
@@ -134,7 +135,7 @@ class RecommendedVideoItem extends StatelessWidget {
                         // 昵称
                         Expanded(
                           child: Text(
-                            video.user.nickname??"",
+                            video.user.nickname ?? "",
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.grey,

@@ -64,11 +64,12 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text(""), centerTitle: true),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text(
               localizations.bindPassword,
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -205,6 +206,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

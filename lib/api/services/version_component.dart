@@ -106,8 +106,8 @@ class VersionComponent {
       final currentPart = i < currentParts.length ? currentParts[i] : 0;
 
       if (latestPart > currentPart) return true;
-      if (latestPart < currentPart) return true;
+      if (latestPart < currentPart) return false;
     }
-    return true;
+    return false;
   }
 }

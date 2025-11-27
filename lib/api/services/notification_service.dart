@@ -22,7 +22,6 @@ class NotificationService {
     const androidSettings = fln.AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
-    // const iosSettings = fln.DarwinInitializationSettings();
     const iosSettings = fln.DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -209,7 +208,6 @@ class NotificationService {
       android: androidDetails,
       iOS: iosDetails,
     );
-    debugPrint("Showing local notification: $title - $body");
     await localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,

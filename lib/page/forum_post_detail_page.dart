@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/widgets/empty_retry.dart';
 
 import '../api/services/user_service.dart';
@@ -410,8 +411,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
           const SizedBox(height: 30),
           Row(
             children: [
-              const Text(
-                "评论",
+              Text(
+                AppLocalizations.of(context)!.comment,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,

@@ -1,6 +1,7 @@
 // 帖子详情 Provider（使用 StateNotifier 与状态管理）
 // ----------------------------------------------
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/forum_post.dart';
@@ -61,14 +62,14 @@ class PostDetailNotifier extends StateNotifier<PostDetailState> {
     final service = ref.read(forumServiceProvider);
     final newValue = !post.isLiked;
 
-    // If liking, cancel downvote
-    if (newValue && (post.isDownvoted ?? false)) {
-      try {
-        await service.voteCancel(post.id);
-      } catch (_) {}
-    }
+    final oldPost = post;
 
     try {
+      if (newValue && (post.isDownvoted ?? false)) {
+        await service.voteCancel(post.id);
+      }
+
+
       if (newValue) {
         await service.vote(post.id, "up");
       } else {
@@ -87,7 +88,10 @@ class PostDetailNotifier extends StateNotifier<PostDetailState> {
               : post.dislikeCount,
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("Erreur toggleLike: $e");
+      state = state.copyWith(post: oldPost);
+    }
   }
 
   /// 收藏 / 取消收藏

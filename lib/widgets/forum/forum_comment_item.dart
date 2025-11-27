@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/page/comment_forum_detail_page.dart';
 
 import '../../api/services/forum_service.dart';
 import '../../models/forum_comment.dart';
@@ -168,11 +169,23 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
 
     final user = c.commentUser;
     final toUser = c.commentToUser;
-
     final isDownSelected = voteState == _VoteState.down;
-
     return InkWell(
-      onTap: () => widget.onReply?.call(widget.comment),
+      onTap: () {
+        widget.isChild == true
+            ? null
+            : Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return CommentForumDetailPage(
+                      parentComment: widget.comment,
+                      onReply: widget.onReply,
+                    );
+                  },
+                ),
+              );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

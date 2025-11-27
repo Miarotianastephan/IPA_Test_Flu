@@ -55,28 +55,6 @@ class NotificationService {
     );
     debugPrint("Notification plugin initialized");
 
-    // === PUSHY DISABLED (prevent infinite loop & duplicates) ===
-    /*
-    try {
-      String deviceToken = await Pushy.register();
-      _token = deviceToken;
-      debugPrint("Pushy actif — Token: $_token");
-
-      Pushy.listen();
-
-      Pushy.setNotificationListener((Map<String, dynamic> data) {
-        final String? title = data['title'] ?? "Notification";
-        final String? body = data['message'];
-
-        debugPrint("Pushy message: $title - $body");
-
-        showCustomLocalNotification(title ?? "Notification", body ?? "", "");
-      });
-    } catch (e) {
-      debugPrint("Error Pushy: $e");
-    }
-    */
-
     if (Platform.isAndroid) {
       try {
         await _messaging.requestPermission();
@@ -89,18 +67,39 @@ class NotificationService {
         _listenOpenedAppMessages();
         _listenBackgroundMessages();
       } catch (e) {
-        _usingFCM = false;
-        debugPrint("No GMS, switch HMS");
+        try {
+          String deviceToken = await Pushy.register();
+          _token = deviceToken;
+          debugPrint("Pushy actif — Token: $_token");
 
-        hms.Push.getTokenStream.listen((event) {
-          _token = event;
-          debugPrint("HMS actif — Token: $_token");
-        });
+          Pushy.listen();
 
-        hms.Push.getToken("");
+          Pushy.setNotificationListener((Map<String, dynamic> data) {
+            final String? title = data['title'] ?? "Notification";
+            final String? body = data['message'];
+
+            debugPrint("Pushy message: $title - $body");
+
+            showCustomLocalNotification(
+              title ?? "Notification",
+              body ?? "",
+              "",
+            );
+          });
+          _usingFCM = false;
+        } catch (e) {
+          _usingFCM = false;
+          debugPrint("No GMS, switch HMS");
+
+          hms.Push.getTokenStream.listen((event) {
+            _token = event;
+            debugPrint("HMS actif — Token: $_token");
+          });
+
+          hms.Push.getToken("");
+        }
       }
     }
-    // ===== iOS PERMISSION FIX =====
     if (Platform.isIOS) {
       try {
         final settings = await _messaging.requestPermission(
@@ -123,10 +122,31 @@ class NotificationService {
 
         _usingFCM = true;
       } catch (e) {
-        debugPrint("iOS Firebase error: $e");
+        try {
+          String deviceToken = await Pushy.register();
+          _token = deviceToken;
+          debugPrint("Pushy actif — Token: $_token");
+
+          Pushy.listen();
+
+          Pushy.setNotificationListener((Map<String, dynamic> data) {
+            final String? title = data['title'] ?? "Notification";
+            final String? body = data['message'];
+
+            debugPrint("Pushy message: $title - $body");
+
+            showCustomLocalNotification(
+              title ?? "Notification",
+              body ?? "",
+              "",
+            );
+          });
+          _usingFCM = false;
+        } catch (e) {
+          debugPrint("Error Notif Ios : $e");
+        }
       }
     }
-    // ignore: use_build_context_synchronously
     try {
       await _version.check(localNotifications);
     } catch (e) {
@@ -189,7 +209,7 @@ class NotificationService {
       android: androidDetails,
       iOS: iosDetails,
     );
-
+    debugPrint("Showing local notification: $title - $body");
     await localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,

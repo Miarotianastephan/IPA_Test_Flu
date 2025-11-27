@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:live_app/api/services/notification_service.dart';
 import 'package:live_app/models/version.dart';
 import 'package:live_app/models/version_response.dart';
 import 'package:package_info_plus/package_info_plus.dart';

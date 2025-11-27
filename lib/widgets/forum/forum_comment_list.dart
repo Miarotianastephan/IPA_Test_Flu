@@ -9,11 +9,7 @@ class ForumCommentsList extends ConsumerWidget {
   final int postId;
   final void Function(ForumComment comment)? onReply;
 
-  const ForumCommentsList({
-    super.key,
-    required this.postId,
-    this.onReply,
-  });
+  const ForumCommentsList({super.key, required this.postId, this.onReply});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,12 +37,16 @@ class ForumCommentsList extends ConsumerWidget {
     /// 纯列表渲染（由外层滚动）
     return Column(
       children: [
-        ...comments.map((comment) {
-          return ForumCommentItem(
-            comment: comment,
-            onReply: onReply,
-          );
-        }),
+        ...comments
+            .where((c) =>
+        c.parentId == null || c.parentId == 0)
+            .map((comment) {
+              return ForumCommentItem(
+                comment: comment,
+                onReply: onReply,
+                isChild: false, // important : racine
+              );
+            }),
 
         /// 加载中
         if (state.loading)
@@ -65,10 +65,7 @@ class ForumCommentsList extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.all(16),
             child: Center(
-              child: Text(
-                "已经到底啦",
-                style: TextStyle(color: Colors.white54),
-              ),
+              child: Text("已经到底啦", style: TextStyle(color: Colors.white54)),
             ),
           ),
       ],

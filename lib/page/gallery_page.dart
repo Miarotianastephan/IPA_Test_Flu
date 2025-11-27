@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:live_app/widgets/video_screen.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:video_player/video_player.dart';
@@ -40,33 +41,25 @@ class _GalleryPageState extends State<GalleryPage> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            PageView.builder(
-              controller: _pageController,
+            PhotoViewGallery.builder(
               itemCount: widget.items.length,
-              itemBuilder: (_, index) {
+              pageController: _pageController,
+              builder: (ctx, index) {
                 final item = widget.items[index];
+                debugPrint("Video URLLLLL : ${item.url}");
+                if (item.isVideo) {
+                  return PhotoViewGalleryPageOptions.customChild(
+                    child: _VideoPlayerView(url: item.url),
+                  );
+                }
 
-                return PhotoViewGallery.builder(
-                  itemCount: widget.items.length,
-                  pageController: _pageController,
-                  builder: (ctx, index) {
-                    final item = widget.items[index];
-
-                    if (item.isVideo) {
-                      return PhotoViewGalleryPageOptions.customChild(
-                        child: _VideoPlayerView(url: item.url),
-                      );
-                    }
-
-                    return PhotoViewGalleryPageOptions(
-                      imageProvider: NetworkImage(item.url),
-                      minScale: PhotoViewComputedScale.contained,
-                      maxScale: PhotoViewComputedScale.covered * 2.5,
-                    );
-                  },
-                  onPageChanged: (i) => setState(() => _currentIndex = i),
+                return PhotoViewGalleryPageOptions(
+                  imageProvider: NetworkImage(item.url),
+                  minScale: PhotoViewComputedScale.contained,
+                  maxScale: PhotoViewComputedScale.covered * 2.5,
                 );
               },
+              onPageChanged: (i) => setState(() => _currentIndex = i),
             ),
 
             // 返回按钮
@@ -92,7 +85,7 @@ class _GalleryPageState extends State<GalleryPage> {
                   horizontal: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.35), // 透明白色
+                  color: Colors.white.withValues(alpha: 0.35), // 透明白色
                   borderRadius: BorderRadius.circular(20), // 更圆的胶囊
                   // backdropFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), // 毛玻璃效果（可选）
                 ),
@@ -132,13 +125,15 @@ class _VideoPlayerView extends StatefulWidget {
 
 class _VideoPlayerViewState extends State<_VideoPlayerView> {
   late VideoPlayerController _controller;
-
+  bool isLoad = false;
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.network(widget.url)
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
       ..initialize().then((_) {
-        setState(() {});
+        setState(() {
+          isLoad = true;
+        });
         _controller.play();
       });
   }
@@ -151,13 +146,15 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: _controller.value.isInitialized
-          ? AspectRatio(
-              aspectRatio: _controller.value.aspectRatio,
-              child: VideoPlayer(_controller),
-            )
-          : const CircularProgressIndicator(color: Colors.white),
-    );
+    return isLoad == false
+        ? VideoScreen(videoUrl: widget.url)
+        : Center(
+            child: _controller.value.isInitialized
+                ? AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(_controller),
+                  )
+                : const CircularProgressIndicator(color: Colors.white),
+          );
   }
 }

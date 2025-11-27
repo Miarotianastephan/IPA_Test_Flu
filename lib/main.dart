@@ -13,6 +13,8 @@ import 'provider/locale_provider.dart';
 import 'provider/theme_provider.dart';
 import 'utils/toast_util.dart';
 import 'utils/window_manager_wrapper.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'
+    as fln;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,10 +25,28 @@ Future<void> main() async {
   MediaKit.ensureInitialized();
   await initWindowManager();
   await StorageService.instance.init();
-  notificationService.showCustomLocalNotification(
-    'TEST LOCAL FOREGROUND',
+  NotificationService.showCustomLocalNotification(
+    'TEST LOCAL',
     'La notification locale fonctionne 🎉',
     ''
+  );
+  fln.FlutterLocalNotificationsPlugin().show(
+    999,
+    'Test local iOS',
+    'Si tu vois ceci, ton affichage fonctionne',
+    const fln.NotificationDetails(
+      iOS: fln.DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+        presentBadge: true,
+      ),
+      android: fln.AndroidNotificationDetails(
+        'test_channel',
+        'Test Channel',
+        importance: fln.Importance.max,
+        priority: fln.Priority.high,
+      ),
+    ),
   );
   runApp(const ProviderScope(child: MyApp()));
 }

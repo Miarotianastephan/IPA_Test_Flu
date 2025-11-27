@@ -186,7 +186,7 @@ class NotificationService {
     );
   }
 
-  static Future<void> showCustomLocalNotification(
+  Future<void> showCustomLocalNotification(
     String title,
     String body,
     payload,

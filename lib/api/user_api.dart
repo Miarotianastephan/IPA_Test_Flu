@@ -8,7 +8,7 @@ class UserApi {
   static const String visitorLogin = '$base/visitorLogin';
 
   //更新用户信息
-  static const String updateInfo = '$base/updateInfo';
+  static const String updateInfo = '$base/users/updateInfo';
 
   //获取用户信息
   static const String getInfo = '$base/getInfo';

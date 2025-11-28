@@ -35,7 +35,7 @@ class MyApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Bogo App',
+      title: 'Xo',
       locale: locale,
       scaffoldMessengerKey: ToastUtil.scaffoldMessengerKey,
       localizationsDelegates: const [

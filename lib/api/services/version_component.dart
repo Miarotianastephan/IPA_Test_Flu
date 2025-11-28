@@ -11,7 +11,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class VersionComponent {
   Future<void> check(fln.FlutterLocalNotificationsPlugin local) async {
     final current = await getCurrentVersion();
-    // ignore: use_build_context_synchronously
     final latestVersionObj = await fetchVersion();
 
     if (latestVersionObj == null) {
@@ -22,7 +21,6 @@ class VersionComponent {
     final latestVersion = latestVersionObj.versionNumber;
 
     if (isUpdateAvailable(latestVersion, current)) {
-
       const androidDetails = fln.AndroidNotificationDetails(
         'default_channel',
         'Notifications',
@@ -30,7 +28,11 @@ class VersionComponent {
         priority: fln.Priority.high,
       );
 
-      const iosDetails = fln.DarwinNotificationDetails();
+      const iosDetails = fln.DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+        presentBadge: true,
+      );
 
       const details = fln.NotificationDetails(
         android: androidDetails,
@@ -44,7 +46,6 @@ class VersionComponent {
         details,
         payload: "https://landing.99sq20.fun/",
       );
-
     } else {
       debugPrint("Application is up to date: $current");
     }

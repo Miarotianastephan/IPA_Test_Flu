@@ -9,6 +9,7 @@ import 'package:live_app/api/api_client.dart';
 import 'package:live_app/api/services/user_service.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/utils/toast_util.dart';
 import 'package:live_app/widgets/cover_image_picker.dart';
 import 'package:live_app/widgets/profile_image_picker.dart';
 import 'package:live_app/widgets/save_button_edit_user.dart';
@@ -34,6 +35,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
 
   final ImagePicker _picker = ImagePicker();
   bool _isEditing = false;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -111,68 +113,68 @@ class _UserInfoPageState extends State<UserInfoPage> {
   }
 
   Future<void> _saveProfileApi(BuildContext context) async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
 
-      final user = widget.user;
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.userNotFound)),
+    _formKey.currentState!.save();
+
+    final user = widget.user;
+    if (user == null) {
+      ToastUtil.warning(AppLocalizations.of(context)!.userNotFound);
+      Navigator.pop(context, true);
+      return;
+    }
+
+    setState(() => _saving = true);
+
+    try {
+      final Map<String, dynamic> data = {
+        'username': _username,
+        'nickname': _nickname,
+        'bio': _bio,
+        'phone': _phone,
+      };
+
+      if (_avatar != null) {
+        data['avatar'] = await MultipartFile.fromFile(
+          _avatar!.path,
+          filename: basename(_avatar!.path),
         );
-        return;
       }
 
-      try {
-        final Map<String, dynamic> data = {
-          'username': _username,
-          'nickname': _nickname,
-          'bio': _bio,
-          'phone': _phone,
-          'userId': user.id.toString(),
-        };
-
-        if (_avatar != null) {
-          data['avatar'] = await MultipartFile.fromFile(
-            _avatar!.path,
-            filename: basename(_avatar!.path),
-          );
-        }
-
-        if (_cover != null) {
-          data['cover'] = await MultipartFile.fromFile(
-            _cover!.path,
-            filename: basename(_cover!.path),
-          );
-        }
-
-        final formData = FormData.fromMap(data);
-
-        final response = await UserService(ApiClient()).updateInfo(formData);
-
-        if (response.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.profileUpdated),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${AppLocalizations.of(context)!.serverError}: ${response.msg}',
-              ),
-            ),
-          );
-          debugPrint(response.msg);
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              ' ${AppLocalizations.of(context)!.networkError}  : $e',
-            ),
-          ),
+      if (_cover != null) {
+        data['cover'] = await MultipartFile.fromFile(
+          _cover!.path,
+          filename: basename(_cover!.path),
         );
+      }
+
+      final formData = FormData.fromMap(data);
+      final response = await UserService(ApiClient()).updateInfo(formData);
+
+      if (!mounted) return;
+
+      if (response.success || response.code == 1) {
+        ToastUtil.success(AppLocalizations.of(context)!.profileUpdated);
+
+        setState(() {
+          _saving = false;
+          _isEditing = false;
+        });
+        Navigator.pop(context, true);
+      } else {
+        ToastUtil.error(AppLocalizations.of(context)!.serverError);
+        debugPrint('Erreur serveur: ${response.msg}');
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ToastUtil.error(AppLocalizations.of(context)!.networkError);
+      Navigator.pop(context, true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+        });
       }
     }
   }
@@ -186,110 +188,120 @@ class _UserInfoPageState extends State<UserInfoPage> {
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.visibility : Icons.edit),
-            tooltip: _isEditing
-                ? localizations.show
-                : localizations.edit,
+            tooltip: _isEditing ? localizations.show : localizations.edit,
             onPressed: () {
               setState(() => _isEditing = !_isEditing);
             },
           ),
         ],
       ),
-      body: widget.user == null
-          ? Center(child: Text(localizations.userInfoPageContent))
-          : SingleChildScrollView(
-              padding: EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
+      body: Stack(
+        children: [
+          widget.user == null
+              ? Center(child: Text(localizations.userInfoPageContent))
+              : SingleChildScrollView(
+                  padding: EdgeInsets.all(16),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
                       children: [
-                        CoverImagePicker(
-                          cover: _cover,
-                          coverUrl: widget.user!.cover,
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            CoverImagePicker(
+                              cover: _cover,
+                              coverUrl: widget.user!.cover,
+                              isEditing: _isEditing,
+                              onTap: () {
+                                _isEditing
+                                    ? _pickCoverImage(context)
+                                    : showDial(
+                                        context,
+                                        _cover ?? widget.user!.cover,
+                                        widget.user!.cover != null
+                                            ? false
+                                            : true,
+                                      );
+                              },
+                              user: widget.user,
+                            ),
+                            Positioned(
+                              bottom: -50,
+                              left: MediaQuery.of(context).size.width / 2 - 55,
+                              child: ProfileImagePicker(
+                                avatar: _avatar,
+                                avatarUrl: widget.user!.avatar,
+                                isEditing: _isEditing,
+                                onTap: () {
+                                  _isEditing
+                                      ? _pickAvatarImage(context)
+                                      : showDial(
+                                          context,
+                                          _avatar ?? widget.user!.avatar,
+                                          widget.user!.avatar != null
+                                              ? false
+                                              : true,
+                                        );
+                                },
+                                user: widget.user,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 80),
+                        TextFieldWidget(
+                          label: localizations.username,
+                          icon: Icons.person_outline,
+                          value: _username,
                           isEditing: _isEditing,
-                          onTap: () {
-                            _isEditing
-                                ? _pickCoverImage(context)
-                                : showDial(
-                                    context,
-                                    _cover ?? widget.user!.cover,
-                                    widget.user!.cover != null ? false : true,
-                                  );
-                          },
-                          user: widget.user,
+                          onSaved: (value) => _username = value ?? '',
                         ),
-                        Positioned(
-                          bottom: -50,
-                          left: MediaQuery.of(context).size.width / 2 - 55,
-                          child: ProfileImagePicker(
-                            avatar: _avatar,
-                            avatarUrl: widget.user!.avatar,
-                            isEditing: _isEditing,
-                            onTap: () {
-                              _isEditing
-                                  ? _pickAvatarImage(context)
-                                  : showDial(
-                                      context,
-                                      _avatar ?? widget.user!.avatar,
-                                      widget.user!.avatar != null
-                                          ? false
-                                          : true,
-                                    );
+                        const SizedBox(height: 16),
+                        TextFieldWidget(
+                          label: localizations.nickname,
+                          icon: Icons.tag,
+                          value: _nickname,
+                          isEditing: _isEditing,
+                          onSaved: (value) => _nickname = value ?? '',
+                        ),
+                        const SizedBox(height: 16),
+                        TextFieldWidget(
+                          label: localizations.bio,
+                          icon: Icons.description,
+                          value: _bio,
+                          isEditing: _isEditing,
+                          onSaved: (value) => _bio = value ?? '',
+                        ),
+                        const SizedBox(height: 16),
+                        TextFieldWidget(
+                          label: localizations.phone,
+                          icon: Icons.phone,
+                          value: _phone,
+                          isEditing: _isEditing,
+                          onSaved: (value) => _phone = value ?? '',
+                        ),
+                        SizedBox(height: 20),
+                        if (_isEditing)
+                          SaveButtonEditUser(
+                            onPressed: () {
+                              _saveProfileApi(context);
                             },
-                            user: widget.user,
                           ),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 80),
-                    TextFieldWidget(
-                      label: localizations.username,
-                      icon: Icons.person_outline,
-                      value: _username,
-                      isEditing: _isEditing,
-                      onSaved: (value) => _username = value ?? '',
-                    ),
-
-                    const SizedBox(height: 16),
-                    TextFieldWidget(
-                      label: localizations.nickname,
-                      icon: Icons.tag,
-                      value: _nickname,
-                      isEditing: _isEditing,
-                      onSaved: (value) => _nickname = value ?? '',
-                    ),
-
-                    const SizedBox(height: 16),
-                    TextFieldWidget(
-                      label: localizations.bio,
-                      icon: Icons.description,
-                      value: _bio,
-                      isEditing: _isEditing,
-                      onSaved: (value) => _bio = value ?? '',
-                    ),
-
-                    const SizedBox(height: 16),
-                    TextFieldWidget(
-                      label: localizations.phone,
-                      icon: Icons.phone,
-                      value: _phone,
-                      isEditing: _isEditing,
-                      onSaved: (value) => _phone = value ?? '',
-                    ),
-                    SizedBox(height: 20),
-                    if (_isEditing)
-                      SaveButtonEditUser(
-                        onPressed: () {
-                          _saveProfileApi(context);
-                        },
-                      ),
-                  ],
+                  ),
+                ),
+          if (_saving)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black54,
+                child: const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
                 ),
               ),
             ),
+        ],
+      ),
     );
   }
 }

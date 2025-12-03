@@ -190,6 +190,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loginSuccess => 'Inicio de sesión exitoso';
 
   @override
+  String get loginFailed => 'Error de inicio de sesión';
+
+  @override
   String get loginWithQrcode => 'Iniciar sesión con código QR';
 
   @override
@@ -360,7 +363,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get alreadyFollowed => 'Ya seguido';
 
   @override
-  String get all => 'Todo';
+  String get all => 'todo';
 
   @override
   String get about => 'Acerca de';
@@ -443,4 +446,65 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get saveLoginCredentials => 'Guardar credenciales de inicio de sesión';
+
+  @override
+  String get clearHistory => 'Borrar historial';
+
+  @override
+  String get confirmClearingHistory => '¿Confirmar borrado del historial?';
+
+  @override
+  String get actionCanNotBeUndoneWhenClearingHistory =>
+      'Esta acción no se puede deshacer. ¿Estás seguro de que quieres borrar todos los mensajes del chat?';
+
+  @override
+  String get cancel => 'Cancelar';
+
+  @override
+  String get unreadMessage => 'Mensaje no leído';
+
+  @override
+  String get unread => 'No leído';
+
+  @override
+  String get item => 'elemento';
+
+  @override
+  String get enterMessage => 'Escribe un mensaje…';
+
+  @override
+  String get followEachOther => 'Seguirse mutuamente';
+
+  @override
+  String get pleaseEnterYourUsernameOrId =>
+      'Por favor ingresa tu nombre de usuario o ID';
+
+  @override
+  String get startConversation => 'Iniciar conversación';
+
+  @override
+  String get myFollows => 'Mis seguidos';
+
+  @override
+  String get systemNotification => 'Notificación del sistema';
+
+  @override
+  String get checkTheLatestSystemNotification =>
+      'Ver los últimos mensajes del sistema';
+
+  @override
+  String get noConversationFound => 'Ninguna conversación encontrada';
+
+  @override
+  String get groupChat => 'Chat grupal';
+
+  @override
+  String get searchUsernameOrIdPlaceholder =>
+      'Ingresa nombre de usuario o ID para comenzar la búsqueda';
+
+  @override
+  String get newMessage => 'Nuevo mensaje';
+
+  @override
+  String get noCommentsYet => 'Aún no hay comentarios';
 }

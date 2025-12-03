@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/video_comment.dart';
 import 'package:live_app/widgets/comment_item_replies.dart';
+import 'package:live_app/widgets/empty_widget.dart';
 
 import '../../api/services/video_service.dart';
 import '../../models/page_params.dart';
@@ -154,6 +155,8 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
   @override
   Widget build(BuildContext context) {
     final topLevelComments = comments;
+    final localisations = AppLocalizations.of(context)!;
+
     return Container(
       decoration: const BoxDecoration(color: Colors.white),
       child: Column(
@@ -224,66 +227,79 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
                   }
                   return false;
                 },
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 0, top: 10),
-                  itemCount: topLevelComments.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == topLevelComments.length) {
-                      if (_finished) {
-                        return Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Center(
-                            child: Text(
-                              AppLocalizations.of(context)!.noMoreComments,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                        );
-                      } else if (_loading) {
-                        return const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      } else {
-                        return const SizedBox.shrink();
-                      }
-                    }
-                    final comment = topLevelComments[index];
-                    final expanded = _expandedComments.contains(comment.id);
-                    return CommentItem(
-                      key: ValueKey(comment.id),
-                      comment: comment,
-                      isChild: false,
-                      expanded: expanded,
-                      onClick: onReplyComment,
-                      onToggleExpand: () {
-                        setState(() {
-                          if (expanded) {
-                            _expandedComments.remove(comment.id);
-                          } else {
-                            _expandedComments.add(comment.id);
+                child: (topLevelComments.isEmpty)
+                    ? Expanded(
+                        child: EmptyWidget(
+                          icon: Icons.message_outlined,
+                          message: localisations.noCommentsYet,
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 0, top: 10),
+                        itemCount: topLevelComments.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == topLevelComments.length) {
+                            if (_finished) {
+                              return Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.noMoreComments,
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ),
+                              );
+                            } else if (_loading) {
+                              return const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              );
+                            } else {
+                              return const SizedBox.shrink();
+                            }
                           }
-                        });
-                      },
-                      childComments: expanded
-                          ? Padding(
-                              padding: const EdgeInsets.only(
-                                left: 56.0,
-                                bottom: 8.0,
-                              ),
-                              child: ChildCommentsList(
-                                parentId: comment.id,
-                                onClick: onReplyComment,
-                              ),
-                            )
-                          : null,
-                      darkStyle: true,
-                      childCount: comment.childCount,
-                    );
-                  },
-                ),
+                          final comment = topLevelComments[index];
+                          final expanded = _expandedComments.contains(
+                            comment.id,
+                          );
+                          return CommentItem(
+                            key: ValueKey(comment.id),
+                            comment: comment,
+                            isChild: false,
+                            expanded: expanded,
+                            onClick: onReplyComment,
+                            onToggleExpand: () {
+                              setState(() {
+                                if (expanded) {
+                                  _expandedComments.remove(comment.id);
+                                } else {
+                                  _expandedComments.add(comment.id);
+                                }
+                              });
+                            },
+                            childComments: expanded
+                                ? Padding(
+                                    padding: const EdgeInsets.only(
+                                      left: 56.0,
+                                      bottom: 8.0,
+                                    ),
+                                    child: ChildCommentsList(
+                                      parentId: comment.id,
+                                      onClick: onReplyComment,
+                                    ),
+                                  )
+                                : null,
+                            darkStyle: true,
+                            childCount: comment.childCount,
+                          );
+                        },
+                      ),
               ),
             ),
           ),

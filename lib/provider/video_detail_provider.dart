@@ -5,6 +5,10 @@ import 'package:live_app/models/page_params.dart';
 import '../models/video_info.dart';
 import 'api_provider.dart';
 
+final videoTypeProvider = StateProvider<int>((ref) => 2);
+
+final fullscreenProvider = StateProvider<bool>((ref) => false);
+
 class VideoDetailState {
   final VideoInfo? video;
   final bool loading;

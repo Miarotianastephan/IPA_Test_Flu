@@ -98,7 +98,6 @@ class _ForumTabPageState extends ConsumerState<ForumTabPage>
       _hasMore = true;
     });
     final service = ref.read(forumServiceProvider);
-    debugPrint("88888888888888888888888888888888888${categoryId}8888888888888888888888888888888888888888");
     try {
       final res = await service.forums(
         pageParams: PageParams(page: _page, limit: 20),

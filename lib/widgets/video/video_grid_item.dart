@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:live_app/widgets/video/video_stat_item.dart';
 import 'package:live_app/widgets/video/video_tag_category_wrap.dart';
-import 'package:live_app/widgets/video/video_grid_item.dart';
 
 import '../../models/video_info.dart';
 import '../encrypted_image.dart';

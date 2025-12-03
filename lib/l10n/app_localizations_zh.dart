@@ -189,6 +189,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get loginSuccess => '登录成功';
 
   @override
+  String get loginFailed => '登录失败';
+
+  @override
   String get loginWithQrcode => '二维码登录';
 
   @override
@@ -439,4 +442,61 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get saveLoginCredentials => '保存登录凭证';
+
+  @override
+  String get clearHistory => '清除记录';
+
+  @override
+  String get confirmClearingHistory => '确认清除记录？';
+
+  @override
+  String get actionCanNotBeUndoneWhenClearingHistory => '此操作无法撤销，确定要清空所有聊天记录吗？';
+
+  @override
+  String get cancel => '取消';
+
+  @override
+  String get unreadMessage => '未读消息';
+
+  @override
+  String get unread => '未读';
+
+  @override
+  String get item => '条';
+
+  @override
+  String get enterMessage => '输入消息…';
+
+  @override
+  String get followEachOther => '互相关注';
+
+  @override
+  String get pleaseEnterYourUsernameOrId => '请输入用户名或ID';
+
+  @override
+  String get startConversation => '发起对话';
+
+  @override
+  String get myFollows => '我的关注';
+
+  @override
+  String get systemNotification => '系统通知';
+
+  @override
+  String get checkTheLatestSystemNotification => '查看最新的系统消息';
+
+  @override
+  String get noConversationFound => '未找到对话';
+
+  @override
+  String get groupChat => '群聊';
+
+  @override
+  String get searchUsernameOrIdPlaceholder => '请输入用户名或ID开始搜索';
+
+  @override
+  String get newMessage => '新消息';
+
+  @override
+  String get noCommentsYet => '暂无评论';
 }

@@ -22,27 +22,3 @@ class ApiResponse<T> {
   bool get success => code == 200; 
   bool get hasData => data != null;
 }
-
-
-// class ApiResponse<T> {
-//   final int code;
-//   final String msg;
-//   final T? data; // 改成可空
-//
-//   ApiResponse({required this.code, required this.msg, this.data});
-//
-//   factory ApiResponse.fromJson(
-//       Map<String, dynamic> json,
-//       T Function(dynamic)? fromJsonT,
-//       ) {
-//     return ApiResponse<T>(
-//       code: json['code'] as int,
-//       msg: json['msg'] as String,
-//       data: (json['data'] != null)
-//           ? (fromJsonT != null
-//           ? fromJsonT(json['data'])
-//           : json['data'] as T)
-//           : null,
-//     );
-//   }
-// }

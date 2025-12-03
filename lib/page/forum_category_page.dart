@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 import '../../models/forum_category.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -82,9 +83,13 @@ class _ForumCategoryPageState extends State<ForumCategoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localisations = AppLocalizations.of(context)!;
     final sections = _buildAllSections(_categories);
     return Scaffold(
-      appBar: AppBar(title: const Text('全部分类'), backgroundColor: Colors.black),
+      appBar: AppBar(
+        title: Text(localisations.allCategories),
+        backgroundColor: Colors.black,
+      ),
       backgroundColor: Colors.black,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -126,9 +131,9 @@ class _ForumCategoryPageState extends State<ForumCategoryPage> {
                             },
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
-                              children: const [
+                              children: [
                                 Text(
-                                  '全部',
+                                  localisations.all,
                                   style: TextStyle(color: Colors.white),
                                 ),
                                 SizedBox(width: 4),

@@ -1,21 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/userinfo.dart';
 import '../page/user_detail_page.dart';
+import '../provider/api_provider.dart';
+import 'follow_button.dart';
 
-class UserListItem extends StatelessWidget {
+final _followStateProvider = StateProvider.family<bool, UserInfo>(
+  (ref, user) => user.isFollowed,
+);
+
+class UserListItem extends ConsumerWidget {
   final UserInfo user;
+  final Function(UserInfo user)? onTap;
+  final VoidCallback? onFollowTap;
 
-  const UserListItem({super.key, required this.user});
+  const UserListItem({
+    super.key,
+    required this.user,
+    this.onTap,
+    this.onFollowTap,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final followState = ref.watch(_followStateProvider(user));
+
+    final isFollowed = followState;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => UserDetailPage(user: user)),
-        );
+        if (onTap != null) {
+          onTap?.call(user);
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => UserDetailPage(user: user)),
+          );
+        }
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -58,18 +80,20 @@ class UserListItem extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 20),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                minimumSize: const Size(0, 32),
-              ),
-              child: const Text("关注"),
+            FollowButton(
+              isFollowed: isFollowed,
+              onPressed: (v) async {
+                if (v) {
+                  await ref.read(userServiceProvider).follow(user.id);
+                } else {
+                  await ref.read(userServiceProvider).unfollow(user.id);
+                }
+
+                // 乐观更新
+                ref.read(_followStateProvider(user).notifier).state = v;
+
+                onFollowTap?.call();
+              },
             ),
           ],
         ),

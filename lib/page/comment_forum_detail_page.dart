@@ -6,6 +6,7 @@ import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/forum_comment.dart';
 import 'package:live_app/models/page_params.dart';
 import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/forum_comments_provider.dart';
 import 'package:live_app/widgets/comment/comment_input_bar.dart';
 import 'package:live_app/widgets/encrypted_image.dart';
 import 'package:live_app/widgets/forum/forum_comment_item.dart';
@@ -29,6 +30,8 @@ class _CommentForumDetailPageState
     extends ConsumerState<CommentForumDetailPage> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
+  final GlobalKey<RefreshIndicatorState> _refreshKey =
+      GlobalKey<RefreshIndicatorState>();
 
   late final ForumService forumService;
   List<ForumComment> childComments = [];
@@ -113,7 +116,7 @@ class _CommentForumDetailPageState
 
       _commentController.clear();
       _scrollToBottom();
-
+      _refreshKey.currentState?.show();
       _loadChildComments(refresh: true);
     } catch (e) {
       debugPrint('Erreur envoi réponse: $e');
@@ -201,126 +204,144 @@ class _CommentForumDetailPageState
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          ref
+              .read(forumCommentsProvider(widget.parentComment.postId).notifier)
+              .refresh();
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.pop(context);
+              ref
+           .read(
+                    forumCommentsProvider(widget.parentComment.postId).notifier,
+                  )
+                  .refresh();
+            },
+          ),
+          title: Text(
+            localizations.replies,
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
-        title: Text(
-          localizations.replies,
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
-      body: Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              border: Border(
-                bottom: BorderSide(color: Colors.grey[800]!, width: 1),
-              ),
-            ),
-            child: _buildParentCommentHeader(),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              border: Border(
-                bottom: BorderSide(color: Colors.grey[800]!, width: 0.5),
-              ),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '${localizations.replies} (${widget.parentComment.childCount})',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: RefreshIndicator(
-              color: Colors.white,
-              backgroundColor: Colors.black,
-              onRefresh: () => _loadChildComments(refresh: true),
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.only(bottom: 80),
-                itemCount: childComments.length + 1,
-                itemBuilder: (context, index) {
-                  if (index < childComments.length) {
-                    return ForumCommentItem(
-                      comment: childComments[index],
-                      isChild: true,
-                      darkStyle: false,
-                      onReply: (comment) {
-                        setState(() => _replyingTo = comment);
-                      },
-                    );
-                  }
-
-                  if (_finished) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Center(
-                        child: Text(
-                          localizations.noMoreComments,
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                      ),
-                    );
-                  }
-
-                  if (_loading) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                    );
-                  }
-
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
-          ),
-
-          SafeArea(
-            top: false,
-            child: Container(
+        body: Column(
+          children: [
+            Container(
               decoration: BoxDecoration(
                 color: Colors.grey[900],
                 border: Border(
-                  top: BorderSide(color: Colors.grey[800]!, width: 0.5),
+                  bottom: BorderSide(color: Colors.grey[800]!, width: 1),
                 ),
               ),
-              child: CommentInputBar(
-                controller: _commentController,
-                replyingToName:
-                    _replyingTo?.commentUser?.nickname ??
-                    widget.parentComment.commentUser?.nickname,
-                onCancelReply: () {
-                  setState(() => _replyingTo = null);
-                },
-                darkStyle: false,
-                onSend: _handleSendReply,
+              child: _buildParentCommentHeader(),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey[800]!, width: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '${localizations.replies} (${childComments.length})',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+
+            Expanded(
+              child: RefreshIndicator(
+                key: _refreshKey,
+                color: Colors.white,
+                backgroundColor: Colors.black,
+                onRefresh: () => _loadChildComments(refresh: true),
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.only(bottom: 80),
+                  itemCount: childComments.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index < childComments.length) {
+                      return ForumCommentItem(
+                        comment: childComments[index],
+                        isChild: true,
+                        darkStyle: false,
+                        onReply: (comment) {
+                          setState(() => _replyingTo = comment);
+                        },
+                      );
+                    }
+
+                    if (_finished) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Center(
+                          child: Text(
+                            localizations.noMoreComments,
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      );
+                    }
+
+                    if (_loading) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+            ),
+
+            SafeArea(
+              top: false,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  border: Border(
+                    top: BorderSide(color: Colors.grey[800]!, width: 0.5),
+                  ),
+                ),
+                child: CommentInputBar(
+                  controller: _commentController,
+                  replyingToName:
+                      _replyingTo?.commentUser?.nickname ??
+                      widget.parentComment.commentUser?.nickname,
+                  onCancelReply: () {
+                    setState(() => _replyingTo = null);
+                  },
+                  darkStyle: false,
+                  onSend: _handleSendReply,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

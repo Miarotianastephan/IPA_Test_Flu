@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/page/search_detail_page.dart';
+import 'package:live_app/provider/video_detail_provider.dart';
+import 'package:live_app/widgets/video_type_toggle_button.dart';
 
 import '../config/storage_config.dart';
 import '../widgets/empty_widget.dart';
 
-class SearchPage extends StatefulWidget {
+class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _SearchPageState extends ConsumerState<SearchPage> {
   final TextEditingController _controller = TextEditingController();
 
   List<String> _history = [];
@@ -79,6 +82,11 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
+  void _toggleVideoType() {
+    final current = ref.read(videoTypeProvider);
+    ref.read(videoTypeProvider.notifier).state = current == 1 ? 2 : 1;
+  }
+
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
@@ -128,6 +136,11 @@ class _SearchPageState extends State<SearchPage> {
         IconButton(
           icon: const Icon(Icons.search, color: Colors.white),
           onPressed: () => _onSearch(_controller.text),
+        ),
+        VideoTypeToggleButton(
+          isLongVideo: ref.watch(videoTypeProvider) == 2,
+          onToggle: _toggleVideoType,
+          withText: false,
         ),
       ],
     );

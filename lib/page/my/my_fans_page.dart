@@ -22,6 +22,7 @@ class _MyFansPageState extends ConsumerState<MyFansPage> {
 
   Future<void> _load({bool refresh = false}) async {
     if (_loading) return;
+    if (_finished && !refresh) return;
 
     setState(() => _loading = true);
 
@@ -53,6 +54,10 @@ class _MyFansPageState extends ConsumerState<MyFansPage> {
         } else {
           _page++;
         }
+      });
+    } else {
+      setState(() {
+        _finished = true;
       });
     }
 

@@ -59,10 +59,10 @@ class UserService extends BaseService {
     );
   }
 
-  Future<ApiResponse<String>> bindPassword(String username, String password) {
+  Future<ApiResponse<String>> bindPassword(String username, String nickname,String password) {
     return post<String>(
       UserApi.bindPassword,
-      body: {"username": username, "password": password},
+      body: {"username": username, "nickname":nickname,"password": password},
       fromJson: (json) => json.toString(),
     );
   }
@@ -125,12 +125,25 @@ class UserService extends BaseService {
   }
 
   Future<ApiResponse<PageResponse<UserInfo>>> searchUsers([
-    int page = 0,
+    int page = 1,
     int limit = 20,
     String keyword = "",
   ]) {
     return post<PageResponse<UserInfo>>(
       UserApi.searchUsers,
+      body: {"page": page, "limit": limit, "name": keyword},
+      fromJson: (json) =>
+          PageResponse.fromJson(json, (item) => UserInfo.fromJson(item)),
+    );
+  }
+
+  Future<ApiResponse<PageResponse<UserInfo>>> mutualFollowings([
+    int page = 0,
+    int limit = 20,
+    String keyword = "",
+  ]) {
+    return post<PageResponse<UserInfo>>(
+      UserApi.mutualFollowings,
       body: {"page": page, "limit": limit, "keyword": keyword},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => UserInfo.fromJson(item)),

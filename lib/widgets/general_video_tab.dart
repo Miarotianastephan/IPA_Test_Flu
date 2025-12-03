@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/video_info.dart';
 import 'package:live_app/widgets/video/video_grid_item.dart';
 import 'package:waterfall_flow/waterfall_flow.dart';
@@ -63,6 +64,7 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
   }
 
   Widget _buildShortVideoGrid() {
+    final filteredResults = widget.results.where((v) => v.type == 1).toList();
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
@@ -75,15 +77,14 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
               mainAxisSpacing: 6,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
-              if (widget.loading && index == widget.results.length) {
+              if (widget.loading && index == filteredResults.length) {
                 return _buildLoadMoreIndicator();
               }
 
-              final video = widget.results[index];
+              final video = filteredResults[index];
 
               return LayoutBuilder(
                 builder: (ctx, constraints) {
-                  // constraints.maxWidth 是 item 的列宽
                   final double columnWidth = constraints.maxWidth;
                   return VideoGridItem(
                     video: video,
@@ -113,7 +114,7 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
                                 }
                               });
 
-                              if (newIndex > widget.results.length - 2 &&
+                              if (newIndex > filteredResults.length - 2 &&
                                   !widget.loading &&
                                   !widget.finished) {
                                 widget.onLoadMore();
@@ -145,7 +146,7 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
                   );
                 },
               );
-            }, childCount: widget.results.length + (widget.loading ? 1 : 0)),
+            }, childCount: filteredResults.length + (widget.loading ? 1 : 0)),
           ),
         ),
         if (widget.finished)
@@ -153,7 +154,10 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
-                child: Text("没有更多了", style: TextStyle(color: Colors.white)),
+                child: Text(
+                  AppLocalizations.of(context)!.noMore,
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ),
@@ -162,6 +166,8 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
   }
 
   Widget _buildLongVideoList() {
+    final filteredResults = widget.results.where((v) => v.type == 2).toList();
+
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
@@ -173,21 +179,22 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
             childAspectRatio: .95,
           ),
           delegate: SliverChildBuilderDelegate((context, index) {
-            // 最后一项显示正在加载更多
-            if (widget.loading && index == widget.results.length) {
+            if (widget.loading && index == filteredResults.length) {
               return _buildLoadMoreIndicator();
             }
-
-            final video = widget.results[index];
+            final video = filteredResults[index];
             return VideoCard(video: video);
-          }, childCount: widget.results.length + (widget.loading ? 1 : 0)),
+          }, childCount: filteredResults.length + (widget.loading ? 1 : 0)),
         ),
         if (widget.finished)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
-                child: Text("没有更多了", style: TextStyle(color: Colors.white)),
+                child: Text(
+                  AppLocalizations.of(context)!.noMore,
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ),

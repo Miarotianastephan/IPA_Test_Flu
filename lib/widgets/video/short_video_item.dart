@@ -1,12 +1,13 @@
-import 'package:chewie/chewie.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/models/video_info.dart';
 import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/current_user_provider.dart';
 import 'package:live_app/widgets/comment/comments_modal.dart';
-import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 import '../../api/services/video_service.dart';
 import '../../page/comment_detail_page.dart';
@@ -40,11 +41,8 @@ class ShortVideoItemController extends ChangeNotifier {
   }
 
   bool? get isFollowed => _isFollowed;
-
   bool? get isLike => _isLike;
-
   bool? get isFavorite => _isFavorite;
-
   int? get commentCount => _commentCount;
 }
 
@@ -77,8 +75,10 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
   late bool _isFavorite;
   late int _commentCount;
   bool _modalOpen = false;
-  late final VideoPlayerController _videoPlayerController;
-  ChewieController? _chewieController;
+
+  late final Player _player;
+  late final VideoController _videoController;
+
   late AnimationController _transitionController;
   late final VideoService videoService;
 
@@ -120,22 +120,14 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
       ref.read(currentUserProvider.notifier).state = widget.videoInfo.user;
     });
 
-    _videoPlayerController = VideoPlayerController.networkUrl(
-      Uri.parse(widget.videoInfo.url),
-      // Uri.parse("https://assets.mixkit.co/videos/51792/51792-720.mp4"),
+    _player = Player(configuration: const PlayerConfiguration(muted: false));
+
+    _player.open(
+      Media(widget.videoInfo.url),
+      play: kIsWeb ? true : false, 
     );
 
-    _videoPlayerController.initialize().then((_) {
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController,
-        showControls: false,
-        autoPlay: kIsWeb,
-        looping: true,
-        allowFullScreen: false,
-        allowPlaybackSpeedChanging: false,
-      );
-      setState(() {});
-    });
+    _videoController = VideoController(_player);
   }
 
   Future<void> _showModal(height) async {
@@ -157,83 +149,73 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
           animation: _transitionController,
           builder: (context, child) {
             final t = _transitionController.value;
-            final offset = (1 - t) * height; // 初始在底部，逐渐上移
+            final offset = (1 - t) * height;// 初始在底部，逐渐上移
             return Positioned(
               left: 0,
               right: 0,
               bottom: -offset,
               // 控制从下往上滑
               height: height,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return GestureDetector(
-                    onHorizontalDragStart: (details) {
-                      dragStartX = details.globalPosition.dx;
-                    },
-                    onHorizontalDragUpdate: (details) {
-                      if (dragStartX != null &&
-                          dragStartX! < 50 &&
-                          details.primaryDelta != null &&
-                          details.primaryDelta! > 20) {
-                        _transitionController.reverse().then((_) {
-                          entry.remove();
-                          setState(() {
-                            _modalOpen = false;
-                          });
-                          widget.onHideComment?.call();
-                        });
-                      }
-                    },
-                    child: Material(
-                      color: Colors.white,
-                      elevation: 12,
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: CommentsModal(
-                              videoId: widget.videoInfo.id,
-                              height: height,
-                              transitionController: _transitionController,
-                              onTapClose: () async {
-                                await _transitionController.reverse();
-                                entry.remove();
-                                setState(() {
-                                  _modalOpen = false;
-                                });
-                                widget.onHideComment?.call();
-                              },
-                              onComment: () {
-                                setState(() {
-                                  _commentCount = _commentCount + 1;
-                                });
-                              },
-                              onCommentTap: (comment) async {
-                                final navigator = Navigator.of(context);
-
-                                _transitionController.reverse();
-                                entry.remove();
-                                setState(() {
-                                  _modalOpen = false;
-                                });
-                                widget.onHideComment?.call();
-
-                                if (!mounted) return;
-                                await navigator.push(
-                                  MaterialPageRoute(
-                                    builder: (context) => CommentDetailPage(
-                                      parentComment: comment,
-                                      videoId: widget.videoInfo.id,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+              child: GestureDetector(
+                onHorizontalDragStart: (details) {
+                  dragStartX = details.globalPosition.dx;
                 },
+                onHorizontalDragUpdate: (details) {
+                  if (dragStartX != null &&
+                      dragStartX! < 50 &&
+                      details.primaryDelta != null &&
+                      details.primaryDelta! > 20) {
+                    _transitionController.reverse().then((_) {
+                      entry.remove();
+                      setState(() {
+                        _modalOpen = false;
+                      });
+                      widget.onHideComment?.call();
+                    });
+                  }
+                },
+                child: Material(
+                  color: Colors.white,
+                  elevation: 12,
+                  child: CommentsModal(
+                    videoId: widget.videoInfo.id,
+                    height: height,
+                    transitionController: _transitionController,
+                    onTapClose: () async {
+                      await _transitionController.reverse();
+                      entry.remove();
+                      setState(() {
+                        _modalOpen = false;
+                      });
+                      widget.onHideComment?.call();
+                    },
+                    onComment: () {
+                      setState(() {
+                        _commentCount = _commentCount + 1;
+                      });
+                    },
+                    onCommentTap: (comment) async {
+                      final navigator = Navigator.of(context);
+
+                      _transitionController.reverse();
+                      entry.remove();
+                      setState(() {
+                        _modalOpen = false;
+                      });
+                      widget.onHideComment?.call();
+
+                      if (!mounted) return;
+                      await navigator.push(
+                        MaterialPageRoute(
+                          builder: (context) => CommentDetailPage(
+                            parentComment: comment,
+                            videoId: widget.videoInfo.id,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             );
           },
@@ -246,17 +228,19 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
 
   @override
   void dispose() {
-    _videoPlayerController.dispose();
-    _chewieController?.dispose();
+    _player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
     final video = widget.videoInfo;
     final mediaQuery = MediaQuery.of(context);
+
     var availableHeight = 0.0;
+
     return PopScope(
       canPop: !_modalOpen, // 控制是否允许系统返回
       onPopInvokedWithResult: (didPop, result) async {
@@ -272,9 +256,9 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
         key: Key(widget.videoInfo.id.toString()),
         onVisibilityChanged: (info) {
           if (info.visibleFraction == 0) {
-            _videoPlayerController.pause();
+            _player.pause();
           } else if (info.visibleFraction > 0.8) {
-            _videoPlayerController.play();
+            _player.play();
           }
         },
         child: Stack(
@@ -289,78 +273,33 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                       builder: (context, child) {
                         final t = _transitionController.value;
                         final height = t * mediaQuery.padding.top;
-                        return SizedBox(height: height, child: Container());
+                        return SizedBox(height: height);
                       },
                     ),
-
                     AnimatedBuilder(
                       animation: _transitionController,
                       builder: (context, child) {
                         final t = _transitionController.value;
-                        final videoValue = _videoPlayerController.value;
-                        final isPortrait =
-                            videoValue.size.height > videoValue.size.width;
 
+                      
                         final containerHeight =
                             availableHeight * (1 - t) +
                             (availableHeight * 0.4 - mediaQuery.padding.top) *
                                 t;
 
-                        if (_chewieController == null) {
-                          return SizedBox(
-                            height: containerHeight,
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
-                        }
-
-                        if (isPortrait) {
-                          if (t == 0) {
-                            //竖屏全屏：视频铺满整个容器
-                            return SizedBox(
-                              height: containerHeight,
-                              width: double.infinity,
-                              child: FittedBox(
-                                fit: BoxFit.cover,
-                                clipBehavior: Clip.hardEdge,
-                                child: SizedBox(
-                                  width: videoValue.size.width,
-                                  height: videoValue.size.height,
-                                  child: Chewie(controller: _chewieController!),
-                                ),
-                              ),
-                            );
-                          } else {
-                            // 竖屏缩放：高度保持视频高度，只改变宽度
-                            final videoHeight = videoValue.size.height;
-                            final videoWidth = videoValue.size.width;
-
-                            // 比例缩放，只动宽度
-                            final scale = 1 - t * 0.5; // 这里控制缩放幅度
-                            return SizedBox(
-                              height: containerHeight,
-                              child: Align(
-                                alignment: Alignment.center,
-                                child: SizedBox(
-                                  height: videoHeight,
-                                  width: videoWidth * scale,
-                                  child: Chewie(controller: _chewieController!),
-                                ),
-                              ),
-                            );
-                          }
-                        } else {
-                          // 横屏视频：用 AspectRatio 保持比例
-                          return SizedBox(
-                            height: containerHeight,
-                            width: double.infinity,
-                            child: AspectRatio(
-                              aspectRatio: videoValue.aspectRatio,
-                              child: Chewie(controller: _chewieController!),
-                            ),
-                          );
-                        }
+                       //竖屏全屏：视频铺满整个容器
+                        return SizedBox(
+                          height: containerHeight,
+                          width: double.infinity,
+                          child: Video(
+                            controller: _videoController,
+                            controls: null,
+                            fit: video.type == 2
+                                ? BoxFit.contain
+                                : BoxFit
+                                      .cover,
+                          ),
+                        );
                       },
                     ),
 
@@ -369,7 +308,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                       builder: (context, child) {
                         final t = _transitionController.value;
                         final height = t * availableHeight * 0.6;
-                        return SizedBox(height: height, child: Container());
+                        return SizedBox(height: height);
                       },
                     ),
                   ],
@@ -377,78 +316,68 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
               },
             ),
 
-            if (_chewieController != null)
-              Positioned.fill(
-                child: Center(
-                  child: AnimatedBuilder(
-                    animation: _videoPlayerController,
-                    builder: (context, child) {
-                      final isBuffering =
-                          _videoPlayerController.value.isBuffering;
-                      if (!isBuffering) return const SizedBox.shrink();
+            StreamBuilder<bool>(
+              stream: _player.stream.buffering,
+              builder: (context, snapshot) {
+                final buffering = snapshot.data ?? false;
+                if (!buffering) return const SizedBox.shrink();
 
-                      return Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 3,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-
-            if (_chewieController != null)
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (_videoPlayerController.value.isPlaying) {
-                        _videoPlayerController.pause();
-                      } else {
-                        _videoPlayerController.play();
-                      }
-                    });
-                  },
+                return Center(
                   child: Container(
-                    color: Colors.transparent,
-                    child: Center(
-                      child: AnimatedOpacity(
-                        opacity: _videoPlayerController.value.isPlaying
-                            ? 0.0
-                            : 1.0,
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  if (_player.state.playing) {
+                    _player.pause();
+                  } else {
+                    _player.play();
+                  }
+                },
+                child: Center(
+                  child: StreamBuilder<bool>(
+                    stream: _player.stream.playing,
+                    builder: (context, snapshot) {
+                      final isPlaying = snapshot.data ?? false;
+
+                      return AnimatedOpacity(
+                        opacity: isPlaying ? 0.0 : 1.0,
                         duration: const Duration(milliseconds: 300),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                           
                             GestureDetector(
                               onTap: () {
-                                final currentPosition =
-                                    _videoPlayerController.value.position;
-                                final newPosition =
-                                    currentPosition -
-                                    const Duration(seconds: 10);
-                                _videoPlayerController.seekTo(
-                                  newPosition < Duration.zero
+                                final pos = _player.state.position;
+                                final newPos =
+                                    pos - const Duration(seconds: 10);
+                                _player.seek(
+                                  newPos < Duration.zero
                                       ? Duration.zero
-                                      : newPosition,
+                                      : newPos,
                                 );
                               },
                               child: Container(
-                                width: 40,
-                                height: 40,
+                                width: 45,
+                                height: 45,
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.5),
+                                  color: const Color.fromARGB(95, 0, 0, 0),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -459,46 +388,40 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                               ),
                             ),
 
-                            const SizedBox(width: 15),
+                            const SizedBox(width: 20),
 
+                          
                             Container(
-                              width: 60,
-                              height: 60,
+                              width: 70,
+                              height: 70,
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.5),
+                                color: const Color.fromARGB(95, 0, 0, 0),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                _videoPlayerController.value.isPlaying
-                                    ? Icons.pause
-                                    : Icons.play_arrow,
+                                isPlaying ? Icons.pause : Icons.play_arrow,
                                 color: Colors.white,
                                 size: 40,
                               ),
                             ),
 
-                            const SizedBox(width: 15),
+                            const SizedBox(width: 20),
 
+                          
                             GestureDetector(
                               onTap: () {
-                                final currentPosition =
-                                    _videoPlayerController.value.position;
-                                final duration =
-                                    _videoPlayerController.value.duration;
-                                final newPosition =
-                                    currentPosition +
-                                    const Duration(seconds: 10);
-                                _videoPlayerController.seekTo(
-                                  newPosition > duration
-                                      ? duration
-                                      : newPosition,
-                                );
+                                final pos = _player.state.position;
+                                final dur = _player.state.duration;
+
+                                final newPos =
+                                    pos + const Duration(seconds: 10);
+                                _player.seek(newPos > dur ? dur : newPos);
                               },
                               child: Container(
-                                width: 40,
-                                height: 40,
+                                width: 45,
+                                height: 45,
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.5),
+                                  color: const Color.fromARGB(95, 0, 0, 0),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -510,86 +433,58 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                             ),
                           ],
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
               ),
-
-            if (_chewieController != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapDown: (details) {
-                    final RenderBox box =
-                        context.findRenderObject() as RenderBox;
-                    final Offset localPosition = box.globalToLocal(
-                      details.globalPosition,
-                    );
-                    final double width = box.size.width;
-                    final double tapPosition = (localPosition.dx / width).clamp(
-                      0.0,
-                      1.0,
-                    );
-                    final Duration duration =
-                        _videoPlayerController.value.duration;
-                    final Duration newPosition = duration * tapPosition;
-                    _videoPlayerController.seekTo(newPosition);
-                  },
-                  onHorizontalDragUpdate: (details) {
-                    final RenderBox box =
-                        context.findRenderObject() as RenderBox;
-                    final Offset localPosition = box.globalToLocal(
-                      details.globalPosition,
-                    );
-                    final double width = box.size.width;
-                    final double dragPosition = (localPosition.dx / width)
-                        .clamp(0.0, 1.0);
-                    final Duration duration =
-                        _videoPlayerController.value.duration;
-                    final Duration newPosition = duration * dragPosition;
-                    _videoPlayerController.seekTo(newPosition);
-                  },
-                  child: Container(
-                    height: 6.5,
-                    padding: const EdgeInsets.only(top: 2.5),
-                    color: Colors.transparent,
-                    child: AnimatedBuilder(
-                      animation: _videoPlayerController,
-                      builder: (context, child) {
-                        final position = _videoPlayerController.value.position;
-                        final duration = _videoPlayerController.value.duration;
-                        final progress = duration.inMilliseconds > 0
-                            ? position.inMilliseconds / duration.inMilliseconds
-                            : 0.0;
-
-                        return Container(
-                          height: 3,
-                          margin: const EdgeInsets.symmetric(horizontal: 0),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.3,
-                            ),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color.fromARGB(255, 54, 174, 244),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
+            ),
 
             Positioned(
-              top: 0,
               left: 0,
               right: 0,
               bottom: 0,
+              child: StreamBuilder<Duration>(
+                stream: _player.stream.position,
+                builder: (context, snapshot) {
+                  final position = snapshot.data ?? Duration.zero;
+                  final duration = _player.state.duration;
+
+                  final progress = duration.inMilliseconds == 0
+                      ? 0.0
+                      : position.inMilliseconds / duration.inMilliseconds;
+
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onHorizontalDragUpdate: (details) {
+                      final box = context.findRenderObject() as RenderBox;
+                      final dx = box.globalToLocal(details.globalPosition).dx;
+                      final x = (dx / box.size.width).clamp(0.0, 1.0);
+                      _player.seek(duration * x);
+                    },
+                    onTapDown: (details) {
+                      final box = context.findRenderObject() as RenderBox;
+                      final dx = box.globalToLocal(details.globalPosition).dx;
+                      final x = (dx / box.size.width).clamp(0.0, 1.0);
+                      _player.seek(duration * x);
+                    },
+                    child: SizedBox(
+                      height: 6,
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: Colors.white30,
+                        valueColor: const AlwaysStoppedAnimation(
+                          Color.fromARGB(255, 54, 174, 244),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+          
+            Positioned.fill(
               child: VideoOverlayActions(
                 commentCount: _commentCount,
                 video: video,
@@ -601,20 +496,16 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                   _showModal(mediaQuery.size.height - availableHeight * 0.4);
                 },
                 onFollowChanged: (value) async {
-                  setState(() {
-                    _isFollowed = value;
-                  });
+                  setState(() => _isFollowed = value);
                   widget.onVideoInfoChange(video.copyWith(isFollow: value));
                 },
                 onLikeChanged: (value) async {
                   if (value) {
-                    await videoService.likeVideo(widget.videoInfo.id);
+                    await videoService.likeVideo(video.id);
                   } else {
-                    await videoService.unlikeVideo(widget.videoInfo.id);
+                    await videoService.unlikeVideo(video.id);
                   }
-                  setState(() {
-                    _isLike = value;
-                  });
+                  setState(() => _isLike = value);
                   widget.onVideoInfoChange(
                     video.copyWith(
                       isLike: value,
@@ -626,13 +517,11 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                 },
                 onFavoriteChanged: (value) async {
                   if (value) {
-                    await videoService.favoriteVideo(widget.videoInfo.id);
+                    await videoService.favoriteVideo(video.id);
                   } else {
-                    await videoService.unFavoriteVideo(widget.videoInfo.id);
+                    await videoService.unFavoriteVideo(video.id);
                   }
-                  setState(() {
-                    _isFavorite = value;
-                  });
+                  setState(() => _isFavorite = value);
                   widget.onVideoInfoChange(
                     video.copyWith(
                       isFavorite: value,

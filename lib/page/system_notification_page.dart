@@ -1,19 +1,21 @@
-
 import 'package:flutter/material.dart';
+import 'package:live_app/l10n/app_localizations.dart';
+
+import '../widgets/empty_widget.dart';
 
 class SystemNotificationPage extends StatelessWidget {
   const SystemNotificationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final localisations = AppLocalizations.of(context)!;
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('系统通知'),
+        backgroundColor: Colors.black,
+        title: Text(localisations.systemNotification),
       ),
-      body: const Center(
-        child: Text('这里是系统通知页面的占位符'),
-      ),
+      body: const Center(child: EmptyWidget()),
     );
   }
 }
-

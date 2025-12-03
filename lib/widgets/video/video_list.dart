@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/video_detail_provider.dart';
 
 import '../../models/video_info.dart';
 import '../empty_retry.dart';
@@ -22,23 +23,27 @@ class VideoListSliver extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(provider);
     final list = state.list;
+
+    final videoType = ref.watch(videoTypeProvider);
+
     if ((!state.finished || state.loading) && list.isEmpty) {
       return SliverFillRemaining(child: LoadingWidget(message: "正在加载中..."));
     }
     if (state.finished && !state.loading && list.isEmpty) {
       return SliverFillRemaining(child: EmptyWithRetry(onRetry: onRefresh));
     }
+
     return SliverGrid(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        childAspectRatio: .95,
+        childAspectRatio: videoType == 2 ? 0.95 : 9 / 16,
       ),
-      delegate: SliverChildBuilderDelegate(
-        (c, i) => VideoCard(video: list[i], onUserTap: onUserTap),
-        childCount: list.length,
-      ),
+      delegate: SliverChildBuilderDelegate((c, i) {
+        final video = list[i];
+        return VideoCard(video: video, onUserTap: onUserTap);
+      }, childCount: list.length),
     );
   }
 }

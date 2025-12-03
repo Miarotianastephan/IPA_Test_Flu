@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/video_detail_provider.dart';
 
 import '../provider/search_post_list_provider.dart';
 import '../provider/search_user_list_provider.dart';
@@ -21,13 +23,9 @@ class SearchDetailPage extends ConsumerStatefulWidget {
 class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  bool _isLongVideo = false;
   bool _videoLoaded = false;
   bool _postLoaded = false;
   bool _userLoaded = false;
-
-  int get _videoType => _isLongVideo ? 2 : 1;
 
   SearchPostQueryParams get _postParams =>
       SearchPostQueryParams(keyword: widget.keyword);
@@ -71,7 +69,7 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
           searchVideoListProvider((
             keyword: widget.keyword,
             sort: null,
-            type: _videoType,
+            type: ref.watch(videoTypeProvider),
           )).notifier,
         )
         .fetch(refresh: true);
@@ -82,7 +80,7 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
       searchVideoListProvider((
         keyword: widget.keyword,
         sort: null,
-        type: _videoType,
+        type: ref.watch(videoTypeProvider),
       )).notifier,
     );
 
@@ -90,7 +88,7 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
       searchVideoListProvider((
         keyword: widget.keyword,
         sort: null,
-        type: _videoType,
+        type: ref.watch(videoTypeProvider),
       )),
     );
 
@@ -132,8 +130,9 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
 
   /// 切换短/长视频
   void _toggleVideoType() {
+    final current = ref.read(videoTypeProvider);
+    ref.read(videoTypeProvider.notifier).state = current == 1 ? 2 : 1;
     setState(() {
-      _isLongVideo = !_isLongVideo;
       _videoLoaded = false;
     });
     _fetchVideos();
@@ -142,12 +141,13 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
-
+    final videoType = ref.watch(videoTypeProvider);
+    final isLongVideo = videoType == 2;
     ref.listen(
       searchVideoListProvider((
         keyword: widget.keyword,
         sort: null,
-        type: _videoType,
+        type: videoType,
       )),
       (prev, next) {
         if (prev?.loading == true && next.loading == false) {
@@ -172,7 +172,7 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
       searchVideoListProvider((
         keyword: widget.keyword,
         sort: null,
-        type: _videoType,
+        type: videoType,
       )),
     );
 
@@ -204,8 +204,9 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
         actions: [
           if (_isVideoTab)
             VideoTypeToggleButton(
-              isLongVideo: _isLongVideo,
+              isLongVideo: isLongVideo,
               onToggle: _toggleVideoType,
+              withText: true,
             ),
         ],
         bottom: TabBar(
@@ -213,10 +214,10 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(text: "视频"),
-            Tab(text: "帖子"),
-            Tab(text: "用户"),
+          tabs: [
+            Tab(text: AppLocalizations.of(context)!.video),
+            Tab(text: AppLocalizations.of(context)!.post),
+            Tab(text: AppLocalizations.of(context)!.user),
           ],
         ),
       ),
@@ -231,11 +232,11 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
             isLoaded: _videoLoaded,
             loading: videoState.loading,
             results: videoState.list,
-            isLongVideo: _isLongVideo,
+            isLongVideo: isLongVideo,
             provider: searchVideoListProvider((
               keyword: widget.keyword,
               sort: null,
-              type: _videoType,
+              type: videoType,
             )),
           ),
 

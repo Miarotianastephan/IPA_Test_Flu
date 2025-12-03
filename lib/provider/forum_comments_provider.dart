@@ -49,9 +49,7 @@ class ForumCommentsNotifier extends StateNotifier<ForumCommentsState> {
   final int postId;
 
   ForumCommentsNotifier(this.forumService, this.postId)
-      : super(const ForumCommentsState());
-
-
+    : super(const ForumCommentsState());
 
   /// 下拉刷新
   Future<void> refresh() => _loadData(refresh: true);
@@ -103,7 +101,7 @@ class ForumCommentsNotifier extends StateNotifier<ForumCommentsState> {
 
   ///  评论成功后自动 append，不重新加载
   void addComment(ForumComment? comment) {
-    if (comment == null){
+    if (comment == null) {
       return;
     }
     state = state.copyWith(
@@ -113,11 +111,13 @@ class ForumCommentsNotifier extends StateNotifier<ForumCommentsState> {
   }
 }
 
-
-
 /// Provider.family：按帖子 postId 区分
-final forumCommentsProvider = StateNotifierProvider.family<
-    ForumCommentsNotifier, ForumCommentsState, int>((ref, postId) {
-  final service = ref.read(forumServiceProvider);
-  return ForumCommentsNotifier(service, postId);
-});
+final forumCommentsProvider =
+    StateNotifierProvider.family<
+      ForumCommentsNotifier,
+      ForumCommentsState,
+      int
+    >((ref, postId) {
+      final service = ref.read(forumServiceProvider);
+      return ForumCommentsNotifier(service, postId);
+    });

@@ -44,10 +44,18 @@ class _VideoCardState extends State<VideoCard> {
   Widget build(BuildContext context) {
     final responsive = ResponsiveDimensions(context);
 
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final cardHeight = widget.video.type == 2
+        ? screenWidth * 9 / 16
+        : screenWidth * 4 / 5;
+    final height = widget.video.type == 2
+        ? screenWidth * 0.3
+        : screenWidth * 2 / 3;
     return GestureDetector(
       onTap: _openVideoDetail,
       child: SizedBox(
-        height: 500,
+        height: cardHeight,
         child: Card(
           color: Colors.black,
           elevation: 2,
@@ -65,9 +73,7 @@ class _VideoCardState extends State<VideoCard> {
                     /// 视频封面图
                     EncryptedImage(
                       url: widget.video.cover,
-                      height:
-                          MediaQuery.of(context).size.width /
-                          responsive.videoCardImageRatio,
+                      height: height,
                       width: double.infinity,
                       fit: BoxFit.cover,
                     ),

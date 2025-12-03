@@ -19,7 +19,7 @@ class UserApi {
   static const String updatePassword = '$base/updatePassword';
 
   //绑定密码
-  static const String bindPassword = '$base/bindPassword';
+  static const String bindPassword = '$base/users/bindPassword';
 
   //关注用户
   static const String follow = '$base/follow';
@@ -37,7 +37,7 @@ class UserApi {
   static const String bindInviteCode = '$base/bindInviteCode';
 
   //搜索用户
-  static const String searchUsers = '$base/searchUsers';
+  static const String searchUsers = '$base/users/searchUsers';
 
   //账号密码登录
   static const String login = '$base/login';
@@ -47,4 +47,6 @@ class UserApi {
 
   //首次打开应用
   static const String firstOpen = '$base/v1/first_open';
+  //互相关注的用户列表
+  static const String mutualFollowings = '$base/mutualFollowings';
 }

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/api/services/forum_service.dart';
+import 'package:live_app/api/services/message_service.dart';
+
 import '../api/api_client.dart';
 import '../api/services/app_service.dart';
 import '../api/services/user_service.dart';
@@ -26,9 +28,14 @@ final videoServiceProvider = Provider<VideoService>((ref) {
   return VideoService(client);
 });
 
-
 /// ForumService
 final forumServiceProvider = Provider<ForumService>((ref) {
   final client = ref.watch(apiClientProvider);
   return ForumService(client);
+});
+
+/// MessageService
+final messageServiceProvider = Provider<MessageService>((ref) {
+  final client = ref.watch(apiClientProvider);
+  return MessageService(client);
 });

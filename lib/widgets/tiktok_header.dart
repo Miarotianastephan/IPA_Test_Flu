@@ -22,12 +22,6 @@ class TikTokHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8), // 两边留点空
       child: Row(
         children: [
-          // 左边按钮：发布视频
-          IconButton(
-            onPressed: onVideoCallPressed ?? () {},
-            icon: Icon(Icons.video_call, color: Colors.white),
-          ),
-
           // 中间 TabBar，Expanded 保证占满剩余空间
           Expanded(
             child: TabBar(

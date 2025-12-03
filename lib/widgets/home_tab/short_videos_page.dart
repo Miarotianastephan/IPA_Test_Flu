@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/page/login/login_with_username.dart';
 import '../../models/video_info.dart';
 import '../../provider/home_video_list_provider.dart';
 import '../empty_widget.dart';
@@ -38,14 +43,26 @@ class ShortVideosPage extends ConsumerStatefulWidget {
 class ShortVideosPageState extends ConsumerState<ShortVideosPage>
     with AutomaticKeepAliveClientMixin {
   bool _commentVisible = false;
+  UserInfo? _userInfo;
 
   @override
   void initState() {
     super.initState();
     // 初始化加载
     Future.microtask(() {
+      getUserFromCache();
       fetch(refresh: true);
     });
+  }
+
+  Future<void> getUserFromCache() async {
+    final data = await StorageService.instance.getValue("user_info");
+    if (data != null && data.isNotEmpty) {
+      final map = data is String ? jsonDecode(data) : data;
+      setState(() {
+        _userInfo = UserInfo.fromJson(map);
+      });
+    }
   }
 
   Future<void> fetch({bool refresh = false}) async {
@@ -89,6 +106,61 @@ class ShortVideosPageState extends ConsumerState<ShortVideosPage>
     if (state.loading && state.list.isEmpty) {
       child = LoadingWidget(
         message: "${AppLocalizations.of(context)!.loadingInProgress}...",
+      );
+    } else if (!state.loading &&
+        (_userInfo?.isVisitor ?? true) &&
+        widget.tabIndex == 0) {
+      child = Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.video_library_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              "Sign in to follow videos",
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Create an account or log in to save and access your favorite videos anytime",
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LoginWithUsernamePage(),
+                  ),
+                );
+              },
+              child: const Text(
+                "Log In",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
       );
     } else if (!state.loading && state.list.isEmpty) {
       child = CustomScrollView(

@@ -74,7 +74,7 @@ class RecommendedVideoItem extends StatelessWidget {
             // 标题、头像和信息
             Expanded(
               child: SizedBox(
-                height: 90,
+                height: MediaQuery.of(context).size.height*0.12,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

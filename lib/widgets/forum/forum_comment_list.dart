@@ -37,16 +37,16 @@ class ForumCommentsList extends ConsumerWidget {
     /// 纯列表渲染（由外层滚动）
     return Column(
       children: [
-        ...comments
-            .where((c) =>
-        c.parentId == null || c.parentId == 0)
-            .map((comment) {
-              return ForumCommentItem(
-                comment: comment,
-                onReply: onReply,
-                isChild: false, // important : racine
-              );
-            }),
+        ...comments.where((c) => c.parentId == null || c.parentId == 0).map((
+          comment,
+        ) {
+          return ForumCommentItem(
+            key: UniqueKey(),
+            comment: comment,
+            onReply: onReply,
+            isChild: false,
+          );
+        }),
 
         /// 加载中
         if (state.loading)

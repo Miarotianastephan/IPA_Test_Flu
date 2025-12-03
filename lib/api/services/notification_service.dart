@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart' as fcm;
 import 'package:huawei_push/huawei_push.dart' as hms;
 import 'package:pushy_flutter/pushy_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../main.dart';
 import 'version_component.dart';
 
 class NotificationService {
@@ -17,6 +18,18 @@ class NotificationService {
 
   bool _usingFCM = false;
   String? _token;
+
+  void _handleInternalRoute(String payload) {
+    final clean = payload.replaceFirst("route:", "");
+    final uri = Uri.parse(clean);
+    final route = uri.path;
+    final params = uri.queryParameters;
+
+    navigatorKey.currentState?.pushNamed(
+      route,
+      arguments: params,
+    );
+  }
 
   Future<void> init() async {
     const androidSettings = fln.AndroidInitializationSettings(
@@ -36,31 +49,33 @@ class NotificationService {
       initSettings,
       onDidReceiveNotificationResponse:
           (fln.NotificationResponse response) async {
-            final payload = response.payload;
-            if (payload != null && payload.isNotEmpty) {
-              try {
-                final uri = Uri.parse(payload);
+        final payload = response.payload;
 
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                } else {
-                  debugPrint("Unable to open URL: $payload");
-                }
-              } catch (e) {
-                debugPrint("Error while opening payload: $e");
-              }
+        if (payload != null && payload.isNotEmpty) {
+          try {
+            final uri = Uri.parse(payload);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+              return;
             }
-          },
+
+            if (payload.startsWith("route:")) {
+              _handleInternalRoute(payload);
+              return;
+            }
+
+          } catch (e) {
+            debugPrint("Error while opening payload: $e");
+          }
+        }
+      },
     );
-    debugPrint("Notification plugin initialized");
 
     if (Platform.isAndroid) {
       try {
         await _messaging.requestPermission();
         _usingFCM = true;
-
         _token = await _messaging.getToken();
-        debugPrint("FCM actif — Token: $_token");
 
         _listenForegroundMessages();
         _listenOpenedAppMessages();
@@ -69,15 +84,12 @@ class NotificationService {
         try {
           String deviceToken = await Pushy.register();
           _token = deviceToken;
-          debugPrint("Pushy actif — Token: $_token");
 
           Pushy.listen();
 
           Pushy.setNotificationListener((Map<String, dynamic> data) {
             final String? title = data['title'] ?? "Notification";
             final String? body = data['message'];
-
-            debugPrint("Pushy message: $title - $body");
 
             showCustomLocalNotification(
               title ?? "Notification",
@@ -88,11 +100,9 @@ class NotificationService {
           _usingFCM = false;
         } catch (e) {
           _usingFCM = false;
-          debugPrint("No GMS, switch HMS");
 
           hms.Push.getTokenStream.listen((event) {
             _token = event;
-            debugPrint("HMS actif — Token: $_token");
           });
 
           hms.Push.getToken("");
@@ -101,19 +111,14 @@ class NotificationService {
     }
     if (Platform.isIOS) {
       try {
-        final settings = await _messaging.requestPermission(
+        await _messaging.requestPermission(
           alert: true,
           badge: true,
           sound: true,
         );
 
-        debugPrint("iOS permission: ${settings.authorizationStatus}");
-
         _token = await _messaging.getAPNSToken();
-        debugPrint("APNs token: $_token");
-
-        String? tokenFCM = await _messaging.getToken();
-        debugPrint("FCM token: $tokenFCM");
+        await _messaging.getToken();
 
         _listenForegroundMessages();
         _listenOpenedAppMessages();
@@ -124,15 +129,12 @@ class NotificationService {
         try {
           String deviceToken = await Pushy.register();
           _token = deviceToken;
-          debugPrint("Pushy actif — Token: $_token");
 
           Pushy.listen();
 
           Pushy.setNotificationListener((Map<String, dynamic> data) {
             final String? title = data['title'] ?? "Notification";
             final String? body = data['message'];
-
-            debugPrint("Pushy message: $title - $body");
 
             showCustomLocalNotification(
               title ?? "Notification",
@@ -155,7 +157,6 @@ class NotificationService {
 
   void _listenForegroundMessages() {
     fcm.FirebaseMessaging.onMessage.listen((fcm.RemoteMessage message) {
-      debugPrint("FCM foreground: ${message.notification?.title}");
       _showLocalNotification(message);
     });
   }
@@ -197,7 +198,6 @@ class NotificationService {
       priority: fln.Priority.high,
     );
 
-    // const iosDetails = fln.DarwinNotificationDetails();
     const iosDetails = fln.DarwinNotificationDetails(
       presentAlert: true,
       presentSound: true,

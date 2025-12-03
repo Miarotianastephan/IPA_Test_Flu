@@ -116,7 +116,7 @@ class VideoGridViewState extends ConsumerState<VideoGridTabView> {
 
         onUserTap() {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref.read(currentUserProvider.notifier).state = video.user;
+            ref.read(currentVideoUserProvider.notifier).state = video.user;
           });
           widget.onUserTap.call(video);
         }

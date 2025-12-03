@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/video_detail_provider.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-class MobileVideoControlsOverlay extends StatefulWidget {
+class MobileVideoControlsOverlay extends ConsumerStatefulWidget {
   final Player player;
   final VideoController controller;
 
@@ -14,11 +16,13 @@ class MobileVideoControlsOverlay extends StatefulWidget {
   });
 
   @override
-  State<MobileVideoControlsOverlay> createState() => _MobileVideoControlsOverlayState();
+  ConsumerState<MobileVideoControlsOverlay> createState() =>
+      _MobileVideoControlsOverlayState();
 }
 
-class _MobileVideoControlsOverlayState extends State<MobileVideoControlsOverlay> {
-  double _volume = 1.0;
+class _MobileVideoControlsOverlayState
+    extends ConsumerState<MobileVideoControlsOverlay> {
+  double _volume = 100.0;
   bool userHasSeeked = false;
   bool isFullscreen = false;
 
@@ -39,24 +43,26 @@ class _MobileVideoControlsOverlayState extends State<MobileVideoControlsOverlay>
   }
 
   Future<void> toggleFullscreen() async {
-    if (isFullscreen) {
-     
+    if (isFullscreen == true) {
+      setState(() {
+        isFullscreen = false;
+      });
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.portraitUp,
       ]);
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      ref.read(fullscreenProvider.notifier).state = false;
     } else {
-      
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
       ]);
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      ref.read(fullscreenProvider.notifier).state = true;
+      setState(() {
+        isFullscreen = true;
+      });
     }
-
-    setState(() {
-      isFullscreen = !isFullscreen;
-    });
   }
 
   @override
@@ -71,7 +77,7 @@ class _MobileVideoControlsOverlayState extends State<MobileVideoControlsOverlay>
   Widget build(BuildContext context) {
     return Stack(
       children: [
-      
+        // Barre de progression
         Positioned(
           bottom: 30,
           left: 0,
@@ -84,14 +90,12 @@ class _MobileVideoControlsOverlayState extends State<MobileVideoControlsOverlay>
               return Slider(
                 activeColor: Colors.blueAccent,
                 inactiveColor: Colors.white,
-
                 value: pos.inSeconds.toDouble(),
                 min: 0,
                 max: dur.inSeconds.toDouble(),
                 onChanged: (value) {
                   setState(() {
-                    userHasSeeked =
-                        true; 
+                    userHasSeeked = true;
                   });
                   widget.player.seek(Duration(seconds: value.toInt()));
                 },
@@ -100,7 +104,6 @@ class _MobileVideoControlsOverlayState extends State<MobileVideoControlsOverlay>
           ),
         ),
 
-     
         Positioned(
           bottom: 0,
           left: 0,
@@ -122,6 +125,8 @@ class _MobileVideoControlsOverlayState extends State<MobileVideoControlsOverlay>
                   );
                 },
               ),
+
+              // Temps
               StreamBuilder<Duration>(
                 stream: widget.player.stream.position,
                 builder: (_, snapshot) {
@@ -135,6 +140,7 @@ class _MobileVideoControlsOverlayState extends State<MobileVideoControlsOverlay>
                   );
                 },
               ),
+
               IconButton(
                 icon: const Icon(Icons.replay_10, color: Colors.white),
                 onPressed: () => seekBackward(widget.player),
@@ -144,71 +150,23 @@ class _MobileVideoControlsOverlayState extends State<MobileVideoControlsOverlay>
                 onPressed: () => seekForward(widget.player),
               ),
 
-              Spacer(),
-              PopupMenuButton<double>(
-                color: Color(0x00000000),
-                menuPadding: EdgeInsetsGeometry.all(0.0),
-                icon: GestureDetector(
-                  onDoubleTap: () {
-                    setState(() {
-                      _volume = _volume == 0 ? 1.0 : 0.0;
-                      widget.player.setVolume(_volume);
-                    });
-                  },
-                  child: Icon(
-                    _volume == 0 ? Icons.volume_off : Icons.volume_up,
-                    color: Colors.white,
-                  ),
+              const Spacer(),
+
+              // Volume
+              IconButton(
+                icon: Icon(
+                  _volume == 0 ? Icons.volume_off : Icons.volume_up,
+                  color: Colors.white,
                 ),
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    enabled: false,
-                    child: StatefulBuilder(
-                      builder: (context, setState) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.remove, color: Colors.black),
-                                onPressed: () {
-                                  double newVolume = (_volume - 0.1).clamp(
-                                    0.0,
-                                    1.0,
-                                  );
-                                  setState(() => _volume = newVolume);
-                                  widget.player.setVolume(newVolume);
-                                },
-                              ),
-                              Text(
-                                '${(_volume * 100).toInt()}%',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.add, color: Colors.black),
-                                onPressed: () {
-                                  double newVolume = (_volume + 0.1).clamp(
-                                    0.0,
-                                    1.0,
-                                  );
-                                  setState(() => _volume = newVolume);
-                                  widget.player.setVolume(newVolume);
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                onPressed: () {
+                  setState(() {
+                    _volume = _volume == 0 ? 100.0 : 0.0;
+                    widget.player.setVolume(_volume);
+                  });
+                },
               ),
+
+              // Fullscreen
               IconButton(
                 icon: Icon(
                   isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
@@ -217,6 +175,31 @@ class _MobileVideoControlsOverlayState extends State<MobileVideoControlsOverlay>
                 onPressed: toggleFullscreen,
               ),
             ],
+          ),
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          top: 0,
+          child: StreamBuilder<bool>(
+            stream: widget.player.stream.buffering,
+            builder: (_, snapshot) {
+              final isBuffering = snapshot.data ?? false;
+              final hasDuration = widget.player.state.duration > Duration.zero;
+
+              if (isBuffering || !hasDuration) {
+                return IgnorePointer(
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: Colors.white,
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
           ),
         ),
       ],

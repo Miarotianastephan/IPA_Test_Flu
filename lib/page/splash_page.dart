@@ -39,9 +39,6 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
     try {
       final token = StorageService.instance.getValue("token");
-      debugPrint(
-        "***********************************************$token****************************************************************",
-      );
 
       if (token != null) {
         // 已有 token，尝试刷新

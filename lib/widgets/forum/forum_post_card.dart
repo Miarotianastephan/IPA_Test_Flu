@@ -10,11 +10,7 @@ import '../encrypted_image.dart';
 class ForumPostCard extends StatelessWidget {
   final ForumPost post;
 
-  const ForumPostCard({
-    super.key,
-    required this.post,
-  });
-
+  const ForumPostCard({super.key, required this.post});
 
   @override
   Widget build(BuildContext context) {
@@ -27,15 +23,10 @@ class ForumPostCard extends StatelessWidget {
         context,
         MaterialPageRoute(
           builder: (_) =>
-              ForumTagCategoryPage(
-                title: title,
-                type: type,
-                id: id,
-              ),
+              ForumTagCategoryPage(title: title, type: type, id: id),
         ),
       );
     }
-
 
     Widget buildTag(IconData icon, String label) {
       return Container(
@@ -59,7 +50,7 @@ class ForumPostCard extends StatelessWidget {
     Widget buildContentText(String content) {
       const int maxLines = 4;
       const TextStyle baseStyle = TextStyle(color: Colors.grey, fontSize: 14);
-      final String linkText = ' ${AppLocalizations.of(context)!.seeMore }';
+      final String linkText = ' ${AppLocalizations.of(context)!.seeMore}';
       const TextStyle linkStyle = TextStyle(color: Colors.lightBlueAccent);
 
       return LayoutBuilder(
@@ -176,13 +167,18 @@ class ForumPostCard extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: List.generate(3, (index) {
-                              final media = post.attachments!
-                                  .where(
-                                    (a) =>
-                                        a.fileType == 'image' ||
-                                        a.fileType == 'video',
-                                  )
-                                  .toList();
+                              final media =
+                                  post.attachments!
+                                      .where(
+                                        (a) =>
+                                            a.fileType == 'image' ||
+                                            a.fileType == 'video',
+                                      )
+                                      .toList()
+                                    ..sort(
+                                      (a, b) =>
+                                          (a.fileType).compareTo(b.fileType),
+                                    );
                               if (index < media.length) {
                                 final attachment = media[index];
                                 return Expanded(
@@ -218,10 +214,21 @@ class ForumPostCard extends StatelessWidget {
                                                   ),
                                                 ],
                                               )
-                                            else
+                                            else if (attachment
+                                                .fileUrl
+                                                .isNotEmpty)
                                               Image.network(
                                                 attachment.fileUrl,
                                                 fit: BoxFit.cover,
+                                              )
+                                            else
+                                              Container(
+                                                color: Colors.grey.shade500,
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  size: 48,
+                                                  color: Colors.white70,
+                                                ),
                                               ),
                                           ],
                                         ),
@@ -265,17 +272,26 @@ class ForumPostCard extends StatelessWidget {
                                         )
                                         .length >
                                     3)
-                              buildTag(Icons.image, AppLocalizations.of(context)!.moreMedia ),
+                              buildTag(
+                                Icons.image,
+                                AppLocalizations.of(context)!.moreMedia,
+                              ),
                             if (post.attachments != null &&
                                 post.attachments!.any(
                                   (a) => a.fileType == 'audio',
                                 ))
-                              buildTag(Icons.audiotrack, AppLocalizations.of(context)!.hasAudio),
+                              buildTag(
+                                Icons.audiotrack,
+                                AppLocalizations.of(context)!.hasAudio,
+                              ),
                             if (post.attachments != null &&
                                 post.attachments!.any(
                                   (a) => a.fileType == 'file',
                                 ))
-                              buildTag(Icons.insert_drive_file, AppLocalizations.of(context)!.hasFile ),
+                              buildTag(
+                                Icons.insert_drive_file,
+                                AppLocalizations.of(context)!.hasFile,
+                              ),
                           ],
                         ),
                         GestureDetector(
@@ -298,7 +314,8 @@ class ForumPostCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              post.category?.name ?? AppLocalizations.of(context)!.unknownCategory,
+                              post.category?.name ??
+                                  AppLocalizations.of(context)!.unknownCategory,
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: Colors.black,
@@ -346,9 +363,10 @@ class ForumPostCard extends StatelessWidget {
                         child: Row(
                           children: [
                             if (post.tags != null && post.tags!.isNotEmpty)
-                              ...post.tags!.take(2).map(
-                                    (t) =>
-                                    Padding(
+                              ...post.tags!
+                                  .take(2)
+                                  .map(
+                                    (t) => Padding(
                                       padding: const EdgeInsets.only(left: 6),
                                       child: GestureDetector(
                                         onTap: () {
@@ -360,11 +378,14 @@ class ForumPostCard extends StatelessWidget {
                                         },
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 4),
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: Colors.grey.shade200,
                                             borderRadius: BorderRadius.circular(
-                                                4),
+                                              4,
+                                            ),
                                           ),
                                           child: Text(
                                             t.name,
@@ -376,14 +397,16 @@ class ForumPostCard extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                              ),
+                                  ),
                             if (post.tags != null && post.tags!.length > 2)
                               Padding(
                                 padding: const EdgeInsets.only(left: 6),
                                 child: GestureDetector(
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.grey.shade200,
                                       borderRadius: BorderRadius.circular(4),
@@ -414,7 +437,8 @@ class ForumPostCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        post.user?.nickname ?? AppLocalizations.of(context)!.anonymousUser ,
+                        post.user?.nickname ??
+                            AppLocalizations.of(context)!.anonymousUser,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade700,
@@ -445,7 +469,7 @@ class ForumPostCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                 AppLocalizations.of(context)!.alreadyFollowed,
+                                AppLocalizations.of(context)!.alreadyFollowed,
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -467,7 +491,6 @@ class ForumPostCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-
                 ],
               ),
             ),

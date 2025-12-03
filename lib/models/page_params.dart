@@ -6,8 +6,9 @@ part 'page_params.g.dart';
 class PageParams {
   final int page;
   final int limit;
+  final int type;
 
-  const PageParams({this.page = 1, this.limit = 20});
+  const PageParams({this.page = 1, this.limit = 20, this.type = 2});
 
   factory PageParams.fromJson(Map<String, dynamic> json) =>
       _$PageParamsFromJson(json);

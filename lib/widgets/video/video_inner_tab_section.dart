@@ -12,6 +12,7 @@ class VideoInnerTabSection extends ConsumerStatefulWidget {
   final TabController outerController;
   final Map<int, String> sortTypeByCategory;
   final Function(VideoInfo videoInfo)? onUserTap;
+  final int videoType;
 
   const VideoInnerTabSection({
     super.key,
@@ -19,6 +20,7 @@ class VideoInnerTabSection extends ConsumerStatefulWidget {
     required this.outerController,
     required this.sortTypeByCategory,
     this.onUserTap,
+    required this.videoType,
   });
 
   @override
@@ -30,11 +32,12 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
   bool _initialFetched = false;
   final Map<String, SearchVideoParams> _paramsCache = {};
 
-  SearchVideoParams _getParams(int categoryId, String sort) {
-    final key = '$categoryId-$sort';
+  SearchVideoParams _getParams(int categoryId, String sort, int type) {
+    final key = '$categoryId-$sort-$type';
     return _paramsCache[key] ??= SearchVideoParams(
       categoryId: categoryId,
       sort: sort,
+      typeId: type,
     );
   }
 
@@ -46,11 +49,31 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
       _initialFetched = true;
       final categoryId = widget.categoryId;
       final currentSort = widget.sortTypeByCategory[categoryId] ?? 'latest';
-      final params = _getParams(categoryId, currentSort);
+      final typeId = widget.videoType;
+      final params = _getParams(categoryId, currentSort, typeId);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(searchVideosProvider(params).notifier).fetch(refresh: true);
       });
     });
+  }
+
+  @override
+  void didUpdateWidget(VideoInnerTabSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoType != widget.videoType) {
+      final currentSort =
+          widget.sortTypeByCategory[widget.categoryId] ?? 'latest';
+      final params = _getParams(
+        widget.categoryId,
+        currentSort,
+        widget.videoType,
+      );
+      ref.invalidate(searchVideosProvider(params));
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(searchVideosProvider(params).notifier).fetch(refresh: true);
+      });
+    }
   }
 
   @override
@@ -73,6 +96,7 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
             final params = _getParams(
               categoryId,
               getSortTabs(context)[tabController.index].type,
+              widget.videoType,
             );
             await ref
                 .read(searchVideosProvider(params).notifier)
@@ -86,8 +110,8 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
               setState(() {
                 widget.sortTypeByCategory[categoryId] = newType;
               });
-              // fetch on sort switch
-              final params = _getParams(categoryId, newType);
+
+              final params = _getParams(categoryId, newType, widget.videoType);
               ref
                   .read(searchVideosProvider(params).notifier)
                   .fetch(refresh: true);
@@ -138,7 +162,11 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
             body: TabBarView(
               controller: tabController,
               children: getSortTabs(context).map((sortTab) {
-                final params = _getParams(categoryId, sortTab.type);
+                final params = _getParams(
+                  categoryId,
+                  sortTab.type,
+                  widget.videoType,
+                );
                 final provider = searchVideosProvider(params);
                 return Builder(
                   builder: (context) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/page_response.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/widgets/general_user_tab.dart';
@@ -7,7 +8,9 @@ import 'package:live_app/widgets/general_user_tab.dart';
 import '../../provider/api_provider.dart';
 
 class MyFollowPage extends ConsumerStatefulWidget {
-  const MyFollowPage({super.key});
+  final Function(UserInfo user)? onTap;
+
+  const MyFollowPage({super.key, this.onTap});
 
   @override
   ConsumerState<MyFollowPage> createState() => _MyFollowPageState();
@@ -22,6 +25,7 @@ class _MyFollowPageState extends ConsumerState<MyFollowPage> {
 
   Future<void> _load({bool refresh = false}) async {
     if (_loading) return;
+    if (_finished && !refresh) return;
 
     setState(() => _loading = true);
 
@@ -54,6 +58,11 @@ class _MyFollowPageState extends ConsumerState<MyFollowPage> {
           _page++;
         }
       });
+    } else {
+      // 请求失败或没有数据时，认为已经没有更多数据了，避免重复触发加载
+      setState(() {
+        _finished = true;
+      });
     }
 
     setState(() => _loading = false);
@@ -67,9 +76,13 @@ class _MyFollowPageState extends ConsumerState<MyFollowPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localisations = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(title: const Text("我的关注"), backgroundColor: Colors.black),
+      appBar: AppBar(
+        title: Text(localisations.myFollows),
+        backgroundColor: Colors.black,
+      ),
       body: GeneralUserTab(
         loading: _loading,
         results: _results,
@@ -77,6 +90,7 @@ class _MyFollowPageState extends ConsumerState<MyFollowPage> {
         onRefresh: () => _load(refresh: true),
         onLoadMore: () => _load(),
         finished: _finished,
+        onTap: widget.onTap,
       ),
     );
   }

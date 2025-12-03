@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/page/comment_forum_detail_page.dart';
-
 import '../../api/services/forum_service.dart';
 import '../../models/forum_comment.dart';
 import '../../models/page_params.dart';
@@ -35,20 +34,20 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
   bool expanded = false;
   bool loading = false;
   bool childLoaded = false;
-
   List<ForumComment> childComments = [];
   late final ForumService forumService;
 
   late _VoteState voteState; // 当前用户对这条评论的投票状态
-  late bool isLike; // 仍保留给 UI 使用（等同于 voteState == up）
+  bool isLike = false;
+  bool isDownSelected = false; // 仍保留给 UI 使用（等同于 voteState == up）
   late int upvoteCount;
   late int downvoteCount;
-
+  final int _page = 1;
   @override
   void initState() {
+    expanded = false;
     super.initState();
     forumService = ref.read(forumServiceProvider);
-
     if (widget.comment.isLike) {
       voteState = _VoteState.up;
     } else if (widget.comment.isDownVote) {
@@ -131,14 +130,22 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
     await _setVoteState(target);
   }
 
-  Future<void> loadChildComments() async {
-    if (loading || childLoaded) return;
+  Future<void> loadChildComments({bool refresh = false}) async {
+    if (loading || childLoaded) {
+      setState(() {
+        childLoaded = false;
+      });
+      return;
+    }
 
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+    });
 
     try {
+      final nextPage = refresh ? 1 : _page + 1;
       final resp = await forumService.commentChildren(
-        PageParams(page: 1, limit: 50),
+        PageParams(page: nextPage, limit: 50),
         widget.comment.id,
       );
 
@@ -153,8 +160,17 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
     } catch (e) {
       debugPrint("加载子评论失败: $e");
     } finally {
-      setState(() => loading = false);
+      setState(() {
+        loading = false;
+        childLoaded = false;
+      });
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    expanded = false;
   }
 
   @override
@@ -169,22 +185,25 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
 
     final user = c.commentUser;
     final toUser = c.commentToUser;
-    final isDownSelected = voteState == _VoteState.down;
+    isDownSelected = voteState == _VoteState.down;
     return InkWell(
       onTap: () {
-        widget.isChild == true
-            ? null
-            : Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return CommentForumDetailPage(
-                      parentComment: widget.comment,
-                      onReply: widget.onReply,
-                    );
-                  },
-                ),
-              );
+        if (widget.isChild == false) {
+          setState(() {
+            expanded = false;
+          });
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                return CommentForumDetailPage(
+                  parentComment: widget.comment,
+                  onReply: widget.onReply,
+                );
+              },
+            ),
+          );
+        }
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +340,9 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
                         TextButton(
                           onPressed: () async {
                             setState(() => expanded = !expanded);
-                            if (expanded) await loadChildComments();
+                            if (expanded) {
+                              await loadChildComments(refresh: true);
+                            }
                           },
                           child: Text(
                             "${expanded ? localizations.collapse : localizations.expand} "

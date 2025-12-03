@@ -4,7 +4,6 @@ import '../models/userinfo.dart';
 import 'empty_retry.dart';
 import 'user_list_item.dart';
 
-
 class GeneralUserTab extends StatelessWidget {
   final bool loading;
   final List<UserInfo> results;
@@ -12,6 +11,8 @@ class GeneralUserTab extends StatelessWidget {
   final VoidCallback onRefresh;
   final VoidCallback onLoadMore;
   final bool finished;
+  final Function(UserInfo user)? onTap;
+  final VoidCallback? onFollowTap;
 
   const GeneralUserTab({
     super.key,
@@ -21,6 +22,8 @@ class GeneralUserTab extends StatelessWidget {
     required this.onRefresh,
     required this.onLoadMore,
     required this.finished,
+    this.onTap,
+    this.onFollowTap,
   });
 
   @override
@@ -66,7 +69,7 @@ class GeneralUserTab extends StatelessWidget {
         }
 
         final item = results[index];
-        return UserListItem(user: item);
+        return UserListItem(user: item, onTap: onTap, onFollowTap: onFollowTap);
       },
     );
   }

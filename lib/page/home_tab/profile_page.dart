@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,6 +34,7 @@ class ProfileTabPage extends ConsumerStatefulWidget {
 class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
   UserInfo? _userInfo;
   bool _hasLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,28 +43,23 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
     });
   }
 
-  // Future<void> getUserInfo() async {
-  //   final userService = ref.read(userServiceProvider);
-  //          debugPrint("..............................................");
-  //   try {
-  //     final response = await userService.getInfo();
+  //Future<void> getUserInfo() async {
+  //  final userService = ref.read(userServiceProvider);
 
-  //     debugPrint("getUserInfo response: ${response.data!.isVisitor}");
-  //     if (response.data != null) {
-  //       await StorageService.instance.setValue(
-  //         "user_info",
-  //         jsonEncode(response.data!.toJson()),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     await logout();
-  //     debugPrint("Erreur getUserInfo: $e");
-  //     showToast(context, "Erreur lors de la récupération des infos utilisateur");
-  //   }
-  // }
+  //    final response = await userService.getInfo();
+  //    if (response.data != null) {
+  //     await StorageService.instance.setValue(
+  //       "user_info",
+  //        jsonEncode(response.data!.toJson()),
+  //      );
+  //     setState(() {
+  //        _userInfo = response.data;
+  //      });
+  //    }
+
+  //}
 
   Future<void> getUserFromCache() async {
-    debugPrint("Récupération des infos utilisateur depuis le cache...");
     final data = await StorageService.instance.getValue("user_info");
     if (data != null && data.isNotEmpty) {
       final map = data is String ? jsonDecode(data) : data;
@@ -92,27 +87,27 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
       "user_info",
       jsonEncode(userInfo.toJson()),
     );
-    final jsonString = await StorageService.instance.getValue("user_info");
-    if (jsonString == null || jsonString.isEmpty) {
-      throw Exception("Utilisateur non connecté");
-    }
   }
 
-  void _navigate(BuildContext context, Widget page) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  void _navigate(BuildContext context, Widget page) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+
+    await getUserFromCache();
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    if (_userInfo == null) {
+      return Center(child: const CircularProgressIndicator(color: Colors.white),);
+    }
 
     return Container(
       color: Colors.black,
       child: RefreshIndicator(
         color: theme.colorScheme.onPrimary,
         backgroundColor: theme.colorScheme.primary,
-        // onRefresh: getUserInfo(),
         onRefresh: getUserFromCache,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -122,7 +117,6 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
               onVisibilityChanged: (info) {
                 if (!_hasLoaded && info.visibleFraction > 0) {
                   _hasLoaded = true;
-                  // getUserInfo();
                   getUserFromCache();
                 }
               },
@@ -165,9 +159,12 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                "ID: ${_userInfo?.displayId ?? ''}",
-                                style: const TextStyle(color: Colors.grey),
+                              Expanded(
+                                child: Text(
+                                  "ID: ${_userInfo?.displayId ?? ''}",
+                                  style: const TextStyle(color: Colors.grey),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                               if (_userInfo?.displayId != null)
                                 IconButton(
@@ -257,7 +254,8 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => requireLogin(
                 localizations: localizations,
-                action: () => _navigate(context, UserInfoPage(user: _userInfo!)),
+                action: () =>
+                    _navigate(context, UserInfoPage(user: _userInfo!)),
                 userInfo: _userInfo,
               ),
             ),

@@ -101,6 +101,7 @@ class _VideoTagCategoryPageState extends ConsumerState<VideoTagCategoryPage> {
           VideoTypeToggleButton(
             isLongVideo: _isLongVideo,
             onToggle: _toggleVideoType,
+            withText: true,
           ),
         ],
       ),

@@ -80,10 +80,21 @@ dependencies:
   pretty_qr_code: ^3.5.0
   gallery_saver_plus: ^3.2.9
   image_sequence_animator: ^2.0.0
-  google_fonts: ^6.3.2
+  google_fonts: ^6.3.3
   uuid: ^4.5.1
+  drift: ^2.29.0
+  drift_flutter: ^0.2.7
+  drift_dev: ^2.29.0
+  sqlite3_flutter_libs: ^0.5.40
+  sqlite3: ^2.9.4
+  socket_io_client: ^2.0.3+1
   path: ^1.9.1
   flutter_launcher_icons: ^0.14.4
+  dtd: ^4.0.0
+  flutter_lints: ^6.0.0
+  json_rpc_2: ^4.0.0
+  stack_trace: ^1.12.1
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:
@@ -94,7 +105,6 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
   json_serializable: ^6.11.1
   build_runner: ^2.10.1
 

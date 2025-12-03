@@ -460,6 +460,12 @@ abstract class AppLocalizations {
   /// **'Login successful'**
   String get loginSuccess;
 
+  /// No description provided for @loginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login Failed'**
+  String get loginFailed;
+
   /// No description provided for @loginWithQrcode.
   ///
   /// In en, this message translates to:
@@ -607,7 +613,7 @@ abstract class AppLocalizations {
   /// No description provided for @allCategories.
   ///
   /// In en, this message translates to:
-  /// **'All Categories'**
+  /// **'All categories'**
   String get allCategories;
 
   /// No description provided for @allTags.
@@ -799,7 +805,7 @@ abstract class AppLocalizations {
   /// No description provided for @all.
   ///
   /// In en, this message translates to:
-  /// **'All'**
+  /// **'all'**
   String get all;
 
   /// No description provided for @about.
@@ -963,6 +969,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save login credentials'**
   String get saveLoginCredentials;
+
+  /// No description provided for @clearHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear history'**
+  String get clearHistory;
+
+  /// No description provided for @confirmClearingHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm clearing history?'**
+  String get confirmClearingHistory;
+
+  /// No description provided for @actionCanNotBeUndoneWhenClearingHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone. Are you sure you want to clear all chat messages?'**
+  String get actionCanNotBeUndoneWhenClearingHistory;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @unreadMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread message'**
+  String get unreadMessage;
+
+  /// No description provided for @unread.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get unread;
+
+  /// No description provided for @item.
+  ///
+  /// In en, this message translates to:
+  /// **'item'**
+  String get item;
+
+  /// No description provided for @enterMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a message…'**
+  String get enterMessage;
+
+  /// No description provided for @followEachOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow each other'**
+  String get followEachOther;
+
+  /// No description provided for @pleaseEnterYourUsernameOrId.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your username or ID'**
+  String get pleaseEnterYourUsernameOrId;
+
+  /// No description provided for @startConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start conversation'**
+  String get startConversation;
+
+  /// No description provided for @myFollows.
+  ///
+  /// In en, this message translates to:
+  /// **'My follows'**
+  String get myFollows;
+
+  /// No description provided for @systemNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'System notification'**
+  String get systemNotification;
+
+  /// No description provided for @checkTheLatestSystemNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the latest system messages'**
+  String get checkTheLatestSystemNotification;
+
+  /// No description provided for @noConversationFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversation found'**
+  String get noConversationFound;
+
+  /// No description provided for @groupChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Group chat'**
+  String get groupChat;
+
+  /// No description provided for @searchUsernameOrIdPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter username or ID to start searching'**
+  String get searchUsernameOrIdPlaceholder;
+
+  /// No description provided for @newMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'New message'**
+  String get newMessage;
+
+  /// No description provided for @noCommentsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet'**
+  String get noCommentsYet;
 }
 
 class _AppLocalizationsDelegate

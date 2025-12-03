@@ -10,6 +10,7 @@ import 'package:live_app/page/login/login_with_cert.dart';
 import 'package:live_app/page/login/login_with_qrcode.dart';
 
 import '../../provider/api_provider.dart';
+import '../../provider/current_user_provider.dart';
 import '../../utils/toast_util.dart';
 import '../home.dart';
 
@@ -30,8 +31,8 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
 
   Future<void> _login(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
-    final username = _usernameController.text;
-    final password = _passwordController.text;
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
 
     if (username.isEmpty || password.isEmpty) {
       ToastUtil.warning(localizations.enterUsernameAndPassword);
@@ -43,20 +44,25 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
       return;
     }
 
-    final userService = ref.read(userServiceProvider);
+    final currentUserNotifier = ref.read(currentUserProvider.notifier);
     final navigator = Navigator.of(context);
 
     try {
-      userInfo = await userService.login(username, password);
-      saveUserInfoWithToken(userInfo!);
-      ToastUtil.success(localizations.loginSuccess);
-      if (!mounted) return;
-      navigator.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomePage()),
-        (route) => false,
-      );
+      final res = await currentUserNotifier.login(username, password);
+
+      if (res?.data != null) {
+        ToastUtil.success(localizations.loginSuccess);
+
+        if (!mounted) return;
+        navigator.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const HomePage()),
+          (route) => false,
+        );
+      } else {
+        ToastUtil.warning(localizations.loginFailed);
+      }
     } catch (err, stack) {
-      debugPrint("登录出错: $err");
+      debugPrint("登录失败: $err");
       debugPrintStack(stackTrace: stack);
     }
   }

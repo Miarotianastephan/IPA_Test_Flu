@@ -18,38 +18,3 @@ class VideoTag {
 
   Map<String, dynamic> toJson() => _$VideoTagToJson(this);
 }
-
-
-// class VideoTag {
-//   final int id;
-//   final String name;
-//   final String createdAt;
-//   // final String updatedAt;
-//   // final String? deletedAt;
-//
-//   VideoTag({
-//     required this.id,
-//     required this.name,
-//     required this.createdAt,
-//     // required this.updatedAt,
-//     // this.deletedAt,
-//   });
-//
-//   factory VideoTag.fromJson(Map<String, dynamic> json) {
-//     return VideoTag(
-//       id: json['id'] as int,
-//       name: json['name'] as String,
-//       createdAt: json['created_at'] as String,
-//       // updatedAt: json['updated_at'] as String,
-//       // deletedAt: json['deleted_at'] as String?,
-//     );
-//   }
-//
-//   Map<String, dynamic> toJson() => {
-//     'id': id,
-//     'name': name,
-//     'created_at': createdAt,
-//     // 'updated_at': updatedAt,
-//     // 'deleted_at': deletedAt,
-//   };
-// }

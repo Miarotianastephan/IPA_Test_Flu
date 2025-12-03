@@ -22,7 +22,12 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer> {
     super.initState();
     player = Player();
     controller = VideoController(player);
-    player.open(Media(widget.videoUrl));
+    initPlayer();
+  }
+
+  Future initPlayer() async {
+    await player.open(Media(widget.videoUrl));
+    await player.setVolume(100.0);
   }
 
   @override

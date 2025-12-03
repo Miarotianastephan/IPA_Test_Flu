@@ -37,7 +37,7 @@ ForumPost _$ForumPostFromJson(Map<String, dynamic> json) => ForumPost(
   isDownvoted: parseBool(json['is_downvoted']),
   user: json['user'] == null
       ? null
-      : UserInfo.fromJson(json['user'] as Map<String, dynamic>),
+      : SimpleUser.fromJson(json['user'] as Map<String, dynamic>),
   tags: (json['tags'] as List<dynamic>?)
       ?.map((e) => ForumTag.fromJson(e as Map<String, dynamic>))
       .toList(),

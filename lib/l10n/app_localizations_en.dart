@@ -189,6 +189,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginSuccess => 'Login successful';
 
   @override
+  String get loginFailed => 'Login Failed';
+
+  @override
   String get loginWithQrcode => 'Login with QR Code';
 
   @override
@@ -261,7 +264,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get user => 'User';
 
   @override
-  String get allCategories => 'All Categories';
+  String get allCategories => 'All categories';
 
   @override
   String get allTags => 'All Tags';
@@ -357,7 +360,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alreadyFollowed => 'Already followed';
 
   @override
-  String get all => 'All';
+  String get all => 'all';
 
   @override
   String get about => 'About';
@@ -440,4 +443,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveLoginCredentials => 'Save login credentials';
+
+  @override
+  String get clearHistory => 'Clear history';
+
+  @override
+  String get confirmClearingHistory => 'Confirm clearing history?';
+
+  @override
+  String get actionCanNotBeUndoneWhenClearingHistory =>
+      'This action cannot be undone. Are you sure you want to clear all chat messages?';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get unreadMessage => 'Unread message';
+
+  @override
+  String get unread => 'Unread';
+
+  @override
+  String get item => 'item';
+
+  @override
+  String get enterMessage => 'Enter a message…';
+
+  @override
+  String get followEachOther => 'Follow each other';
+
+  @override
+  String get pleaseEnterYourUsernameOrId => 'Please enter your username or ID';
+
+  @override
+  String get startConversation => 'Start conversation';
+
+  @override
+  String get myFollows => 'My follows';
+
+  @override
+  String get systemNotification => 'System notification';
+
+  @override
+  String get checkTheLatestSystemNotification =>
+      'Check the latest system messages';
+
+  @override
+  String get noConversationFound => 'No conversation found';
+
+  @override
+  String get groupChat => 'Group chat';
+
+  @override
+  String get searchUsernameOrIdPlaceholder =>
+      'Enter username or ID to start searching';
+
+  @override
+  String get newMessage => 'New message';
+
+  @override
+  String get noCommentsYet => 'No comments yet';
 }

@@ -29,7 +29,7 @@ Widget getSortTabBar(BuildContext context, TabController? tabController) {
     indicatorColor: Colors.redAccent,
     labelColor: Colors.white,
     unselectedLabelColor: Colors.grey,
-    labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
     tabs: tabs.map((e) => e.tab).toList(),
   );
 }

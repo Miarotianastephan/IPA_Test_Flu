@@ -22,7 +22,6 @@ class VideoApi {
   static const String relevanceRecommend =  '$base/relevanceRecommend';
 
 
-
   static const String favoriteList =  '$base/favoriteList';
   static const String historyList =  '$base/historyList';
   static const String likeList =  '$base/likeList';

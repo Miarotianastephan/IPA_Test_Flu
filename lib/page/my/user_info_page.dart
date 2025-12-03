@@ -1,14 +1,19 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:live_app/api/api_client.dart';
 import 'package:live_app/api/services/user_service.dart';
+import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/page/home.dart';
+import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/utils/toast_util.dart';
 import 'package:live_app/widgets/cover_image_picker.dart';
 import 'package:live_app/widgets/profile_image_picker.dart';
@@ -16,15 +21,15 @@ import 'package:live_app/widgets/save_button_edit_user.dart';
 import 'package:live_app/widgets/text_field_widget.dart';
 import 'package:path/path.dart';
 
-class UserInfoPage extends StatefulWidget {
+class UserInfoPage extends ConsumerStatefulWidget {
   final UserInfo? user;
   const UserInfoPage({super.key, required this.user});
 
   @override
-  State<UserInfoPage> createState() => _UserInfoPageState();
+  ConsumerState<UserInfoPage> createState() => _UserInfoPageState();
 }
 
-class _UserInfoPageState extends State<UserInfoPage> {
+class _UserInfoPageState extends ConsumerState<UserInfoPage> {
   final _formKey = GlobalKey<FormState>();
   late String _username;
   late String _nickname;
@@ -112,6 +117,18 @@ class _UserInfoPageState extends State<UserInfoPage> {
     }
   }
 
+  Future<void> getUserInfo() async {
+    final userService = ref.read(userServiceProvider);
+
+    final response = await userService.getInfo();
+    if (response.data != null) {
+      await StorageService.instance.setValue(
+        "user_info",
+        jsonEncode(response.data!.toJson()),
+      );
+    }
+  }
+
   Future<void> _saveProfileApi(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -153,29 +170,78 @@ class _UserInfoPageState extends State<UserInfoPage> {
 
       if (!mounted) return;
 
-      if (response.success || response.code == 1) {
-        ToastUtil.success(AppLocalizations.of(context)!.profileUpdated);
+      if (response.code == 1) {
+        await getUserInfo();
+        Navigator.of(context, rootNavigator: true).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const HomePage(),
+            transitionDuration: const Duration(milliseconds: 500),
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+        );
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            content: Text(AppLocalizations.of(context)!.profileUpdated),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text("OK", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
 
         setState(() {
           _saving = false;
           _isEditing = false;
         });
-        Navigator.pop(context, true);
+        debugPrint("SUCCESS");
       } else {
-        ToastUtil.error(AppLocalizations.of(context)!.serverError);
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              content: Text(AppLocalizations.of(context)!.serverError),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text(
+                    "OK",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
         debugPrint('Erreur serveur: ${response.msg}');
-        Navigator.pop(context, true);
       }
     } catch (e) {
-      if (!mounted) return;
-      ToastUtil.error(AppLocalizations.of(context)!.networkError);
-      Navigator.pop(context, true);
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            content: Text(AppLocalizations.of(context)!.networkError),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text("OK", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+      }
+      debugPrint("ERROR NET");
     } finally {
       if (mounted) {
         setState(() {
           _saving = false;
         });
       }
+      debugPrint("FINAL");
     }
   }
 
@@ -217,8 +283,15 @@ class _UserInfoPageState extends State<UserInfoPage> {
                                     ? _pickCoverImage(context)
                                     : showDial(
                                         context,
-                                        _cover ?? widget.user!.cover,
-                                        widget.user!.cover != null
+                                        _cover ??
+                                            (_cover != null &&
+                                                    widget.user!.cover != null
+                                                ? _cover
+                                                : widget.user!.cover),
+                                        _cover != null &&
+                                                widget.user!.cover != null
+                                            ? true
+                                            : widget.user!.cover != null
                                             ? false
                                             : true,
                                       );
@@ -237,8 +310,16 @@ class _UserInfoPageState extends State<UserInfoPage> {
                                       ? _pickAvatarImage(context)
                                       : showDial(
                                           context,
-                                          _avatar ?? widget.user!.avatar,
-                                          widget.user!.avatar != null
+                                          _avatar ??
+                                              (_avatar != null &&
+                                                      widget.user!.avatar !=
+                                                          null
+                                                  ? _avatar
+                                                  : widget.user!.avatar),
+                                          _avatar != null &&
+                                                  widget.user!.avatar != null
+                                              ? true
+                                              : widget.user!.avatar != null
                                               ? false
                                               : true,
                                         );

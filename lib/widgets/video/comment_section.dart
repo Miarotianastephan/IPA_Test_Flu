@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/widgets/empty_widget.dart';
 
 import '../../api/services/video_service.dart';
 import '../../models/page_params.dart';
@@ -183,6 +184,8 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
 
   @override
   Widget build(BuildContext context) {
+    final localisations = AppLocalizations.of(context)!;
+
     return Column(
       children: [
         Expanded(
@@ -201,45 +204,50 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
                 return false;
               },
 
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.only(bottom: 60, top: 10),
+              child: (comments.isEmpty)
+                  ? EmptyWidget(
+                      icon: Icons.message_outlined,
+                      message: localisations.noCommentsYet,
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.only(bottom: 60, top: 10),
 
-                itemCount: comments.length + 1,
+                      itemCount: comments.length + 1,
 
-                itemBuilder: (context, index) {
-                  if (index < comments.length) {
-                    return _buildCommentItem(
-                      comments[index],
-                      index,
-                      kAlwaysCompleteAnimation,
-                    );
-                  }
-                  if (_finished) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Center(
-                        child: Text(
-                          AppLocalizations.of(context)!.noMoreComments,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    );
-                  }
-                  if (_loading) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
+                      itemBuilder: (context, index) {
+                        if (index < comments.length) {
+                          return _buildCommentItem(
+                            comments[index],
+                            index,
+                            kAlwaysCompleteAnimation,
+                          );
+                        }
+                        if (_finished) {
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Center(
+                              child: Text(
+                                localisations.noMoreComments,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          );
+                        }
+                        if (_loading) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
             ),
           ),
         ),

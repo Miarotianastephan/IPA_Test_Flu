@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/video_detail_provider.dart';
 
 import '../../provider/my_post_providers.dart';
 import '../../provider/my_video_providers.dart';
@@ -19,11 +20,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  bool _isLongVideo = false;
   bool _videoLoaded = false;
   bool _postLoaded = false;
-
-  int get _videoType => _isLongVideo ? 2 : 1;
 
   @override
   void initState() {
@@ -53,7 +51,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
     ref
         .read(
           userVideoListProvider((
-            type: _videoType,
+            type: ref.watch(videoTypeProvider),
             listType: UserVideoListType.history,
           )).notifier,
         )
@@ -62,7 +60,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
 
   void _loadMoreVideos() {
     final provider = userVideoListProvider((
-      type: _videoType,
+      type: ref.watch(videoTypeProvider),
       listType: UserVideoListType.history,
     ));
 
@@ -91,8 +89,9 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
   }
 
   void _toggleVideoType() {
+    final current = ref.read(videoTypeProvider);
+    ref.read(videoTypeProvider.notifier).state = current == 1 ? 2 : 1;
     setState(() {
-      _isLongVideo = !_isLongVideo;
       _videoLoaded = false;
     });
     _fetchVideos();
@@ -102,9 +101,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
   Widget build(BuildContext context) {
     const background = Colors.black;
     final localizations = AppLocalizations.of(context)!;
-
+    final videoType = ref.watch(videoTypeProvider);
+    final isLongVideo = videoType == 2;
     final videoProvider = userVideoListProvider((
-      type: _videoType,
+      type: videoType,
       listType: UserVideoListType.history,
     ));
 
@@ -149,8 +149,9 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
         actions: [
           if (_isVideoTab)
             VideoTypeToggleButton(
-              isLongVideo: _isLongVideo,
+              isLongVideo: isLongVideo,
               onToggle: _toggleVideoType,
+              withText: true,
             ),
         ],
         bottom: TabBar(
@@ -175,7 +176,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
             isLoaded: _videoLoaded,
             loading: videoState.loading,
             results: videoState.list,
-            isLongVideo: _isLongVideo,
+            isLongVideo: isLongVideo,
             provider: videoProvider,
           ),
 

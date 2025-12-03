@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/search_videos_provider.dart';
+import 'package:live_app/provider/video_detail_provider.dart';
+
+import 'package:live_app/widgets/video_type_toggle_button.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import '../../models/video_category.dart';
 import '../../provider/category_tag_provider.dart';
@@ -43,11 +47,16 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
     }
   }
 
+  void _toggleVideoType() {
+    final current = ref.read(videoTypeProvider);
+
+    ref.read(videoTypeProvider.notifier).state = current == 1 ? 2 : 1;
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final state = ref.watch(videoCategoryListProvider(true));
-
     return VisibilityDetector(
       key: const Key('video_tab_visibility'),
       onVisibilityChanged: (info) {
@@ -102,16 +111,19 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
                 children: [
                   Expanded(
                     child: TabBar(
-                      isScrollable: false,
+                      controller: DefaultTabController.of(context),
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
                       tabs: _categories.map((t) => Tab(text: t.name)).toList(),
+                      indicatorSize: TabBarIndicatorSize.label,
                       indicator: const BoxDecoration(),
                       labelColor: Colors.white,
                       labelStyle: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
                       unselectedLabelStyle: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 11,
                         color: Color.fromRGBO(255, 255, 255, 0.8),
                       ),
                     ),
@@ -141,6 +153,11 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
                       );
                     },
                   ),
+                  VideoTypeToggleButton(
+                    isLongVideo: ref.watch(videoTypeProvider) == 2,
+                    onToggle: _toggleVideoType,
+                    withText: false,
+                  ),
                 ],
               ),
             ),
@@ -153,7 +170,7 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
                     (index) => VideoInnerTabSection(
                       onUserTap: (info) {
                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ref.read(currentUserProvider.notifier).state =
+                          ref.read(currentVideoUserProvider.notifier).state =
                               info.user;
                         });
                         widget.tkcontroller?.animateToRightWithTempGesture();
@@ -161,6 +178,7 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
                       categoryId: _categories[index].id,
                       outerController: outerController,
                       sortTypeByCategory: _sortTypeByCategory,
+                      videoType: ref.watch(videoTypeProvider),
                     ),
                   ),
                 ),

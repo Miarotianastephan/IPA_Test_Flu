@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/video_detail_provider.dart';
 
 import '../../provider/my_post_providers.dart';
 import '../../provider/my_video_providers.dart';
@@ -18,12 +19,8 @@ class FavoritePage extends ConsumerStatefulWidget {
 class _FavoritePageState extends ConsumerState<FavoritePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  bool _isLongVideo = false;
   bool _videoLoaded = false;
   bool _postLoaded = false;
-
-  int get _videoType => _isLongVideo ? 2 : 1;
 
   @override
   void initState() {
@@ -50,19 +47,19 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
   bool get _isVideoTab => _tabController.index == 0;
 
   void _fetchVideos() {
-    ref
-        .read(
-          userVideoListProvider((
-            type: _videoType,
-            listType: UserVideoListType.favorite,
-          )).notifier,
-        )
-        .fetch(refresh: true);
+    final type = ref.read(videoTypeProvider);
+    final provider = userVideoListProvider((
+      type: type,
+      listType: UserVideoListType.favorite,
+    ));
+
+    ref.invalidate(provider); 
+    ref.read(provider.notifier).fetch(refresh: true);
   }
 
   void _loadMoreVideos() {
     final provider = userVideoListProvider((
-      type: _videoType,
+      type: ref.watch(videoTypeProvider),
       listType: UserVideoListType.favorite,
     ));
 
@@ -91,8 +88,9 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
   }
 
   void _toggleVideoType() {
+    final current = ref.read(videoTypeProvider);
+    ref.read(videoTypeProvider.notifier).state = current == 1 ? 2 : 1;
     setState(() {
-      _isLongVideo = !_isLongVideo;
       _videoLoaded = false;
     });
     _fetchVideos();
@@ -102,9 +100,10 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
   Widget build(BuildContext context) {
     const background = Colors.black;
     final localizations = AppLocalizations.of(context)!;
-
+    final videoType = ref.watch(videoTypeProvider);
+    final isLongVideo = videoType == 2;
     final videoProvider = userVideoListProvider((
-      type: _videoType,
+      type: videoType,
       listType: UserVideoListType.favorite,
     ));
 
@@ -139,15 +138,19 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
             duration: const Duration(milliseconds: 100),
             curve: Curves.easeInOut,
             alignment: _isVideoTab ? Alignment.centerLeft : Alignment.center,
-            child: Text(localizations.favorites, style: TextStyle(color: Colors.white)),
+            child: Text(
+              localizations.favorites,
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ),
         centerTitle: !_isVideoTab,
         actions: [
           if (_isVideoTab)
             VideoTypeToggleButton(
-              isLongVideo: _isLongVideo,
+              isLongVideo: isLongVideo,
               onToggle: _toggleVideoType,
+              withText: true,
             ),
         ],
         bottom: TabBar(
@@ -172,7 +175,7 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
             isLoaded: _videoLoaded,
             loading: videoState.loading,
             results: videoState.list,
-            isLongVideo: _isLongVideo,
+            isLongVideo: isLongVideo,
             provider: videoProvider,
           ),
 

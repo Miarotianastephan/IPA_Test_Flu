@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/widgets/auto_scroll_elevated_button.dart';
+import 'package:live_app/utils/toast_util.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 
@@ -89,10 +90,7 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
       setState(() => _showContent = false);
     } catch (e) {
       debugPrint(e.toString());
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("保存失败: $e")));
+      ToastUtil.error("保存失败: $e");
       setState(() => _showContent = false);
     }
   }

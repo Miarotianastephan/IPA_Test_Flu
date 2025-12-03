@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 
-import '../../provider/api_provider.dart';
+import '../../provider/current_user_provider.dart';
 import '../../utils/toast_util.dart';
 import '../home.dart';
 
@@ -18,29 +18,31 @@ class _LoginWithCertPageState extends ConsumerState<LoginWithCertPage> {
 
   Future<void> _loginWithQRCode(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
-    final code = _qrCodeController.text;
+    final code = _qrCodeController.text.trim();
+
     if (code.isEmpty) {
       ToastUtil.warning(localizations.enterCredentialKey);
       return;
     }
 
-    final userService = ref.read(userServiceProvider);
+    final currentUserNotifier = ref.read(currentUserProvider.notifier);
 
-    try {
-      await userService.loginByCredential(code);
+    final res = await currentUserNotifier.loginByCredential(code);
+
+    if (res?.data != null) {
       ToastUtil.success(localizations.loginSuccess);
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const HomePage()),
-            (route) => false, // false 表示移除所有旧页面
+            (route) => false,
           );
         }
       });
-    } catch (err, stack) {
-      debugPrint("登录出错: $err");
-      debugPrintStack(stackTrace: stack);
+    } else {
+      ToastUtil.warning(localizations.loginFailed);
     }
   }
 

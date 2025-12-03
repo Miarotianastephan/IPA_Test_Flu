@@ -1,8 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/page/login/login_with_username.dart';
 import 'package:live_app/widgets/empty_retry.dart';
+import 'package:live_app/widgets/empty_widget.dart';
 
 import '../api/services/user_service.dart';
 import '../models/forum_attachment.dart';
@@ -30,14 +36,19 @@ class ForumPostDetailPage extends ConsumerStatefulWidget {
 
 class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
   final TextEditingController _commentController = TextEditingController();
+  UserInfo? _userInfo;
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   ForumComment? _replyingTo;
   late final UserService userService;
+  ForumPost? forumPost;
 
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      getUserFromCache();
+    });
     userService = ref.read(userServiceProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 加载帖子详情
@@ -58,6 +69,92 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
         ref.read(forumCommentsProvider(widget.postId).notifier).loadMore();
       }
     });
+  }
+
+  void checkLoginAndRun(String label, Future<void> Function() action) {
+    if (_userInfo?.isVisitor ?? true) {
+      showLoginNotification(label);
+    } else {
+      action();
+    }
+  }
+
+  void showLoginNotification(String label) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.video_library_outlined,
+                size: 56,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "Sign in to $label",
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Create an account or log in to $label.",
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const LoginWithUsernamePage(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Log In",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> getUserFromCache() async {
+    final data = await StorageService.instance.getValue("user_info");
+    if (data != null && data.isNotEmpty) {
+      final map = data is String ? jsonDecode(data) : data;
+      setState(() {
+        _userInfo = UserInfo.fromJson(map);
+      });
+    }
+  }
+
+  void checkLogin() {
+    if (_userInfo == null || _userInfo!.isVisitor) {}
   }
 
   void _openGallery(List<ForumAttachment> attachments, ForumAttachment target) {
@@ -86,6 +183,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
   }
 
   Widget _buildContent(BuildContext context, ForumPost post) {
+    final localisations = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.all(12),
@@ -112,9 +210,12 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   size: 22,
                 ),
                 onPressed: () {
-                  ref
-                      .read(postDetailProvider(widget.postId).notifier)
-                      .toggleLike();
+                  checkLoginAndRun(
+                    'like videos',
+                    ref
+                        .read(postDetailProvider(widget.postId).notifier)
+                        .toggleLike,
+                  );
                 },
               ),
               IconButton(
@@ -124,9 +225,12 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   size: 22,
                 ),
                 onPressed: () {
-                  ref
-                      .read(postDetailProvider(widget.postId).notifier)
-                      .toggleFavorite();
+                  checkLoginAndRun(
+                    'add videos to favorite',
+                    ref
+                        .read(postDetailProvider(widget.postId).notifier)
+                        .toggleFavorite,
+                  );
                 },
               ),
               IconButton(
@@ -140,9 +244,12 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   size: 22,
                 ),
                 onPressed: () {
-                  ref
-                      .read(postDetailProvider(widget.postId).notifier)
-                      .toggleDownvote();
+                  checkLoginAndRun(
+                    "unlike videos",
+                    ref
+                        .read(postDetailProvider(widget.postId).notifier)
+                        .toggleDownvote,
+                  );
                 },
               ),
             ],
@@ -161,7 +268,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
               height: 1.5,
             ),
           ),
-          // ---- 分离图片和视频 ----
+          // 分离图片和视频
           if (post.attachments != null && post.attachments!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 20),
@@ -349,9 +456,12 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                       size: 22,
                     ),
                     onPressed: () {
-                      ref
-                          .read(postDetailProvider(widget.postId).notifier)
-                          .toggleLike();
+                      checkLoginAndRun(
+                        "like videos",
+                        ref
+                            .read(postDetailProvider(widget.postId).notifier)
+                            .toggleLike,
+                      );
                     },
                   ),
                   Text(
@@ -371,9 +481,12 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                       size: 22,
                     ),
                     onPressed: () {
-                      ref
-                          .read(postDetailProvider(widget.postId).notifier)
-                          .toggleFavorite();
+                      checkLoginAndRun(
+                        "add videos to favorite",
+                        ref
+                            .read(postDetailProvider(widget.postId).notifier)
+                            .toggleFavorite,
+                      );
                     },
                   ),
                   Text(
@@ -395,9 +508,12 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                       size: 22,
                     ),
                     onPressed: () {
-                      ref
-                          .read(postDetailProvider(widget.postId).notifier)
-                          .toggleDownvote();
+                      checkLoginAndRun(
+                        "unlike videos",
+                        ref
+                            .read(postDetailProvider(widget.postId).notifier)
+                            .toggleDownvote,
+                      );
                     },
                   ),
                   Text(
@@ -427,7 +543,12 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
             ],
           ),
           const SizedBox(height: 16),
-          ForumCommentsList(postId: post.id, onReply: _handleReply),
+          (post.commentCount < 1)
+              ? EmptyWidget(
+                  icon: Icons.message_outlined,
+                  message: localisations.noCommentsYet,
+                )
+              : ForumCommentsList(postId: post.id, onReply: _handleReply),
         ],
       ),
     );
@@ -460,7 +581,6 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(postDetailProvider(widget.postId));
     final post = state.post;
-
     return SafeArea(
       child: Scaffold(
         resizeToAvoidBottomInset: true,
@@ -470,7 +590,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
             children: [
               UserAvatar(
                 userId: post?.user?.id,
-                url: post?.user?.avatar,
+                url: post?.user?.avatar ?? "https://picsum.photos/40",
                 nickname: post?.user?.nickname,
                 size: 28,
               ),
@@ -493,7 +613,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "${post?.user?.nickname}",
+                        post?.user?.nickname ??
+                            AppLocalizations.of(context)!.anonymousUser,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,
@@ -520,9 +641,12 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
               FollowButton(
                 isFollowed: post?.user?.isFollowed ?? false,
                 onPressed: (v) async {
-                  await ref
-                      .read(postDetailProvider(widget.postId).notifier)
-                      .toggleFollow();
+                  checkLoginAndRun(
+                    "follow a creator",
+                    ref
+                        .read(postDetailProvider(widget.postId).notifier)
+                        .toggleFollow,
+                  );
                 },
               ),
             ],
@@ -567,49 +691,50 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
             ),
 
             /// ---- 底部评论输入框 ----
-            Container(
-              color: Colors.black,
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+            if (!(_userInfo?.isVisitor ?? true))
+              Container(
+                color: Colors.black,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: CommentInputBar(
+                  controller: _commentController,
+                  replyingToName: _replyingTo?.commentUser?.nickname,
+                  onCancelReply: () {
+                    setState(() => _replyingTo = null);
+                  },
+                  onSend: (content) async {
+                    final service = ref.read(forumServiceProvider);
+
+                    // --- 发评论 ---
+                    final resp = await service.comment(
+                      widget.postId,
+                      content,
+                      parentId: _replyingTo?.id,
+                    );
+
+                    // resp.data 是 ForumComment
+                    final newComment = resp.data;
+
+                    // 清除回复对象
+                    setState(() => _replyingTo = null);
+
+                    // provider 追加新评论
+                    ref
+                        .read(forumCommentsProvider(widget.postId).notifier)
+                        .addComment(newComment);
+
+                    // 更新贴子评论数
+                    ref
+                        .read(postDetailProvider(widget.postId).notifier)
+                        .increaseCommentCount();
+
+                    //  自动滚动到最新评论
+                    _scrollToBottom();
+                  },
+                  darkStyle: false,
+                ),
               ),
-              child: CommentInputBar(
-                controller: _commentController,
-                replyingToName: _replyingTo?.commentUser?.nickname,
-                onCancelReply: () {
-                  setState(() => _replyingTo = null);
-                },
-                onSend: (content) async {
-                  final service = ref.read(forumServiceProvider);
-
-                  // --- 发评论 ---
-                  final resp = await service.comment(
-                    widget.postId,
-                    content,
-                    parentId: _replyingTo?.id,
-                  );
-
-                  // resp.data 是 ForumComment
-                  final newComment = resp.data;
-
-                  // 清除回复对象
-                  setState(() => _replyingTo = null);
-
-                  // provider 追加新评论
-                  ref
-                      .read(forumCommentsProvider(widget.postId).notifier)
-                      .addComment(newComment);
-
-                  // 更新贴子评论数
-                  ref
-                      .read(postDetailProvider(widget.postId).notifier)
-                      .increaseCommentCount();
-
-                  //  自动滚动到最新评论
-                  _scrollToBottom();
-                },
-                darkStyle: false,
-              ),
-            ),
           ],
         ),
       ),

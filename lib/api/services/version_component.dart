@@ -62,7 +62,7 @@ class VersionComponent {
       final dio = Dio();
       final baseUrl = dotenv.env['API_BASE_URL'];
       if (baseUrl == null || baseUrl.isEmpty) {
-        throw Exception("API_BASE_URL is not defined in .env");
+        return null;
       }
 
       final response = await dio.post("$baseUrl/api/user/getCurrentVersion");
@@ -80,11 +80,11 @@ class VersionComponent {
           return null;
         }
       } else {
-        throw Exception("Server error: ${response.statusCode}");
+        return null;
       }
     } catch (e) {
       debugPrint("fetchVersion error: $e");
-      throw Exception("Network error: $e");
+      return null;
     }
   }
 

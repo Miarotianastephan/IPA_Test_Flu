@@ -123,9 +123,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
             .read(videoServiceProvider)
             .cancelCommentLike(widget.comment.id);
       } else {
-        await ref
-            .read(videoServiceProvider)
-            .likeComment(widget.comment.id);
+        await ref.read(videoServiceProvider).likeComment(widget.comment.id);
       }
     } catch (e) {
       debugPrint("toggleLike error: $e");

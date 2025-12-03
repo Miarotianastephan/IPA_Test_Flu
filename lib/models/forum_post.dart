@@ -1,5 +1,4 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/utils/json_utils.dart';
 import 'forum_attachment.dart';
 import 'forum_category.dart';
@@ -53,7 +52,7 @@ class ForumPost {
   final bool? isDownvoted;
 
   @JsonKey(name: 'user')
-  final UserInfo? user;
+  final SimpleUser? user;
 
   @JsonKey(name: 'tags')
   final List<ForumTag>? tags;
@@ -115,7 +114,7 @@ class ForumPost {
      bool? isLiked,
      bool? isFavorited,
      bool? isDownvoted,
-     UserInfo? user,
+     SimpleUser? user,
      List<ForumTag>? tags,
    }) {
      return ForumPost(

@@ -2,13 +2,13 @@ name: iOS-ipa-build
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - '.gitignore'
-      - '.github'
+  # push:
+  #   branches:
+  #     - main
+  #   paths-ignore:
+  #     - '**.md'
+  #     - '.gitignore'
+  #     - '.github'
 
 jobs:
   build-ios:

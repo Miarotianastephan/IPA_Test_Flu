@@ -38,11 +38,16 @@ jobs:
         run: zip -qq -r -9 FlutterIpaExport.ipa Payload
         working-directory: build/ios/iphoneos
 
+        # ✨ Tag dynamique basé sur la date
+      - name: Get current timestamp
+        id: timestamp
+        run: echo "timestamp=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: v1.0
+          tag: v1.0-${{ steps.timestamp.outputs.timestamp }}
           overwrite: true
-          body: "This is first release"
+          body: "iOS Build - ${{ steps.timestamp.outputs.timestamp }}"

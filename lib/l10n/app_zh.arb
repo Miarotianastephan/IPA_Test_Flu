@@ -164,5 +164,21 @@
   "newMessage": "新消息",
   "allCategories":"全部分类",
   "all":"全部",
-  "noCommentsYet": "暂无评论"
+  "noCommentsYet": "暂无评论",
+  "unknownUser": "未知用户",
+  "error": "错误",
+  "watchEarnLiveMore": "观看\n赚取\n生活\n更多",
+  "currentVersion": "当前版本",
+  "latestVersion": "最新版本",
+  "newVersionAvailable": "有新版本可用！",
+  "download": "下载",
+  "appUpToDate": "您的应用已是最新版本。",
+  "myFans": "我的粉丝",
+  "userMissing": "用户不存在",
+  "mustBeLoggedIn": "您必须登录。",
+  "save": "保存",
+  "notProvided": "未提供",
+  "reachedEnd": "已经到底啦",
+  "systemEvent": "系统事件",
+  "botCommand": "机器人命令"
 }

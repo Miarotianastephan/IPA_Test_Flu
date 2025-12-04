@@ -164,5 +164,21 @@
   "newMessage": "Nuevo mensaje",
   "allCategories":"Todas las categorías",
   "all":"todo",
-  "noCommentsYet": "Aún no hay comentarios"
+  "noCommentsYet": "Aún no hay comentarios",
+  "unknownUser": "Usuario desconocido",
+  "error": "Error",
+  "watchEarnLiveMore": "Ver\nGanar\nVivir\nMás",
+  "currentVersion": "Versión actual",
+  "latestVersion": "Última versión",
+  "newVersionAvailable": "¡Hay una nueva versión disponible!",
+  "download": "Descargar",
+  "appUpToDate": "Su aplicación está actualizada.",
+  "myFans": "Mis Fans",
+  "userMissing": "Usuario no encontrado",
+  "mustBeLoggedIn": "Debe iniciar sesión.",
+  "save": "Guardar",
+  "notProvided": "No proporcionado",
+  "reachedEnd": "Se ha llegado al final",
+  "systemEvent": "Evento del sistema",
+  "botCommand": "Comando del bot"
 }

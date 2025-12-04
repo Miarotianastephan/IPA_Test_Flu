@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 import '../models/forum_post.dart';
 import 'empty_retry.dart';
@@ -29,14 +30,15 @@ class GeneralPostTab extends StatelessWidget {
       onRefresh: () async => onRefresh(),
       child: !isLoaded
           ? _buildFirstLoading() // 只有首次、且确实在 loading 时全屏转圈
-          : loading && results.isEmpty ?_buildFirstLoading() : NotificationListener<ScrollNotification>(
-        onNotification: _handleScroll,
-        child: results.isEmpty
-            ? _buildEmpty()
-            : _buildList(context),
-      ),
+          : loading && results.isEmpty
+          ? _buildFirstLoading()
+          : NotificationListener<ScrollNotification>(
+              onNotification: _handleScroll,
+              child: results.isEmpty ? _buildEmpty() : _buildList(context),
+            ),
     );
   }
+
   Widget _buildFirstLoading() {
     return const Center(child: CircularProgressIndicator(color: Colors.white));
   }
@@ -55,10 +57,13 @@ class GeneralPostTab extends StatelessWidget {
         }
 
         if (finished && index == results.length + (loading ? 1 : 0)) {
-          return const Padding(
+          return Padding(
             padding: EdgeInsets.all(16),
             child: Center(
-              child: Text("没有更多了", style: TextStyle(color: Colors.white)),
+              child: Text(
+                AppLocalizations.of(context)!.noMore,
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           );
         }

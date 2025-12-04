@@ -1083,6 +1083,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No comments yet'**
   String get noCommentsYet;
+
+  /// No description provided for @error.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get error;
+
+  /// No description provided for @watchEarnLiveMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch\nEarn\nLive\nMore'**
+  String get watchEarnLiveMore;
+
+  /// No description provided for @currentVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Current version'**
+  String get currentVersion;
+
+  /// No description provided for @latestVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest version'**
+  String get latestVersion;
+
+  /// No description provided for @newVersionAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version is available!'**
+  String get newVersionAvailable;
+
+  /// No description provided for @download.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get download;
+
+  /// No description provided for @appUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Your application is up to date.'**
+  String get appUpToDate;
+
+  /// No description provided for @myFans.
+  ///
+  /// In en, this message translates to:
+  /// **'My Fans'**
+  String get myFans;
+
+  /// No description provided for @userMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'User missing'**
+  String get userMissing;
+
+  /// No description provided for @mustBeLoggedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be logged in.'**
+  String get mustBeLoggedIn;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @notProvided.
+  ///
+  /// In en, this message translates to:
+  /// **'Not provided'**
+  String get notProvided;
+
+  /// No description provided for @reachedEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Reached the end'**
+  String get reachedEnd;
+
+  /// No description provided for @systemEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'System Event'**
+  String get systemEvent;
+
+  /// No description provided for @botCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Bot Command'**
+  String get botCommand;
 }
 
 class _AppLocalizationsDelegate

@@ -137,7 +137,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
     }
   }
 
-  Widget _buildParentCommentHeader() {
+  Widget _buildParentCommentHeader(AppLocalizations localizations) {
     final user = widget.parentComment.commentUser;
     final toUser = widget.parentComment.commentToUser;
 
@@ -160,7 +160,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
                 Row(
                   children: [
                     Text(
-                      user?.nickname ?? 'Unknown User',
+                      user?.nickname ?? localizations.unknownUser,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -232,7 +232,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
                 bottom: BorderSide(color: Colors.grey[800]!, width: 1),
               ),
             ),
-            child: _buildParentCommentHeader(),
+            child: _buildParentCommentHeader(localizations),
           ),
 
           if (childComments.isNotEmpty || _loading)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 class TextFieldWidget extends StatelessWidget {
   final String label;
@@ -47,7 +48,9 @@ class TextFieldWidget extends StatelessWidget {
       return ListTile(
         leading: Icon(icon),
         title: Text(label),
-        subtitle: Text(value.isNotEmpty ? value : 'Non renseigné'),
+        subtitle: Text(
+          value.isNotEmpty ? value : AppLocalizations.of(context)!.notProvided,
+        ),
       );
     }
   }

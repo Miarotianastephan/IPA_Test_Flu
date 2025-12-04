@@ -100,7 +100,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         if (currentUser.isVisitor) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Vous devez être connecté.")),
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.mustBeLoggedIn),
+              ),
             );
           }
           return;

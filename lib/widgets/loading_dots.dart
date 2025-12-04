@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 class LoadingDots extends StatefulWidget {
   const LoadingDots({super.key});
@@ -35,7 +36,7 @@ class _LoadingDotsState extends State<LoadingDots> {
   @override
   Widget build(BuildContext context) {
     return Text(
-      "Loading$_dots",
+      "${AppLocalizations.of(context)!.loading}$_dots",
       style: const TextStyle(color: Colors.white70, fontSize: 16),
     );
   }

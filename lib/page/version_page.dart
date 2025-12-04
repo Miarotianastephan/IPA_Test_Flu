@@ -27,9 +27,11 @@ class _VersionPageState extends State<VersionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localisations = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.about),
+        title: Text(localisations.about),
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
@@ -45,9 +47,11 @@ class _VersionPageState extends State<VersionPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
+            return Center(
+              child: Text("${localisations.error}: ${snapshot.error}"),
+            );
           } else if (!snapshot.hasData) {
-            return Center(child: Text(AppLocalizations.of(context)!.noData));
+            return Center(child: Text(localisations.noData));
           }
 
           final results = snapshot.data!;
@@ -56,7 +60,7 @@ class _VersionPageState extends State<VersionPage> {
           debugPrint("version $version");
           debugPrint("currentVersion $currentVersion");
           if (version == null) {
-            return Center(child: Text(AppLocalizations.of(context)!.noData));
+            return Center(child: Text(localisations.noData));
           }
 
           final updateAvailable = VersionComponent.isUpdateAvailable(
@@ -68,28 +72,31 @@ class _VersionPageState extends State<VersionPage> {
             padding: const EdgeInsets.all(16.0),
             child: ListView(
               children: [
-                InfoField(label: "Current version", value: currentVersion),
+                InfoField(
+                  label: localisations.currentVersion,
+                  value: currentVersion,
+                ),
                 const SizedBox(height: 12),
                 InfoField(
-                  label: "Latest version",
+                  label: localisations.latestVersion,
                   value: version.versionNumber,
                 ),
                 const SizedBox(height: 12),
                 InfoField(
-                  label: AppLocalizations.of(context)!.description,
+                  label: localisations.description,
                   value: version.description ?? "N/A",
                 ),
                 const SizedBox(height: 12),
                 InfoField(
-                  label: AppLocalizations.of(context)!.releaseDate,
+                  label: localisations.releaseDate,
                   value: version.dateRelease ?? "N/A",
                 ),
                 const SizedBox(height: 30),
                 if (updateAvailable)
                   Column(
                     children: [
-                      const Text(
-                        "A new version is available!",
+                      Text(
+                        localisations.newVersionAvailable,
                         style: TextStyle(
                           color: Colors.red,
                           fontWeight: FontWeight.bold,
@@ -100,7 +107,7 @@ class _VersionPageState extends State<VersionPage> {
                           version.urlAndroid != null &&
                           version.urlAndroid!.isNotEmpty)
                         DownloadButton(
-                          label: "Download",
+                          label: localisations.download,
                           icon: const Icon(Icons.android, color: Colors.green),
                           url: version.urlAndroid,
                         ),
@@ -109,15 +116,15 @@ class _VersionPageState extends State<VersionPage> {
                           version.urlIos != null &&
                           version.urlIos!.isNotEmpty)
                         DownloadButton(
-                          label: "Download",
+                          label: localisations.download,
                           icon: const Icon(Icons.apple, color: Colors.white),
                           url: version.urlIos,
                         ),
                     ],
                   )
                 else
-                  const Text(
-                    "Your application is up to date.",
+                  Text(
+                    localisations.appUpToDate,
                     style: TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,

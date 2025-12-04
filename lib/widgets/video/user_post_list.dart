@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 import '../../models/base_list_state.dart';
 import '../../models/forum_post.dart';
@@ -71,11 +72,11 @@ class _UserPostListState extends ConsumerState<UserPostList>
               delegate: SliverChildBuilderDelegate((_, index) {
                 if (index == state.list.length) {
                   if (state.finished) {
-                    return const Padding(
+                    return Padding(
                       padding: EdgeInsets.all(16),
                       child: Center(
                         child: Text(
-                          "没有更多了",
+                          AppLocalizations.of(context)!.noMore,
                           style: TextStyle(color: Colors.white),
                         ),
                       ),

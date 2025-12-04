@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 class SaveButtonEditUser extends StatelessWidget {
   final VoidCallback onPressed;
@@ -13,12 +14,13 @@ class SaveButtonEditUser extends StatelessWidget {
         backgroundColor: theme.colorScheme.onSecondary,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       onPressed: onPressed,
-      child: const Text("Save", style: TextStyle(fontSize: 18)),
+      child: Text(
+        AppLocalizations.of(context)!.save,
+        style: TextStyle(fontSize: 18),
+      ),
     );
   }
 }

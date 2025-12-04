@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 import '../../models/forum_post.dart';
 import '../../models/page_params.dart';
 import '../../models/api_response.dart';
 import '../provider/api_provider.dart';
 import '../widgets/empty_retry.dart';
 import '../widgets/forum/forum_post_card.dart';
-
 
 class ForumTagCategoryPage extends ConsumerStatefulWidget {
   final String title;
@@ -66,7 +66,7 @@ class _ForumTagCategoryPageState extends ConsumerState<ForumTagCategoryPage> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200 &&
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoading &&
         _hasMore) {
       _loadMore();
@@ -98,51 +98,46 @@ class _ForumTagCategoryPageState extends ConsumerState<ForumTagCategoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localisations = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: Colors.black,
-      ),
+      appBar: AppBar(title: Text(widget.title), backgroundColor: Colors.black),
       body: RefreshIndicator(
         color: Colors.white,
         onRefresh: _refresh,
         child: (_total == 0 && !_isLoading)
-            ? EmptyWithRetry(
-          onRetry: _refresh,
-        )
+            ? EmptyWithRetry(onRetry: _refresh)
             : ListView.builder(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: _posts.length + 1,
-          itemBuilder: (_, index) {
-            if (index == _posts.length) {
-              if (!_hasMore) {
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: Text(
-                      "没有更多了",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                );
-              }
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: _posts.length + 1,
+                itemBuilder: (_, index) {
+                  if (index == _posts.length) {
+                    if (!_hasMore) {
+                      return Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: Text(
+                            localisations.noMore,
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    }
 
-              return const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
-              );
-            }
+                    return const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                    );
+                  }
 
-            final post = _posts[index];
-            return ForumPostCard(
-              post: post,
-            );
-          },
-        ),
+                  final post = _posts[index];
+                  return ForumPostCard(post: post);
+                },
+              ),
       ),
     );
   }

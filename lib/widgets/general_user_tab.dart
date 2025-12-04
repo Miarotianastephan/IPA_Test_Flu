@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 import '../models/userinfo.dart';
 import 'empty_retry.dart';
@@ -60,10 +61,13 @@ class GeneralUserTab extends StatelessWidget {
         }
 
         if (finished && index == results.length + (loading ? 1 : 0)) {
-          return const Padding(
+          return Padding(
             padding: EdgeInsets.all(16),
             child: Center(
-              child: Text("没有更多了", style: TextStyle(color: Colors.white)),
+              child: Text(
+                AppLocalizations.of(context)!.noMore,
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           );
         }

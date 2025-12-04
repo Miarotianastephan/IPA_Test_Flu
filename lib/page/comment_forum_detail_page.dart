@@ -133,7 +133,7 @@ class _CommentForumDetailPageState
     }
   }
 
-  Widget _buildParentCommentHeader() {
+  Widget _buildParentCommentHeader(AppLocalizations localizations) {
     final user = widget.parentComment.commentUser;
     final toUser = widget.parentComment.commentToUser;
 
@@ -156,7 +156,7 @@ class _CommentForumDetailPageState
                 Row(
                   children: [
                     Text(
-                      user?.nickname ?? 'Unknown User',
+                      user?.nickname ?? localizations.unknownUser,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -222,7 +222,7 @@ class _CommentForumDetailPageState
             onPressed: () {
               Navigator.pop(context);
               ref
-           .read(
+                  .read(
                     forumCommentsProvider(widget.parentComment.postId).notifier,
                   )
                   .refresh();
@@ -242,7 +242,7 @@ class _CommentForumDetailPageState
                   bottom: BorderSide(color: Colors.grey[800]!, width: 1),
                 ),
               ),
-              child: _buildParentCommentHeader(),
+              child: _buildParentCommentHeader(localizations),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

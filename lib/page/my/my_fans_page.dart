@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 import '../../models/page_response.dart';
 import '../../models/userinfo.dart';
@@ -72,9 +73,10 @@ class _MyFansPageState extends ConsumerState<MyFansPage> {
 
   @override
   Widget build(BuildContext context) {
+    final localisations = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(title: const Text("我的粉丝")),
+      appBar: AppBar(title: Text(localisations.myFans)),
       body: GeneralUserTab(
         loading: _loading,
         results: _results,

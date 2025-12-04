@@ -71,78 +71,6 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
     });
   }
 
-  void checkLoginAndRun(String label, Future<void> Function() action) {
-    if (_userInfo?.isVisitor ?? true) {
-      showLoginNotification(label);
-    } else {
-      action();
-    }
-  }
-
-  void showLoginNotification(String label) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.video_library_outlined,
-                size: 56,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                "Sign in to $label",
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "Create an account or log in to $label.",
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  minimumSize: const Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LoginWithUsernamePage(),
-                    ),
-                  );
-                },
-                child: const Text(
-                  "Log In",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> getUserFromCache() async {
     final data = await StorageService.instance.getValue("user_info");
     if (data != null && data.isNotEmpty) {
@@ -182,8 +110,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
     );
   }
 
-  Widget _buildContent(BuildContext context, ForumPost post) {
-    final localisations = AppLocalizations.of(context)!;
+  Widget _buildContent(AppLocalizations localisations, ForumPost post) {
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.all(12),
@@ -210,12 +137,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   size: 22,
                 ),
                 onPressed: () {
-                  checkLoginAndRun(
-                    'like videos',
-                    ref
-                        .read(postDetailProvider(widget.postId).notifier)
-                        .toggleLike,
-                  );
+                  ref
+                      .read(postDetailProvider(widget.postId).notifier)
+                      .toggleLike();
                 },
               ),
               IconButton(
@@ -225,12 +149,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   size: 22,
                 ),
                 onPressed: () {
-                  checkLoginAndRun(
-                    'add videos to favorite',
-                    ref
-                        .read(postDetailProvider(widget.postId).notifier)
-                        .toggleFavorite,
-                  );
+                  ref
+                      .read(postDetailProvider(widget.postId).notifier)
+                      .toggleFavorite();
                 },
               ),
               IconButton(
@@ -244,12 +165,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   size: 22,
                 ),
                 onPressed: () {
-                  checkLoginAndRun(
-                    "unlike videos",
-                    ref
-                        .read(postDetailProvider(widget.postId).notifier)
-                        .toggleDownvote,
-                  );
+                  ref
+                      .read(postDetailProvider(widget.postId).notifier)
+                      .toggleDownvote();
                 },
               ),
             ],
@@ -456,12 +374,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                       size: 22,
                     ),
                     onPressed: () {
-                      checkLoginAndRun(
-                        "like videos",
-                        ref
-                            .read(postDetailProvider(widget.postId).notifier)
-                            .toggleLike,
-                      );
+                      ref
+                          .read(postDetailProvider(widget.postId).notifier)
+                          .toggleLike();
                     },
                   ),
                   Text(
@@ -481,12 +396,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                       size: 22,
                     ),
                     onPressed: () {
-                      checkLoginAndRun(
-                        "add videos to favorite",
-                        ref
-                            .read(postDetailProvider(widget.postId).notifier)
-                            .toggleFavorite,
-                      );
+                      ref
+                          .read(postDetailProvider(widget.postId).notifier)
+                          .toggleFavorite();
                     },
                   ),
                   Text(
@@ -508,12 +420,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                       size: 22,
                     ),
                     onPressed: () {
-                      checkLoginAndRun(
-                        "unlike videos",
-                        ref
-                            .read(postDetailProvider(widget.postId).notifier)
-                            .toggleDownvote,
-                      );
+                      ref
+                          .read(postDetailProvider(widget.postId).notifier)
+                          .toggleDownvote();
                     },
                   ),
                   Text(
@@ -581,6 +490,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(postDetailProvider(widget.postId));
     final post = state.post;
+    final localisations = AppLocalizations.of(context)!;
+
     return SafeArea(
       child: Scaffold(
         resizeToAvoidBottomInset: true,
@@ -641,12 +552,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
               FollowButton(
                 isFollowed: post?.user?.isFollowed ?? false,
                 onPressed: (v) async {
-                  checkLoginAndRun(
-                    "follow a creator",
-                    ref
-                        .read(postDetailProvider(widget.postId).notifier)
-                        .toggleFollow,
-                  );
+                  ref
+                      .read(postDetailProvider(widget.postId).notifier)
+                      .toggleFollow();
                 },
               ),
             ],
@@ -667,7 +575,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   if (state.error != null) {
                     return Center(
                       child: Text(
-                        "error：${state.error}",
+                        "${localisations.error}：${state.error}",
                         style: const TextStyle(color: Colors.red),
                       ),
                     );
@@ -685,7 +593,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                     );
                   }
 
-                  return _buildContent(context, post);
+                  return _buildContent(localisations, post);
                 },
               ),
             ),

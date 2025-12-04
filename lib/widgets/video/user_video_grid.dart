@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 
 import '../../models/userinfo.dart';
 import '../../models/video_list_state.dart';
@@ -25,8 +26,8 @@ class UserVideoGridState extends ConsumerState<UserVideoGrid>
   int? _activeHeroIndex;
   // late final StateNotifierProvider<UserVideoListNotifier, VideoListState> provider;
   // late final UserVideoListNotifier notifier;
-   StateNotifierProvider<UserVideoListNotifier, VideoListState>? provider;
-   UserVideoListNotifier? notifier;
+  StateNotifierProvider<UserVideoListNotifier, VideoListState>? provider;
+  UserVideoListNotifier? notifier;
   @override
   void initState() {
     super.initState();
@@ -44,9 +45,7 @@ class UserVideoGridState extends ConsumerState<UserVideoGrid>
     final state = ref.watch(provider!);
 
     if (!state.loading && state.list.isEmpty) {
-      return EmptyWithRetry(
-        onRetry: () => notifier!.fetch(refresh: true),
-      );
+      return EmptyWithRetry(onRetry: () => notifier!.fetch(refresh: true));
     }
 
     return RefreshIndicator(
@@ -177,10 +176,10 @@ class UserVideoGridState extends ConsumerState<UserVideoGrid>
                   child: state.loading
                       ? const CircularProgressIndicator()
                       : state.finished
-                      ? const Text(
-                    "没有更多了",
-                    style: TextStyle(color: Colors.white),
-                  )
+                      ? Text(
+                          AppLocalizations.of(context)!.noMore,
+                          style: TextStyle(color: Colors.white),
+                        )
                       : const SizedBox.shrink(),
                 ),
               ),

@@ -507,4 +507,49 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get noCommentsYet => 'Aún no hay comentarios';
+
+  @override
+  String get error => 'Error';
+
+  @override
+  String get watchEarnLiveMore => 'Ver\nGanar\nVivir\nMás';
+
+  @override
+  String get currentVersion => 'Versión actual';
+
+  @override
+  String get latestVersion => 'Última versión';
+
+  @override
+  String get newVersionAvailable => '¡Hay una nueva versión disponible!';
+
+  @override
+  String get download => 'Descargar';
+
+  @override
+  String get appUpToDate => 'Su aplicación está actualizada.';
+
+  @override
+  String get myFans => 'Mis Fans';
+
+  @override
+  String get userMissing => 'Usuario no encontrado';
+
+  @override
+  String get mustBeLoggedIn => 'Debe iniciar sesión.';
+
+  @override
+  String get save => 'Guardar';
+
+  @override
+  String get notProvided => 'No proporcionado';
+
+  @override
+  String get reachedEnd => 'Se ha llegado al final';
+
+  @override
+  String get systemEvent => 'Evento del sistema';
+
+  @override
+  String get botCommand => 'Comando del bot';
 }

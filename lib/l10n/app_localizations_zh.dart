@@ -499,4 +499,49 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noCommentsYet => '暂无评论';
+
+  @override
+  String get error => '错误';
+
+  @override
+  String get watchEarnLiveMore => '观看\n赚取\n生活\n更多';
+
+  @override
+  String get currentVersion => '当前版本';
+
+  @override
+  String get latestVersion => '最新版本';
+
+  @override
+  String get newVersionAvailable => '有新版本可用！';
+
+  @override
+  String get download => '下载';
+
+  @override
+  String get appUpToDate => '您的应用已是最新版本。';
+
+  @override
+  String get myFans => '我的粉丝';
+
+  @override
+  String get userMissing => '用户不存在';
+
+  @override
+  String get mustBeLoggedIn => '您必须登录。';
+
+  @override
+  String get save => '保存';
+
+  @override
+  String get notProvided => '未提供';
+
+  @override
+  String get reachedEnd => '已经到底啦';
+
+  @override
+  String get systemEvent => '系统事件';
+
+  @override
+  String get botCommand => '机器人命令';
 }

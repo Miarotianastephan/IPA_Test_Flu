@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/database/app_database.dart';
 import 'package:live_app/database/dao/conversation_dao.dart';
 import 'package:live_app/database/dao/message_dao.dart';
+import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/conversation_user.dart';
 import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/provider/conversation_list_provider.dart';
@@ -54,6 +55,7 @@ class NoticeHandler extends MessageHandler {
     SocketEnvelope env,
   ) async {
     final body = env.body.business;
+    final localizations = AppLocalizations.of(content)!;
 
     if (body.hasSystem()) {
       final sys = body.system;
@@ -69,7 +71,7 @@ class NoticeHandler extends MessageHandler {
 
       if (im.hasEvent()) {
         return InAppNotice(
-          title: "系统事件",
+          title: localizations.systemEvent,
           content: im.event.description,
           onTap: () {},
         );
@@ -82,7 +84,7 @@ class NoticeHandler extends MessageHandler {
 
       if (im.hasBotCommand()) {
         return InAppNotice(
-          title: "机器人命令",
+          title: localizations.botCommand,
           content: im.botCommand.command,
           onTap: () {},
         );
@@ -142,6 +144,7 @@ class NoticeHandler extends MessageHandler {
   ) async {
     // 先拿到 messageService
     final messageService = ref.read(messageServiceProvider);
+    final localizations = AppLocalizations.of(content)!;
 
     // 根据 messageId 请求会话详情（包含这条消息）
     final rawMessageId = env.meta.messageId; // 这是一个 String
@@ -151,7 +154,7 @@ class NoticeHandler extends MessageHandler {
       // messageId 异常情况，直接用 socket 里的内容构造一个简单通知
       final fallbackContent = env.body.business.im.chat.text;
       return InAppNotice(
-        title: "新消息",
+        title: localizations.newMessage,
         content: fallbackContent,
         avatarUrl: null,
         time: DateTime.now(),
@@ -166,7 +169,7 @@ class NoticeHandler extends MessageHandler {
       // 后端没返回会话，仍然至少弹一个通知
       final fallbackContent = env.body.business.im.chat.text;
       return InAppNotice(
-        title: "新消息",
+        title: localizations.newMessage,
         content: fallbackContent,
         avatarUrl: null,
         time: DateTime.now(),
@@ -232,7 +235,8 @@ class NoticeHandler extends MessageHandler {
       }
     }
 
-    final senderNickname = senderUser?.user?.nickname ?? "新消息";
+    final senderNickname =
+        senderUser?.user?.nickname ?? localizations.newMessage;
     final senderAvatar = senderUser?.user?.avatar ?? "";
 
     final textContent = env.body.business.im.chat.text;
@@ -248,7 +252,9 @@ class NoticeHandler extends MessageHandler {
       );
 
       // 把消息加到当前聊天窗口
-      controller.addMessageToStateOnly(lastMsg!.copyWith(isRead: false, isSelf: false));
+      controller.addMessageToStateOnly(
+        lastMsg!.copyWith(isRead: false, isSelf: false),
+      );
 
       // 不再弹通知
       return null;

@@ -1,15 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show NetworkAssetBundle;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
     as fln;
 import 'package:firebase_messaging/firebase_messaging.dart' as fcm;
 import 'package:huawei_push/huawei_push.dart' as hms;
+import 'package:path_provider/path_provider.dart';
 import 'package:pushy_flutter/pushy_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../main.dart';
 import 'version_component.dart';
 
 class NotificationService {
+  NotificationService._(); 
+
+  static final NotificationService instance = NotificationService._();
+
   final fcm.FirebaseMessaging _messaging = fcm.FirebaseMessaging.instance;
   static final fln.FlutterLocalNotificationsPlugin localNotifications =
       fln.FlutterLocalNotificationsPlugin();
@@ -19,18 +25,12 @@ class NotificationService {
   bool _usingFCM = false;
   String? _token;
 
-  void _handleInternalRoute(String payload) {
-    final clean = payload.replaceFirst("route:", "");
-    final uri = Uri.parse(clean);
-    final route = uri.path;
-    final params = uri.queryParameters;
+  final Map<int, int> _notifIds = {}; 
+  final Map<int, String> _notifBodies = {};
 
-    navigatorKey.currentState?.pushNamed(
-      route,
-      arguments: params,
-    );
-  }
-
+  // ----------------------------
+  // INIT
+  // ----------------------------
   Future<void> init() async {
     const androidSettings = fln.AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -47,107 +47,11 @@ class NotificationService {
 
     await localNotifications.initialize(
       initSettings,
-      onDidReceiveNotificationResponse:
-          (fln.NotificationResponse response) async {
-        final payload = response.payload;
-
-        if (payload != null && payload.isNotEmpty) {
-          try {
-            final uri = Uri.parse(payload);
-            if (await canLaunchUrl(uri)) {
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-              return;
-            }
-
-            if (payload.startsWith("route:")) {
-              _handleInternalRoute(payload);
-              return;
-            }
-
-          } catch (e) {
-            debugPrint("Error while opening payload: $e");
-          }
-        }
-      },
+      onDidReceiveNotificationResponse: _onNotificationClick,
     );
 
-    if (Platform.isAndroid) {
-      try {
-        await _messaging.requestPermission();
-        _usingFCM = true;
-        _token = await _messaging.getToken();
+    await _initPushServices();
 
-        _listenForegroundMessages();
-        _listenOpenedAppMessages();
-        _listenBackgroundMessages();
-      } catch (e) {
-        try {
-          String deviceToken = await Pushy.register();
-          _token = deviceToken;
-
-          Pushy.listen();
-
-          Pushy.setNotificationListener((Map<String, dynamic> data) {
-            final String? title = data['title'] ?? "Notification";
-            final String? body = data['message'];
-
-            showCustomLocalNotification(
-              title ?? "Notification",
-              body ?? "",
-              "",
-            );
-          });
-          _usingFCM = false;
-        } catch (e) {
-          _usingFCM = false;
-
-          hms.Push.getTokenStream.listen((event) {
-            _token = event;
-          });
-
-          hms.Push.getToken("");
-        }
-      }
-    }
-    if (Platform.isIOS) {
-      try {
-        await _messaging.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
-        _token = await _messaging.getAPNSToken();
-        await _messaging.getToken();
-
-        _listenForegroundMessages();
-        _listenOpenedAppMessages();
-        _listenBackgroundMessages();
-
-        _usingFCM = true;
-      } catch (e) {
-        try {
-          String deviceToken = await Pushy.register();
-          _token = deviceToken;
-
-          Pushy.listen();
-
-          Pushy.setNotificationListener((Map<String, dynamic> data) {
-            final String? title = data['title'] ?? "Notification";
-            final String? body = data['message'];
-
-            showCustomLocalNotification(
-              title ?? "Notification",
-              body ?? "",
-              "",
-            );
-          });
-          _usingFCM = false;
-        } catch (e) {
-          debugPrint("Error Notif Ios : $e");
-        }
-      }
-    }
     try {
       await _version.check(localNotifications);
     } catch (e) {
@@ -155,59 +59,220 @@ class NotificationService {
     }
   }
 
-  void _listenForegroundMessages() {
-    fcm.FirebaseMessaging.onMessage.listen((fcm.RemoteMessage message) {
-      _showLocalNotification(message);
-    });
+  // ----------------------------
+  // HANDLE NOTIFICATION CLICK
+  // ----------------------------
+  Future<void> _onNotificationClick(fln.NotificationResponse response) async {
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final uri = Uri.parse(payload);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      if (payload.startsWith("route:")) {
+        final clean = payload.replaceFirst("route:", "");
+        final uri = Uri.parse(clean);
+        final route = uri.path;
+        final params = uri.queryParameters;
+
+        final convIdStr = params['conversationId'];
+        if (convIdStr != null) {
+          final convId = int.tryParse(convIdStr);
+          if (convId != null) {
+            _notifBodies.remove(convId);
+            _notifIds.remove(convId);
+          }
+        }
+
+        navigatorKey.currentState?.pushNamed(route, arguments: params);
+        return;
+      }
+    } catch (e) {
+      debugPrint("Error while opening payload: $e");
+    }
   }
 
-  void _listenOpenedAppMessages() {
-    fcm.FirebaseMessaging.onMessageOpenedApp.listen((
-      fcm.RemoteMessage message,
-    ) {
-      debugPrint("App open in FCM: ${message.notification?.title}");
-    });
+  // ----------------------------
+  // PUSH SERVICES INIT
+  // ----------------------------
+  Future<void> _initPushServices() async {
+    if (Platform.isAndroid) {
+      try {
+        await _messaging.requestPermission();
+        _usingFCM = true;
+        _token = await _messaging.getToken();
+        _listenFCMMessages();
+      } catch (_) {
+        await _initPushyOrHMS();
+      }
+    } else if (Platform.isIOS) {
+      try {
+        await _messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        _token = await _messaging.getAPNSToken();
+        await _messaging.getToken();
+        _listenFCMMessages();
+        _usingFCM = true;
+      } catch (_) {
+        await _initPushyOrHMS();
+      }
+    }
   }
 
-  void _listenBackgroundMessages() {
+  Future<void> _initPushyOrHMS() async {
+    try {
+      String deviceToken = await Pushy.register();
+      _token = deviceToken;
+      Pushy.listen();
+      Pushy.setNotificationListener((Map<String, dynamic> data) {
+        final title = data['title'] ?? "Notification";
+        final body = data['message'] ?? "";
+        showCustomLocalNotification(title, body, "");
+      });
+      _usingFCM = false;
+    } catch (_) {
+      _usingFCM = false;
+      hms.Push.getTokenStream.listen((event) {
+        _token = event;
+      });
+      hms.Push.getToken("");
+    }
+  }
+
+  void _listenFCMMessages() {
+    fcm.FirebaseMessaging.onMessage.listen(_showFCMNotification);
+    fcm.FirebaseMessaging.onMessageOpenedApp.listen((msg) {
+      debugPrint("FCM open: ${msg.notification?.title}");
+    });
     fcm.FirebaseMessaging.onBackgroundMessage(
       _firebaseMessagingBackgroundHandler,
     );
   }
 
-  Future<void> _showLocalNotification(fcm.RemoteMessage message) async {
+  Future<void> _showFCMNotification(fcm.RemoteMessage message) async {
     final notification = message.notification;
     if (notification == null) return;
-
     showCustomLocalNotification(
       notification.title ?? "Notification Firebase",
       notification.body ?? "",
       "",
     );
   }
+  
+Future<fln.FilePathAndroidBitmap?> loadAvatarFromUrl(String url) async {
+  try {
+    final bytes = (await NetworkAssetBundle(Uri.parse(url)).load(url))
+        .buffer
+        .asUint8List();
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/avatar_${DateTime.now().microsecondsSinceEpoch}.png');
+    await file.writeAsBytes(bytes);
+    return fln.FilePathAndroidBitmap(file.path);
+  } catch (e) {
+    debugPrint("Failed to load avatar from URL: $e");
+    return null;
+  }
+}
 
+  // ----------------------------
+  // SHOW / UPDATE CHAT NOTIFICATION
+  // ----------------------------
+Future<void> showOrUpdateChatNotification({
+  required int conversationId,
+  required String title,
+  required String message,
+  required String payload,
+  String? imageUrl,
+}) async {
+  final service = NotificationService.instance;
+
+  final notifId =
+      service._notifIds[conversationId] ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+  final oldBody = service._notifBodies[conversationId];
+  final newBody = oldBody == null ? message : "$oldBody\n$message";
+
+  service._notifBodies[conversationId] = newBody;
+  service._notifIds[conversationId] = notifId;
+
+  fln.FilePathAndroidBitmap? avatar;
+  if (imageUrl != null && imageUrl.isNotEmpty) {
+    avatar = await loadAvatarFromUrl(imageUrl);
+  }
+
+  final person = fln.Person(name: title, key: 'user_$conversationId');
+
+  final messages = newBody
+      .split('\n')
+      .map((text) => fln.Message(text, DateTime.now(), person))
+      .toList();
+
+  final android = fln.AndroidNotificationDetails(
+    'chat_channel',
+    'Chat Messages',
+    importance: fln.Importance.high,
+    priority: fln.Priority.high,
+    autoCancel: true,
+    enableVibration: true,
+    playSound: true,
+    category: fln.AndroidNotificationCategory.message,
+    largeIcon: avatar,
+    styleInformation: fln.MessagingStyleInformation(
+      person,
+      groupConversation: false,
+      conversationTitle: title,
+      messages: messages,
+    ),
+  );
+
+  const ios = fln.DarwinNotificationDetails(
+    presentAlert: true,
+    presentSound: true,
+    presentBadge: true,
+  );
+
+  final details = fln.NotificationDetails(android: android, iOS: ios);
+
+  await localNotifications.show(
+    notifId,
+    title,
+    message,
+    details,
+    payload: payload,
+  );
+}
+
+  // ----------------------------
+  // SHOW SIMPLE NOTIFICATION
+  // ----------------------------
   static Future<void> showCustomLocalNotification(
     String title,
     String body,
-    payload,
+    String payload,
   ) async {
-    const androidDetails = fln.AndroidNotificationDetails(
+    const android = fln.AndroidNotificationDetails(
       'default_channel',
       'Notifications',
       importance: fln.Importance.high,
       priority: fln.Priority.high,
     );
 
-    const iosDetails = fln.DarwinNotificationDetails(
+    const ios = fln.DarwinNotificationDetails(
       presentAlert: true,
       presentSound: true,
       presentBadge: true,
     );
 
-    const details = fln.NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    const details = fln.NotificationDetails(android: android, iOS: ios);
+
     await localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,
@@ -220,6 +285,9 @@ class NotificationService {
   String get provider => _usingFCM ? "FCM" : "HMS";
 }
 
+// ----------------------------
+// BACKGROUND HANDLER
+// ----------------------------
 Future<void> _firebaseMessagingBackgroundHandler(
   fcm.RemoteMessage message,
 ) async {

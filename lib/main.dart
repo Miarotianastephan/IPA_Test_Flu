@@ -23,8 +23,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await dotenv.load(fileName: ".env");
-  final notificationService = NotificationService();
-  await notificationService.init();
+  await NotificationService.instance.init();
   MediaKit.ensureInitialized();
   await initWindowManager();
   await StorageService.instance.init();

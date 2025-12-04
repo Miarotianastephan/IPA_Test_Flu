@@ -116,12 +116,14 @@ class WebSocketManager {
         final userJson = jsonEncode(message.sender?.toJson());
         final encoded = Uri.encodeComponent(userJson);
 
-        NotificationService.showCustomLocalNotification(
-          message.sender!.nickname ?? "New message",
-          message.content,
-          "route:/ChatDetailPage?user=$encoded",
+        NotificationService.instance.showOrUpdateChatNotification(
+          conversationId: message.conversationId,
+          title: message.sender?.nickname ?? "Message",
+          message: message.content,
+          payload:
+              "route:/ChatDetailPage?conversationId=${message.conversationId}&user=$encoded",
+              imageUrl: message.sender?.avatar,
         );
-
 
         onMessageSent?.call(message);
       } catch (e) {

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:live_app/models/conversation.dart';
 import 'package:live_app/models/message.dart';
 import 'package:live_app/models/message_inbox.dart';
@@ -96,7 +97,7 @@ class MessageService extends BaseService {
   Future<ApiResponse<Conversation>> getConversationBetween(int userId) {
     return post<Conversation>(
       MessageApi.conversationBetween,
-      body: {"id": userId},
+      body: {"id": userId.toString()},
       fromJson: (json) => Conversation.fromJson(json),
     );
   }
@@ -185,7 +186,7 @@ class MessageService extends BaseService {
       MessageApi.sendMessage,
       body: {
         "conversation_id": conversationId,
-        "to_user_id": parseInt(toUserId),
+        "to_user_id": toUserId,
         "content": content,
         "message_type": messageType,
         "is_group": isGroup,

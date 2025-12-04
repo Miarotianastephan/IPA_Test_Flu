@@ -94,12 +94,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
 
     return VisibilityDetector(
       key: Key("user_detail_${widget.user.id}"),
-      onVisibilityChanged: (info) {
-        // if (info.visibleFraction == 1) {
-        //   // ref.read(userProvider.notifier).loadUserDetail(widget.user.id);
-        //   ref.read(videoProvider.notifier).fetch(refresh: true);
-        // }
-      },
+      onVisibilityChanged: (info) {},
       child: DefaultTabController(
         length: 2,
         child: Stack(

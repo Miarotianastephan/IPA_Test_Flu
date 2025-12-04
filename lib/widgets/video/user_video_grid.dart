@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/widgets/video/adaptive_video_cover.dart';
+import 'package:waterfall_flow/waterfall_flow.dart';
 
 import '../../models/userinfo.dart';
 import '../../models/video_list_state.dart';
 import '../../page/short_video_detail_page.dart';
 import '../../provider/user_videos_provider.dart';
 import '../empty_retry.dart';
-import '../encrypted_image.dart';
 
 class UserVideoGrid extends ConsumerStatefulWidget {
   final UserInfo user;
@@ -66,13 +67,13 @@ class UserVideoGridState extends ConsumerState<UserVideoGrid>
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.all(4),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 2,
-                  mainAxisSpacing: 2,
-                  childAspectRatio: 0.7,
-                ),
+              sliver: SliverWaterfallFlow(
+                gridDelegate:
+                    const SliverWaterfallFlowDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 5,
+                      mainAxisSpacing: 5,
+                    ),
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final video = state.list[index];
                   return GestureDetector(
@@ -116,53 +117,56 @@ class UserVideoGridState extends ConsumerState<UserVideoGrid>
                         });
                       });
                     },
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Hero(
-                          tag: "video_${video.id}", // 保证 tag 唯一
-                          placeholderBuilder: (context, heroSize, child) {
-                            return child;
-                          },
-                          child: _activeHeroIndex == index
-                              ? Container(color: Colors.transparent)
-                              : EncryptedImage(
-                                  url: video.cover,
-                                  fit: BoxFit.cover,
-                                ),
-                        ),
-                        Positioned(
-                          bottom: 6,
-                          left: 6,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.favorite,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "${video.likeCount}",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Stack(
+                        children: [
+                          Hero(
+                            tag: "video_${video.id}", // 保证 tag 唯一
+                            placeholderBuilder: (context, heroSize, child) {
+                              return child;
+                            },
+                            child: _activeHeroIndex == index
+                                ? Container(color: Colors.transparent)
+                                : AdaptiveVideoCover(
+                                    url: video.cover,
+                                    videoType: video.type,
+                                    fit: BoxFit.cover,
                                   ),
-                                ),
-                              ],
+                          ),
+                          Positioned(
+                            bottom: 6,
+                            left: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.favorite,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${video.likeCount}",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 }, childCount: state.list.length),

@@ -195,11 +195,7 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
                     .read(conversationListProvider.notifier)
                     .loadConversationsAndHistory(isRefresh: true);
               },
-              child: convState.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    )
-                  : (conversations.isEmpty)
+              child: (conversations.isEmpty)
                   ? EmptyWidget(
                       icon: Icons.chat_bubble_outline_outlined,
                       message: localisations.noConversationFound,

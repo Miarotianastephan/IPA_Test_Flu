@@ -7,19 +7,13 @@ import '../page/chat_detail_page.dart';
 final Map<String, WidgetBuilder> appRoutes = {
   '/ChatDetailPage': (context) {
     final args = ModalRoute.of(context)!.settings.arguments as Map?;
-    debugPrint("args : $args");
-
-    final userEncoded = args?['user'];
-
-    if (userEncoded == null) {
+    final userJson = args?['user'];
+    if (userJson == null) {
       return Scaffold(
         body: Center(child: Text(AppLocalizations.of(context)!.userMissing)),
       );
     }
-
-    final userJson = Uri.decodeComponent(userEncoded);
     final user = UserInfo.fromJson(jsonDecode(userJson));
-
     return ChatDetailPage(user: user);
   },
 };

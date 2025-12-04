@@ -52,3 +52,12 @@ jobs:
           tag: v1.0-${{ steps.timestamp.outputs.timestamp }}
           overwrite: true
           body: "iOS Build - ${{ steps.timestamp.outputs.timestamp }}"
+      - name: Upload binaries to latest-ios release (lien stable)
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/ios/iphoneos/FlutterIpaExport.ipa
+          tag: latest-ios
+          release_name: "Latest iOS build"
+          overwrite: true
+          body: "Dernier build iOS - ${{ steps.timestamp.outputs.timestamp }}"

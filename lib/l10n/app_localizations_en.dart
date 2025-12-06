@@ -548,4 +548,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get botCommand => 'Bot Command';
+
+  @override
+  String get showLess => 'Show less';
+
+  @override
+  String get checkForUpdates => 'Check for updates';
+
+  @override
+  String get version => 'Version';
+
+  @override
+  String get noUpdateAvailable => 'No update available';
 }

@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:live_app/models/first_open.dart';
 import 'package:live_app/widgets/image_sequence_player.dart';
 import 'package:live_app/widgets/loading_dots.dart';
 
@@ -13,6 +14,7 @@ import '../config/storage_config.dart';
 import '../models/api_response.dart';
 import '../models/userinfo.dart';
 import '../provider/api_provider.dart';
+import '../provider/current_user_provider.dart';
 import '../utils/device_info_helper.dart';
 import 'home.dart';
 
@@ -45,19 +47,34 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         userInfo = await userService.refreshToken();
       } else {
         // 没有 token，走游客登录
-        userInfo = await visitorLogin(userService);
+        final res = await recordFirstOpen();
+
+        userInfo = await visitorLogin(
+          userService,
+          res!.data!.idFirstOpen!,
+          res.data?.userId,
+        );
       }
     } catch (err) {
       debugPrint("刷新 token 失败，尝试游客模式: $err");
-      userInfo = await visitorLogin(userService);
+      final res = await recordFirstOpen();
+      if (res != null && res.success && res.data != null) {
+        userInfo = await visitorLogin(
+          userService,
+          res.data!.idFirstOpen!,
+          res.data!.userId,
+        );
+      }
     }
 
     if (userInfo != null) {
-      saveUserInfoWithToken(userInfo);
+      await saveUserInfoWithToken(userInfo);
+      if (userInfo.data != null) {
+        ref.read(currentUserProvider.notifier).setUser(userInfo.data!);
+      }
     }
-
-    await getAppConfig();
-    await recordFirstOpen();
+    // future featuere
+    // await getAppConfig();
   }
 
   Future<void> saveUserInfoWithToken(ApiResponse<UserInfo> userInfo) async {
@@ -73,9 +90,13 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     }
   }
 
-  Future<ApiResponse<UserInfo>?> visitorLogin(UserService userService) async {
+  Future<ApiResponse<UserInfo>?> visitorLogin(
+    UserService userService,
+    int idFirstOpen, [
+    String? userid,
+  ]) async {
     try {
-      return await userService.visitorLogin();
+      return await userService.visitorLogin(idFirstOpen, userid: userid);
     } catch (e, st) {
       debugPrint("游客登录失败: $e");
       debugPrintStack(stackTrace: st);
@@ -99,28 +120,18 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     }
   }
 
-  Future<void> recordFirstOpen() async {
+  Future<ApiResponse<FirstOpen>?> recordFirstOpen() async {
     try {
-      final bool? firstOpenSent = StorageService.instance.getValue<bool>(
-        'first_open_sent',
-      );
-
-      if (firstOpenSent == true) {
-        debugPrint('[FirstOpen] - Already sent, skipping analytics');
-        return;
-      }
-
       final deviceData = await DeviceInfoHelper.instance.getFirstOpenData();
-      debugPrint('[FirstOpen] - Device data: $deviceData');
 
       final userService = ref.read(userServiceProvider);
-      await userService.firstOpen(deviceData);
+      final apiResponse = await userService.firstOpen(deviceData);
 
-      await StorageService.instance.setValue('first_open_sent', true);
-      debugPrint('[FirstOpen] - Analytics sent successfully and flag saved');
+      return apiResponse;
     } catch (e, st) {
-      debugPrint('[FirstOpen] ✗ Error recording first open: $e');
+      debugPrint('[FirstOpen] ✗ Error: $e');
       debugPrintStack(stackTrace: st);
+      return null;
     }
   }
 

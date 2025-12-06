@@ -198,9 +198,24 @@ class ForumPostCard extends StatelessWidget {
                                                 fit: StackFit.expand,
                                                 children: [
                                                   Image.network(
-                                                    attachment.thumbnailUrl ??
-                                                        "https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg",
+                                                    (attachment.thumbnailUrl ??
+                                                                '')
+                                                            .isEmpty
+                                                        ? 'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg'
+                                                        : attachment
+                                                              .thumbnailUrl!,
                                                     fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          return Image.network(
+                                                            'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg',
+                                                            fit: BoxFit.cover,
+                                                          );
+                                                        },
                                                   ),
                                                   Container(
                                                     color: Colors.black26,

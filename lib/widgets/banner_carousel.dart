@@ -1,9 +1,5 @@
-
-
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import 'encrypted_image.dart';
 
 class BannerItem {
@@ -16,7 +12,10 @@ class BannerItem {
 class BannerCarousel extends StatefulWidget {
   final List<BannerItem> items;
 
-  const BannerCarousel({super.key, required this.items});
+  const BannerCarousel({
+    super.key,
+    required this.items,
+  });
 
   @override
   BannerCarouselState createState() => BannerCarouselState();
@@ -24,56 +23,81 @@ class BannerCarousel extends StatefulWidget {
 
 class BannerCarouselState extends State<BannerCarousel> {
   late final PageController _pageController;
-  late int _currentPage;
-  Timer? _timer;
+  int _currentIndex = 0;
+  bool _loadingNext = false;
+
+  static const _infiniteCenter = 10000;
 
   @override
   void initState() {
     super.initState();
-    _currentPage = 0;
-    _pageController = PageController(initialPage: _currentPage, viewportFraction: 1.0);
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (_pageController.hasClients) {
-        final currentPage = _pageController.page ?? _currentPage.toDouble();
-        int nextPage = currentPage.toInt() + 1;
-        _pageController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
+    _pageController = PageController(initialPage: _infiniteCenter);
+    _preloadNextImage();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
 
+  void _preloadNextImage() {
+    if (_loadingNext) return;
+    _loadingNext = true;
+
+    final nextIndex = (_currentIndex + 1) % widget.items.length;
+    final nextUrl = widget.items[nextIndex].img;
+
+    final imageProvider = NetworkImage(nextUrl);
+    final stream = imageProvider.resolve(const ImageConfiguration());
+
+    late ImageStreamListener listener;
+    listener = ImageStreamListener((_, __) {
+      stream.removeListener(listener);
+      _loadingNext = false;
+
+      if (mounted && _pageController.hasClients) {
+        Future.delayed(const Duration(seconds: 3), () {
+          if (!mounted) return;
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOut,
+          );
+        });
+      }
+    });
+
+    stream.addListener(listener);
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return PageView.builder(
       controller: _pageController,
       itemCount: null,
-      onPageChanged: (index) {
+      onPageChanged: (page) {
         setState(() {
-          _currentPage = index;
+          _currentIndex = page % widget.items.length;
         });
+        _preloadNextImage();
       },
-      itemBuilder: (context, i) {
-        final index = i % widget.items.length;
-        final item = widget.items[index];
+      itemBuilder: (context, index) {
+        final item = widget.items[index % widget.items.length];
+
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: GestureDetector(
-              onTap: () => {
-               
-              },
-              child: EncryptedImage(url: item.img, fit: BoxFit.cover),
+              onTap: () => {},
+              child: EncryptedImage(
+                url: item.img,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         );

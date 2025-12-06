@@ -1,17 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/models/video_info.dart';
 import 'package:live_app/provider/api_provider.dart';
-import 'package:live_app/provider/current_user_provider.dart';
+import 'package:live_app/provider/cureent_video_user_provider.dart';
 import 'package:live_app/widgets/comment/comments_modal.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../api/services/video_service.dart';
 import '../../page/comment_detail_page.dart';
-import '../../provider/cureent_video_user_provider.dart';
 import 'video_overlay_actions.dart';
 
 class ShortVideoItemController extends ChangeNotifier {
@@ -82,6 +83,45 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
   late AnimationController _transitionController;
   late final VideoService videoService;
 
+  bool _controlsVisible = true;
+  Timer? _hideTimer;
+  static const _controlsFadeDuration = Duration(milliseconds: 250);
+  static const _controlsInactivity = Duration(seconds: 3);
+
+  void _showControls({bool restartTimer = true}) {
+    if (!_controlsVisible) {
+      setState(() => _controlsVisible = true);
+    }
+    if (restartTimer) _scheduleAutoHide();
+  }
+
+  void _hideControls() {
+    if (_controlsVisible) {
+      setState(() => _controlsVisible = false);
+    }
+    _cancelAutoHide();
+  }
+
+  void _toggleControls() {
+    if (_controlsVisible) {
+      _hideControls();
+    } else {
+      _showControls();
+    }
+  }
+
+  void _scheduleAutoHide() {
+    _cancelAutoHide();
+    _hideTimer = Timer(_controlsInactivity, () {
+      if (!_modalOpen) _hideControls();
+    });
+  }
+
+  void _cancelAutoHide() {
+    _hideTimer?.cancel();
+    _hideTimer = null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -117,23 +157,28 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       videoService = ref.read(videoServiceProvider);
-      ref.read(currentUserProvider.notifier).state = widget.videoInfo.user;
+      ref.read(currentVideoUserProvider.notifier).state = widget.videoInfo.user;
     });
 
     _player = Player(configuration: const PlayerConfiguration(muted: false));
 
-    _player.open(
-      Media(widget.videoInfo.url),
-      play: kIsWeb ? true : false, 
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _player.open(Media(widget.videoInfo.url), play: false);
+      await _player.seek(Duration.zero);
+      await _player.play();
+    });
 
     _videoController = VideoController(_player);
+    _controlsVisible = true;
+    _scheduleAutoHide();
   }
 
-  Future<void> _showModal(height) async {
+  Future<void> _showModal(double height) async {
     setState(() {
       _modalOpen = true;
+      _controlsVisible = false;
     });
+    _cancelAutoHide();
     widget.onShowComment?.call();
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
@@ -149,7 +194,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
           animation: _transitionController,
           builder: (context, child) {
             final t = _transitionController.value;
-            final offset = (1 - t) * height;// 初始在底部，逐渐上移
+            final offset = (1 - t) * height; // 初始在底部，逐渐上移
             return Positioned(
               left: 0,
               right: 0,
@@ -169,6 +214,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                       entry.remove();
                       setState(() {
                         _modalOpen = false;
+                        _showControls();
                       });
                       widget.onHideComment?.call();
                     });
@@ -186,6 +232,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                       entry.remove();
                       setState(() {
                         _modalOpen = false;
+                        _showControls();
                       });
                       widget.onHideComment?.call();
                     },
@@ -201,6 +248,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                       entry.remove();
                       setState(() {
                         _modalOpen = false;
+                        _showControls();
                       });
                       widget.onHideComment?.call();
 
@@ -228,8 +276,22 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
 
   @override
   void dispose() {
+    _cancelAutoHide();
     _player.dispose();
+    _transitionController.dispose();
     super.dispose();
+  }
+
+  Widget _circleButton(IconData icon, {double size = 30, double padding = 20}) {
+    return Container(
+      width: size + padding,
+      height: size + padding,
+      decoration: const BoxDecoration(
+        color: Color.fromARGB(95, 0, 0, 0),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: Colors.white, size: size),
+    );
   }
 
   @override
@@ -248,6 +310,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
           await _transitionController.reverse();
           setState(() {
             _modalOpen = false;
+            _showControls();
           });
           widget.onHideComment?.call();
         }
@@ -281,13 +344,12 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                       builder: (context, child) {
                         final t = _transitionController.value;
 
-                      
                         final containerHeight =
                             availableHeight * (1 - t) +
                             (availableHeight * 0.4 - mediaQuery.padding.top) *
                                 t;
 
-                       //竖屏全屏：视频铺满整个容器
+                        //竖屏全屏：视频铺满整个容器
                         return SizedBox(
                           height: containerHeight,
                           width: double.infinity,
@@ -296,13 +358,11 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                             controls: null,
                             fit: video.type == 2
                                 ? BoxFit.contain
-                                : BoxFit
-                                      .cover,
+                                : BoxFit.cover,
                           ),
                         );
                       },
                     ),
-
                     AnimatedBuilder(
                       animation: _transitionController,
                       builder: (context, child) {
@@ -326,7 +386,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                   child: Container(
                     width: 60,
                     height: 60,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.black54,
                       shape: BoxShape.circle,
                     ),
@@ -343,11 +403,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () {
-                  if (_player.state.playing) {
-                    _player.pause();
-                  } else {
-                    _player.play();
-                  }
+                  _toggleControls();
                 },
                 child: Center(
                   child: StreamBuilder<bool>(
@@ -356,82 +412,54 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
                       final isPlaying = snapshot.data ?? false;
 
                       return AnimatedOpacity(
-                        opacity: isPlaying ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                           
-                            GestureDetector(
-                              onTap: () {
-                                final pos = _player.state.position;
-                                final newPos =
-                                    pos - const Duration(seconds: 10);
-                                _player.seek(
-                                  newPos < Duration.zero
-                                      ? Duration.zero
-                                      : newPos,
-                                );
-                              },
-                              child: Container(
-                                width: 45,
-                                height: 45,
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(95, 0, 0, 0),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.replay_10,
-                                  color: Colors.white,
-                                  size: 25,
-                                ),
+                        opacity: _controlsVisible ? 1.0 : 0.0,
+                        duration: _controlsFadeDuration,
+                        curve: Curves.easeInOut,
+                        child: IgnorePointer(
+                          ignoring: !_controlsVisible,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  _showControls();
+                                  final pos = _player.state.position;
+                                  final newPos =
+                                      pos - const Duration(seconds: 10);
+                                  _player.seek(
+                                    newPos < Duration.zero
+                                        ? Duration.zero
+                                        : newPos,
+                                  );
+                                },
+                                child: _circleButton(Icons.replay_10),
                               ),
-                            ),
-
-                            const SizedBox(width: 20),
-
-                          
-                            Container(
-                              width: 70,
-                              height: 70,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(95, 0, 0, 0),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                isPlaying ? Icons.pause : Icons.play_arrow,
-                                color: Colors.white,
-                                size: 40,
-                              ),
-                            ),
-
-                            const SizedBox(width: 20),
-
-                          
-                            GestureDetector(
-                              onTap: () {
-                                final pos = _player.state.position;
-                                final dur = _player.state.duration;
-
-                                final newPos =
-                                    pos + const Duration(seconds: 10);
-                                _player.seek(newPos > dur ? dur : newPos);
-                              },
-                              child: Container(
-                                width: 45,
-                                height: 45,
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(95, 0, 0, 0),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.forward_10,
-                                  color: Colors.white,
-                                  size: 25,
+                              const SizedBox(width: 15),
+                              GestureDetector(
+                                onTap: () {
+                                  _showControls();
+                                  _player.playOrPause();
+                                },
+                                child: _circleButton(
+                                  isPlaying ? Icons.pause : Icons.play_arrow,
+                                  size: 50,
+                                  padding: 30,
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 15),
+                              GestureDetector(
+                                onTap: () {
+                                  _showControls();
+                                  final pos = _player.state.position;
+                                  final dur = _player.state.duration;
+                                  final newPos =
+                                      pos + const Duration(seconds: 10);
+                                  _player.seek(newPos > dur ? dur : newPos);
+                                },
+                                child: _circleButton(Icons.forward_10),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -443,7 +471,7 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
             Positioned(
               left: 0,
               right: 0,
-              bottom: 0,
+              bottom: 4,
               child: StreamBuilder<Duration>(
                 stream: _player.stream.position,
                 builder: (context, snapshot) {
@@ -452,29 +480,49 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
 
                   final progress = duration.inMilliseconds == 0
                       ? 0.0
-                      : position.inMilliseconds / duration.inMilliseconds;
+                      : position.inMilliseconds /
+                            duration.inMilliseconds.clamp(1, 1 << 31);
 
                   return GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onHorizontalDragUpdate: (details) {
+                      _showControls();
                       final box = context.findRenderObject() as RenderBox;
                       final dx = box.globalToLocal(details.globalPosition).dx;
                       final x = (dx / box.size.width).clamp(0.0, 1.0);
                       _player.seek(duration * x);
                     },
                     onTapDown: (details) {
+                      _showControls();
                       final box = context.findRenderObject() as RenderBox;
                       final dx = box.globalToLocal(details.globalPosition).dx;
                       final x = (dx / box.size.width).clamp(0.0, 1.0);
                       _player.seek(duration * x);
                     },
                     child: SizedBox(
-                      height: 6,
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: Colors.white30,
-                        valueColor: const AlwaysStoppedAnimation(
-                          Color.fromARGB(255, 54, 174, 244),
+                      height: 4,
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 4,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 12,
+                          ),
+                          activeTrackColor: Colors.white,
+                          inactiveTrackColor: Colors.white30,
+                          thumbColor: Colors.white,
+                          overlayColor: Colors.white24,
+                        ),
+                        child: Slider(
+                          value: progress.isNaN
+                              ? 0.0
+                              : progress.clamp(0.0, 1.0),
+                          onChanged: (value) {
+                            _showControls();
+                            _player.seek(duration * value);
+                          },
                         ),
                       ),
                     ),
@@ -483,7 +531,6 @@ class ShortVideoPageStat extends ConsumerState<ShortVideoItem>
               ),
             ),
 
-          
             Positioned.fill(
               child: VideoOverlayActions(
                 commentCount: _commentCount,

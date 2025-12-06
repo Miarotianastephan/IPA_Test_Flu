@@ -9,7 +9,6 @@ import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/page/login/login_with_cert.dart';
 import 'package:live_app/page/login/login_with_qrcode.dart';
 
-import '../../provider/api_provider.dart';
 import '../../provider/current_user_provider.dart';
 import '../../utils/toast_util.dart';
 import '../home.dart';
@@ -29,6 +28,8 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
   bool _obscurePassword = true;
   ApiResponse<UserInfo>? userInfo;
 
+  bool _isLoading = false;
+
   Future<void> _login(BuildContext context) async {
     final localizations = AppLocalizations.of(context)!;
     final username = _usernameController.text.trim();
@@ -44,6 +45,9 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
     final currentUserNotifier = ref.read(currentUserProvider.notifier);
     final navigator = Navigator.of(context);
 
@@ -64,6 +68,15 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
     } catch (err, stack) {
       debugPrint("登录失败: $err");
       debugPrintStack(stackTrace: stack);
+      setState(() {
+        _isLoading = false;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -163,10 +176,19 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                           ),
                         ),
                         onPressed: () => _login(context),
-                        child: Text(
-                          localizations.login,
-                          style: const TextStyle(fontSize: 18),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                localizations.login,
+                                style: const TextStyle(fontSize: 18),
+                              ),
                       ),
                       const SizedBox(height: 24),
 

@@ -22,11 +22,15 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer> {
     super.initState();
     player = Player();
     controller = VideoController(player);
-    initPlayer();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initPlayer();
+    });
   }
 
   Future initPlayer() async {
-    await player.open(Media(widget.videoUrl));
+    await player.open(Media(widget.videoUrl), play: false);
+    await player.seek(Duration.zero);
+    await player.play();
     await player.setVolume(100.0);
   }
 

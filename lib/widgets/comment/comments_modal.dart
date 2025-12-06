@@ -229,9 +229,13 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
                 },
                 child: (topLevelComments.isEmpty)
                     ? Expanded(
-                        child: EmptyWidget(
-                          icon: Icons.message_outlined,
-                          message: localisations.noCommentsYet,
+                        child: Center(
+                          child: SingleChildScrollView(
+                            child: EmptyWidget(
+                              icon: Icons.message_outlined,
+                              message: localisations.noCommentsYet,
+                            ),
+                          ),
                         ),
                       )
                     : ListView.builder(

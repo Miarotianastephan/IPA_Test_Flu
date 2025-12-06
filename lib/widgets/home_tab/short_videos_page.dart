@@ -87,9 +87,7 @@ class ShortVideosPageState extends ConsumerState<ShortVideosPage>
     Widget child;
 
     if (state.loading && state.list.isEmpty) {
-      child = LoadingWidget(
-        message: "${AppLocalizations.of(context)!.loadingInProgress}...",
-      );
+      child = LoadingWidget();
     } else if (!state.loading && state.list.isEmpty) {
       child = CustomScrollView(
         controller: widget.controller,

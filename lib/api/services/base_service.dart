@@ -21,7 +21,10 @@ abstract class BaseService {
     );
 
     if (response.code != 1) {
-      ToastUtil.error(response.msg);
+      if (response.msg.isNotEmpty &&
+          !response.msg.contains('Any conversation found')) {
+        ToastUtil.error(response.msg);
+      }
 
       // 抛出异常，调用方可以 catch
       throw Exception(response.msg);

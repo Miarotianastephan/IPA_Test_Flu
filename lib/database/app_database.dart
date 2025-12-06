@@ -12,15 +12,15 @@ import '../models/userinfo.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(
-  tables: [Conversations, ConversationUsers, Messages, UserInfos],
-)
+@DriftDatabase(tables: [Conversations, ConversationUsers, Messages, UserInfos])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? e])
+  final int? userId;
+
+  AppDatabase({this.userId, QueryExecutor? e})
     : super(
         e ??
             driftDatabase(
-              name: 'chat',
+              name: userId != null ? 'chat_user_$userId' : 'chat',
               native: const DriftNativeOptions(
                 databaseDirectory: getApplicationSupportDirectory,
               ),
@@ -39,11 +39,12 @@ class AppDatabase extends _$AppDatabase {
             ),
       );
 
-  AppDatabase.forTesting(DatabaseConnection super.connection);
+  AppDatabase.forTesting(DatabaseConnection super.connection) : userId = null;
 
   @override
   int get schemaVersion => 3;
 
+  @Deprecated('Use currentUserDatabaseProvider from current_user_provider.dart')
   static final provider = Provider<AppDatabase>((ref) {
     final db = AppDatabase();
     ref.onDispose(db.close);

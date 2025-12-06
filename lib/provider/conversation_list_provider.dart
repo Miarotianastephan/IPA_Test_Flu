@@ -10,6 +10,7 @@ import '../database/dao/message_dao.dart';
 import '../models/message.dart';
 import '../models/message_inbox.dart';
 import '../provider/api_provider.dart';
+import 'current_user_provider.dart';
 
 class ConversationListState {
   final List<Conversation> conversations;
@@ -60,12 +61,14 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
       return false;
     }
 
+    if (!mounted) return false;
     state = state.copyWith(conversations: _sortConversations(localList));
     return true; // 表示已成功从本地数据库加载
   }
 
   Future<void> loadConversationsAndHistory({bool isRefresh = false}) async {
     if (isRefresh) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: true, error: null);
 
       try {
@@ -73,8 +76,10 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
 
         await loadHistory();
 
+        if (!mounted) return;
         state = state.copyWith(isLoading: false, error: null);
       } catch (e) {
+        if (!mounted) return;
         state = state.copyWith(
           isLoading: false,
           error: 'Failed to refresh conversations: ${e.toString()}',
@@ -158,7 +163,6 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
 
           page++;
         } catch (e) {
-          // Si le serveur retourne "Any conversation found" avec code 0, on ignore l'erreur
           if (e.toString().contains('Any conversation found')) {
             break;
           }
@@ -172,8 +176,6 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         }
       }
     } catch (e) {
-      // On ignore les erreurs de chargement des messages non lus
-      // (par exemple, "Any conversation found" quand il n'y a pas de messages)
       log("$e");
     }
 
@@ -206,8 +208,6 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
 
           page++;
         } catch (e) {
-          // Si le serveur retourne "Any conversation found" avec code 0, on ignore l'erreur
-          // car cela signifie simplement qu'il n'y a pas de conversations
           if (e.toString().contains('Any conversation found')) {
             break;
           }
@@ -217,12 +217,14 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
 
       final sorted = _sortConversations(all);
 
+      if (!mounted) return;
       state = state.copyWith(conversations: sorted, error: null);
 
       for (final conv in sorted) {
         await conversationDao.upsertFull(conv);
       }
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(
         error: 'Failed to fetch conversations: ${e.toString()}',
       );
@@ -231,6 +233,8 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
   }
 
   Future<void> upsertConversation(Conversation conv) async {
+    if (!mounted) return;
+
     final list = [...state.conversations];
     final index = list.indexWhere((c) => c.id == conv.id);
 
@@ -266,6 +270,7 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     list.insert(0, merged);
 
     final sorted = _sortConversations(list);
+    if (!mounted) return;
     state = state.copyWith(conversations: sorted);
 
     await conversationDao.upsertBasic(merged);
@@ -294,6 +299,8 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
   Future<void> markConversationAsRead(int conversationId) async {
     await conversationDao.updateUnreadCount(conversationId, 0);
 
+    if (!mounted) return;
+
     final list = state.conversations.map((c) {
       if (c.id == conversationId) {
         return c.copyWith(unreadCount: 0);
@@ -302,6 +309,7 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     }).toList();
 
     final sorted = _sortConversations(list);
+    if (!mounted) return;
     state = state.copyWith(conversations: sorted);
   }
 }
@@ -310,14 +318,29 @@ final conversationListProvider =
     StateNotifierProvider<ConversationListNotifier, ConversationListState>((
       ref,
     ) {
+      final user = ref.watch(currentUserProvider);
+
+      if (user == null) {
+        final service = ref.watch(messageServiceProvider);
+        final tempDb = AppDatabase(userId: 0);
+        final dao = ConversationDao(tempDb);
+        final messageDao = MessageDao(tempDb);
+        return ConversationListNotifier(service, dao, messageDao);
+      }
+
       final service = ref.watch(messageServiceProvider);
-      final db = ref.watch(AppDatabase.provider);
+      final db = ref.watch(currentUserDatabaseProvider);
       final dao = ConversationDao(db);
       final messageDao = MessageDao(db);
       return ConversationListNotifier(service, dao, messageDao);
     });
 
 final totalUnreadCountProvider = Provider<int>((ref) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null || user.isVisitor) {
+    return 0;
+  }
+
   final conversations = ref.watch(conversationListProvider).conversations;
   return conversations.fold<int>(0, (sum, conv) => sum + conv.unreadCount);
 });

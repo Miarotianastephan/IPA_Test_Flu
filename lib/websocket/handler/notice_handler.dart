@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/database/app_database.dart';
 import 'package:live_app/database/dao/conversation_dao.dart';
 import 'package:live_app/database/dao/message_dao.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/conversation_user.dart';
 import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/provider/conversation_list_provider.dart';
+import 'package:live_app/provider/current_user_provider.dart';
 import 'package:live_app/widgets/encrypted_image.dart';
 import 'package:toastification/toastification.dart';
 
@@ -94,7 +94,7 @@ class NoticeHandler extends MessageHandler {
     return null;
   }
 
-  showNotice(BuildContext content, InAppNotice notice) {
+  void showNotice(BuildContext content, InAppNotice notice) {
     toastification.showCustom(
       context: content,
       autoCloseDuration: const Duration(seconds: 5),
@@ -188,7 +188,11 @@ class NoticeHandler extends MessageHandler {
     );
 
     // 准备 Drift 相关的 DAO
-    final db = ref.read(AppDatabase.provider);
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      return null;
+    }
+    final db = ref.read(currentUserDatabaseProvider);
     final conversationDao = ConversationDao(db);
     final messageDao = MessageDao(db);
 

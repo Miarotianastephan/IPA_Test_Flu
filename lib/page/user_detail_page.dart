@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/provider/user_follow_provider.dart';
+import 'package:live_app/widgets/follow_button.dart';
 import 'package:live_app/widgets/tiktok_scaffold.dart';
 import 'package:live_app/widgets/video/user_post_list.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -46,51 +48,63 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
   late final StateNotifierProvider<UserVideoListNotifier, VideoListState>
   videoProvider;
   double _dragAccumulatedX = 0.0;
+  bool _isBioExpanded = false;
 
   @override
   void initState() {
     super.initState();
 
-    // 创建唯一的 provider 参数（使用时间戳确保每次都是新实例）
     final param = UserDetailProviderParam(
       widget.user.id,
       initialUser: widget.user,
     );
 
-    // 使用 userDetailProvider 管理用户信息，传入初始用户数据
     userProvider = userDetailProvider(param);
     videoProvider = userVideoListProvider(widget.user.id);
     postProvider = userPostListProvider(widget.user.id);
 
-    // 在下一帧立即更新，确保显示正确的用户数据
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        // 强制设置正确的用户数据
-        ref.read(userProvider.notifier).initUser(widget.user);
-        // 从 API 加载完整的用户信息
-        ref.read(userProvider.notifier).loadUserDetail(widget.user.id);
-        // 加载帖子 & 视频
-        ref.read(videoProvider.notifier).fetch(refresh: true);
-        ref.read(postProvider.notifier).fetch(refresh: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      ref
+          .read(userFollowProvider(widget.user.id.toString()).notifier)
+          .setFromBackend(
+            isFollowed: widget.user.isFollowed,
+            fansCount: widget.user.fansCount ?? 0,
+            followCount: widget.user.followCount ?? 0,
+          );
+
+      final detail = await ref
+          .read(userProvider.notifier)
+          .loadUserDetail(widget.user.id);
+
+      if (detail != null) {
+        ref
+            .read(userFollowProvider(widget.user.id.toString()).notifier)
+            .setFromBackend(
+              isFollowed: detail.isFollowed,
+              fansCount: detail.fansCount ?? 0,
+              followCount: detail.followCount ?? 0,
+            );
       }
+
+      ref.read(videoProvider.notifier).fetch(refresh: true);
+      ref.read(postProvider.notifier).fetch(refresh: true);
     });
   }
 
   @override
   void dispose() {
-    // 清理 provider，避免内存泄漏
-    ref.invalidate(userProvider);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final userState = ref.watch(userProvider);
     final videoState = ref.watch(videoProvider);
     final localizations = AppLocalizations.of(context)!;
-    final user = userState.user ?? widget.user;
-    final isLoading = userState.loading;
+    final user = widget.user;
     final postState = ref.watch(postProvider);
+    final follow = ref.watch(userFollowProvider(user.id.toString()));
 
     return VisibilityDetector(
       key: Key("user_detail_${widget.user.id}"),
@@ -105,9 +119,10 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                 headerSliverBuilder: (context, innerBoxIsScrolled) => [
                   SliverAppBar(
                     backgroundColor: Colors.black,
-                    expandedHeight: 443,
+                    expandedHeight: _isBioExpanded ? 550 : 435,
                     floating: false,
                     pinned: true,
+                    collapsedHeight: kToolbarHeight,
                     leading: IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => {
@@ -169,7 +184,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                               clipBehavior: Clip.none,
                               children: [
                                 SizedBox(
-                                  height: 185,
+                                  height: 250,
                                   width: double.infinity,
                                   child: EncryptedImage(
                                     url:
@@ -177,7 +192,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                         "https://i.pravatar.cc/350",
                                     fit: BoxFit.cover,
                                     width: double.infinity,
-                                    height: 200,
+                                    height: 100,
                                     placeholder: Container(
                                       color: Colors.grey[300],
                                       child: const Center(
@@ -192,50 +207,80 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                     ),
                                   ),
                                 ),
-                                Positioned(
-                                  bottom: -50,
-                                  left: 0,
-                                  right: 0,
-                                  child: Align(
-                                    alignment: Alignment.center,
+                              ],
+                            ),
+                            Transform.translate(
+                              offset: const Offset(0, -40),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  SizedBox(width: 5),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
                                     child: UserAvatar(
                                       url: user.avatar,
                                       nickname: user.nickname,
-                                      size: 110,
+                                      size: 100,
                                     ),
                                   ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 10,
+                                        right: 10,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                user.nickname ?? "",
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              FollowButton(
+                                                userId: user.id.toString(),
+                                              ),
+                                            ],
+                                          ),
+
+                                          const SizedBox(height: 6),
+
+                                          Text(
+                                            "id: ${user.displayId}",
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: 12,
+                                right: 12,
+                              ),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: _buildBioText(
+                                  user.bio ?? localizations.mysteriousUser,
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 55),
-                            Text(
-                              user.nickname ?? "",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
                               ),
-                              textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              "${user.displayId}",
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              user.bio ?? localizations.mysteriousUser,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 10),
+
+                            const SizedBox(height: 15),
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal:
@@ -249,125 +294,27 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                 children: [
                                   _buildCountItem(
                                     localizations.followCount,
-                                    user.followCount ?? 0,
+                                    follow
+                                        .followCount, // plus besoin de fallback vers user.followCount
                                   ),
                                   _buildCountItem(
                                     localizations.fansCount,
-                                    user.fansCount ?? 0,
+                                    follow.fansCount, // idem
                                   ),
                                   _buildCountItem(
                                     localizations.likeCount,
-                                    user.likeCount ?? 0,
+                                    user.likeCount ??
+                                        0, // likeCount toujours depuis user
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            // 按钮区域，关注按钮联动 provider
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal:
-                                    MediaQuery.of(context).size.width < 375
-                                    ? 16
-                                    : 40,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: user.isFollowed
-                                            ? Colors.grey[400]
-                                            : Colors.red,
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      child: TextButton(
-                                        onPressed: () async {
-                                          await ref
-                                              .read(userProvider.notifier)
-                                              .toggleFollow();
-                                        },
-                                        style: TextButton.styleFrom(
-                                          padding: EdgeInsets.zero,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              18,
-                                            ),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          user.isFollowed
-                                              ? localizations.followed
-                                              : localizations.follow,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width:
-                                        MediaQuery.of(context).size.width < 375
-                                        ? 8
-                                        : 12,
-                                  ),
-                                  Container(
-                                    height: 36,
-                                    width:
-                                        MediaQuery.of(context).size.width < 375
-                                        ? 60
-                                        : 80,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade800,
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: IconButton(
-                                      onPressed: () {},
-                                      icon: const Icon(
-                                        Icons.more_horiz,
-                                        color: Colors.white,
-                                      ),
-                                      padding: EdgeInsets.zero,
-                                      iconSize: 20,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width:
-                                        MediaQuery.of(context).size.width < 375
-                                        ? 8
-                                        : 12,
-                                  ),
-                                  Container(
-                                    height: 36,
-                                    width: 36,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade800,
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: IconButton(
-                                      onPressed: () {},
-                                      icon: const Icon(
-                                        Icons.message,
-                                        color: Colors.white,
-                                      ),
-                                      padding: EdgeInsets.zero,
-                                      iconSize: 20,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 50),
                           ],
                         ),
                       ),
                     ),
                   ),
+
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _SliverAppBarDelegate(
@@ -504,21 +451,101 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                 ),
               ),
             ),
-            // Overlay de chargement
-            if (isLoading)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBioText(String bioText) {
+    final localizations = AppLocalizations.of(context)!;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const textStyle = TextStyle(color: Colors.white70, fontSize: 14);
+        const maxLines = 2;
+
+        final textSpan = TextSpan(text: bioText, style: textStyle);
+        final textPainter = TextPainter(
+          text: textSpan,
+          maxLines: maxLines,
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout(maxWidth: constraints.maxWidth);
+
+        final isTextOverflowing = textPainter.didExceedMaxLines;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: Stack(
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: _isBioExpanded ? 150 : double.infinity,
+                    ),
+                    child: SingleChildScrollView(
+                      physics: _isBioExpanded
+                          ? const AlwaysScrollableScrollPhysics()
+                          : const NeverScrollableScrollPhysics(),
+                      child: Text(
+                        bioText,
+                        style: textStyle,
+                        textAlign: TextAlign.start,
+                        maxLines: _isBioExpanded ? null : maxLines,
+                        overflow: _isBioExpanded ? null : TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  if (_isBioExpanded)
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: 40,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.0),
+                              Colors.black.withValues(alpha: 0.7),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (isTextOverflowing)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isBioExpanded = !_isBioExpanded;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    _isBioExpanded
+                        ? localizations.showLess
+                        : "...${localizations.seeMore}",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
               ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 

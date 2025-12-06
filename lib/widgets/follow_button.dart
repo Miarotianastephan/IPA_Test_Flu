@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/user_follow_provider.dart';
 
-class FollowButton extends StatelessWidget {
-  final bool isFollowed;
-  final ValueChanged<bool>? onPressed;
+class FollowButton extends ConsumerWidget {
+  final String userId;
 
-  const FollowButton({
-    super.key,
-    required this.isFollowed,
-    this.onPressed,
-  });
+  const FollowButton({super.key, required this.userId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final localizations = AppLocalizations.of(context)!;
+    final isFollowed = ref.watch(userFollowProvider(userId)).isFollowed;
 
     return Container(
       height: 25,
@@ -23,8 +21,19 @@ class FollowButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: TextButton(
-        onPressed: () {
-          onPressed?.call(!isFollowed);
+        onPressed: () async {
+          try {
+            await ref.read(userFollowProvider(userId).notifier).toggleFollow();
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
         },
         style: TextButton.styleFrom(
           padding: EdgeInsets.zero,

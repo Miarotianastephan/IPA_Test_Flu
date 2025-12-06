@@ -180,5 +180,9 @@
   "notProvided": "未提供",
   "reachedEnd": "已经到底啦",
   "systemEvent": "系统事件",
-  "botCommand": "机器人命令"
+  "botCommand": "机器人命令",
+  "showLess": "收起",
+  "checkForUpdates": "检查更新",
+  "version": "版本",
+  "noUpdateAvailable": "无可用更新"
 }

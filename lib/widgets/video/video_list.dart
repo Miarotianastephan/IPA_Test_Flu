@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/video_detail_provider.dart';
+import 'package:live_app/widgets/empty_widget.dart';
 
 import '../../models/video_info.dart';
-import '../empty_retry.dart';
 import '../loading_widget.dart';
 import 'package:live_app/widgets/video/video_card.dart';
 
@@ -27,10 +27,10 @@ class VideoListSliver extends ConsumerWidget {
     final videoType = ref.watch(videoTypeProvider);
 
     if ((!state.finished || state.loading) && list.isEmpty) {
-      return SliverFillRemaining(child: LoadingWidget(message: "正在加载中..."));
+      return const SliverFillRemaining(child: LoadingWidget());
     }
     if (state.finished && !state.loading && list.isEmpty) {
-      return SliverFillRemaining(child: EmptyWithRetry(onRetry: onRefresh));
+      return const SliverFillRemaining(child: EmptyWidget());
     }
 
     return SliverGrid(

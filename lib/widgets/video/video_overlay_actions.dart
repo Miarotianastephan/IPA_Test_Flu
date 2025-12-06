@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/user_follow_provider.dart';
 import 'package:live_app/utils/utils.dart';
 
 import '../../models/video_info.dart';
 import '../Animation/follow_splash_animation.dart';
 import '../encrypted_image.dart';
 
-class VideoOverlayActions extends StatefulWidget {
+class VideoOverlayActions extends ConsumerStatefulWidget {
   final VideoInfo video;
   final bool isFollowed;
   final bool isLike;
@@ -34,10 +36,11 @@ class VideoOverlayActions extends StatefulWidget {
   });
 
   @override
-  State<VideoOverlayActions> createState() => _VideoOverlayActionsState();
+  ConsumerState<ConsumerStatefulWidget> createState() =>
+      _VideoOverlayActionsState();
 }
 
-class _VideoOverlayActionsState extends State<VideoOverlayActions>
+class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
     with SingleTickerProviderStateMixin {
   bool _showActions = true;
 
@@ -248,8 +251,15 @@ class _VideoOverlayActionsState extends State<VideoOverlayActions>
                                 bottom: 5,
                                 child: GestureDetector(
                                   key: _followBtnKey,
-                                  onTap: () {
+                                  onTap: () async {
                                     _showFollowSplash();
+                                    await ref
+                                        .read(
+                                          userFollowProvider(
+                                            widget.video.userId.toString(),
+                                          ).notifier,
+                                        )
+                                        .toggleFollow();
                                     widget.onFollowChanged(true);
                                   },
                                   child: Container(
@@ -339,16 +349,15 @@ class _VideoOverlayActionsState extends State<VideoOverlayActions>
                       ),
                       const SizedBox(height: 15),
 
-                      _buildAction(
-                        icon: Icons.share,
-                        color: Colors.white,
-                        showText: false,
-                        onTap: () {
-                          debugPrint("分享视频: ${widget.video.title}");
-                        },
-                        count: 0,
-                      ),
-                      const SizedBox(height: 40),
+                      // Future feature
+                      // _buildAction(
+                      //   icon: Icons.share,
+                      //   color: Colors.white,
+                      //   showText: false,
+                      //   onTap: () {},
+                      //   count: 0,
+                      // ),
+                      // const SizedBox(height: 40),
                     ],
 
                     GestureDetector(

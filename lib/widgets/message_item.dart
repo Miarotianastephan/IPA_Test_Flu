@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -41,11 +42,11 @@ class ChatMessageItem extends StatefulWidget {
 }
 
 class _ChatMessageItemState extends State<ChatMessageItem> {
-
   @override
   Widget build(BuildContext context) {
-    final bubbleColor =
-    widget.isSelf ? const Color(0xFFFFFFFF) : const Color(0xFF333333);
+    final bubbleColor = widget.isSelf
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF333333);
 
     return VisibilityDetector(
       key: Key("msg_${widget.message.hashCode}_${widget.messageId}"),
@@ -57,8 +58,9 @@ class _ChatMessageItemState extends State<ChatMessageItem> {
 
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-        widget.isSelf ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: widget.isSelf
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!widget.isSelf)
             Padding(
@@ -92,29 +94,29 @@ class _ChatMessageItemState extends State<ChatMessageItem> {
                           child: Center(
                             child: widget.resending
                                 ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.red,
-                              ),
-                            )
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.red,
+                                    ),
+                                  )
                                 : Container(
-                              width: 20,
-                              height: 20,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                "!",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
+                                    width: 20,
+                                    height: 20,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      "!",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
@@ -128,8 +130,7 @@ class _ChatMessageItemState extends State<ChatMessageItem> {
                       children: [
                         if (!widget.isSelf && widget.nickname != null)
                           Padding(
-                            padding:
-                            const EdgeInsets.only(bottom: 4, top: 10),
+                            padding: const EdgeInsets.only(bottom: 4, top: 10),
                             child: Text(
                               "@${widget.nickname}",
                               style: const TextStyle(
@@ -183,8 +184,7 @@ class _ChatMessageItemState extends State<ChatMessageItem> {
                               left: widget.isSelf ? null : -3,
                               right: widget.isSelf ? -3 : null,
                               child: Transform.rotate(
-                                angle: math.pi /
-                                    (widget.isSelf ? 5 : -5),
+                                angle: math.pi / (widget.isSelf ? 5 : -5),
                                 child: Container(
                                   width: 10,
                                   height: 10,
@@ -203,7 +203,11 @@ class _ChatMessageItemState extends State<ChatMessageItem> {
           ),
           const SizedBox(width: 8),
           if (widget.isSelf)
-            UserAvatar(url: widget.avatarUrl, size: 40),
+            UserAvatar(
+              url: widget.avatarUrl,
+              nickname: widget.nickname,
+              size: 40,
+            ),
         ],
       ),
     );

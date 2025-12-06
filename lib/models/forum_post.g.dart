@@ -14,7 +14,7 @@ ForumPost _$ForumPostFromJson(Map<String, dynamic> json) => ForumPost(
   content: json['content'] as String,
   isPinned: parseBool(json['is_pinned']),
   isFeatured: parseBool(json['is_featured']),
-  status: json['status'] as String,
+  status: parseInt(json['status']),
   price: parseDouble(json['price']),
   favoriteCount: (json['favorite_count'] as num).toInt(),
   likeCount: (json['like_count'] as num).toInt(),

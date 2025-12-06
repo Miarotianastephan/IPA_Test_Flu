@@ -71,8 +71,8 @@ class UserVideoGridState extends ConsumerState<UserVideoGrid>
                 gridDelegate:
                     const SliverWaterfallFlowDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 5,
-                      mainAxisSpacing: 5,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
                     ),
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final video = state.list[index];

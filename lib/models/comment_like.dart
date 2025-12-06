@@ -35,7 +35,7 @@ class CommentLike {
     try {
       final result = _$CommentLikeFromJson(json);
       return result;
-    } catch (e, stackTrace) {
+    } catch (e) {
       rethrow;
     }
   }

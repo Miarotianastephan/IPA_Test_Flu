@@ -212,7 +212,7 @@ class VideoService extends BaseService {
   Future<ApiResponse<String>> seen(int videoId) {
     return post<String>(
       VideoApi.seen,
-      body: {"video_id": videoId},
+      body: {"video_id": videoId.toString()},
       fromJson: (json) => json.toString(),
     );
   }

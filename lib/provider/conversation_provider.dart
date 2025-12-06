@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/services/message_service.dart';
 import '../config/storage_config.dart';
-import '../database/app_database.dart';
 import '../database/dao/conversation_dao.dart';
 import '../database/dao/message_dao.dart';
 import '../models/conversation.dart';
@@ -14,6 +13,7 @@ import '../models/message.dart';
 import '../models/userinfo.dart';
 import '../provider/api_provider.dart';
 import 'conversation_list_provider.dart';
+import 'current_user_provider.dart';
 
 class ChatState {
   final Conversation? conversation;
@@ -277,6 +277,8 @@ class ChatController extends StateNotifier<ChatState> {
     //  更新数据库 message 表
     await messageDao.updateMessageRead(msg.id, true);
 
+    if (!mounted) return;
+
     //  更新内存 state 中的消息列表
     final newList = state.messages.map((m) {
       if (m.id == msg.id) {
@@ -292,6 +294,8 @@ class ChatController extends StateNotifier<ChatState> {
       // 1. 更新当前 ChatState 里的会话
       final newConv = conv.copyWith(unreadCount: 0);
       await conversationDao.upsertBasic(newConv);
+
+      if (!mounted) return;
       state = state.copyWith(conversation: newConv);
 
       // 2. 通知会话列表，把这个会话的 unreadCount 置 0
@@ -387,7 +391,7 @@ final chatControllerProvider = StateNotifierProvider.autoDispose
     .family<ChatController, ChatState, int>((ref, peerUserId) {
       final service = ref.watch(messageServiceProvider);
 
-      final db = ref.watch(AppDatabase.provider);
+      final db = ref.watch(currentUserDatabaseProvider);
       final conversationDao = ConversationDao(db);
       final messageDao = MessageDao(db);
 

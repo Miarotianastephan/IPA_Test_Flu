@@ -1,14 +1,16 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/current_user_provider.dart';
+import 'package:live_app/provider/user_follow_provider.dart';
 import 'package:live_app/utils/profile_utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../config/storage_config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/userinfo.dart';
-import '../../provider/api_provider.dart';
 import '../../utils/toast_util.dart';
 import '../../widgets/count_item.dart';
 import '../../widgets/encrypted_image.dart';
@@ -34,6 +36,7 @@ class ProfileTabPage extends ConsumerStatefulWidget {
 class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
   UserInfo? _userInfo;
   bool _hasLoaded = false;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -43,39 +46,12 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
     });
   }
 
-  //Future<void> getUserInfo() async {
-  //  final userService = ref.read(userServiceProvider);
-
-  //    final response = await userService.getInfo();
-  //    if (response.data != null) {
-  //     await StorageService.instance.setValue(
-  //       "user_info",
-  //        jsonEncode(response.data!.toJson()),
-  //      );
-  //     setState(() {
-  //        _userInfo = response.data;
-  //      });
-  //    }
-
-  //}
-
   Future<void> getUserFromCache() async {
     final data = await StorageService.instance.getValue("user_info");
     if (data != null && data.isNotEmpty) {
       final map = data is String ? jsonDecode(data) : data;
       setState(() {
         _userInfo = UserInfo.fromJson(map);
-      });
-    }
-  }
-
-  Future<void> logout() async {
-    final userService = ref.read(userServiceProvider);
-    final value = await userService.visitorLogin();
-    if (value.data != null) {
-      await saveUserInfoWithToken(value.data!);
-      setState(() {
-        _userInfo = value.data;
       });
     }
   }
@@ -100,8 +76,11 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
     final localizations = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     if (_userInfo == null) {
-      return Center(child: const CircularProgressIndicator(color: Colors.white),);
+      return Center(
+        child: const CircularProgressIndicator(color: Colors.white),
+      );
     }
+    final count = ref.watch(userFollowProvider(_userInfo!.id.toString()));
 
     return Container(
       color: Colors.black,
@@ -130,9 +109,6 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
                       url: _userInfo?.avatar,
                       nickname: _userInfo?.nickname,
                       size: 70,
-                      onTap: () {
-                        debugPrint("点击了头像");
-                      },
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -197,21 +173,51 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            onPressed: () async {
-                              if (_userInfo?.isVisitor ?? true) {
-                                _navigate(
-                                  context,
-                                  const LoginWithUsernamePage(),
-                                );
-                              } else {
-                                await logout();
-                              }
-                            },
-                            child: Text(
-                              (_userInfo?.isVisitor ?? true)
-                                  ? localizations.login
-                                  : localizations.logout,
-                            ),
+                            onPressed: _isLoggingOut
+                                ? null
+                                : () async {
+                                    if (_userInfo?.isVisitor ?? true) {
+                                      _navigate(
+                                        context,
+                                        const LoginWithUsernamePage(),
+                                      );
+                                    } else {
+                                      setState(() {
+                                        _isLoggingOut = true;
+                                      });
+                                      try {
+                                        await ref
+                                            .read(currentUserProvider.notifier)
+                                            .logout(cleanCache: true);
+                                        final visitorUser = ref.read(
+                                          currentUserProvider,
+                                        );
+                                        if (visitorUser != null) {
+                                          setState(() {
+                                            _userInfo = visitorUser;
+                                          });
+                                        }
+                                      } finally {
+                                        setState(() {
+                                          _isLoggingOut = false;
+                                        });
+                                      }
+                                    }
+                                  },
+                            child: _isLoggingOut
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    (_userInfo?.isVisitor ?? true)
+                                        ? localizations.login
+                                        : localizations.logout,
+                                  ),
                           ),
                         ],
                       ),
@@ -232,12 +238,12 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
                 children: [
                   buildCountItem(
                     localizations.followCount,
-                    _userInfo?.followCount ?? 0,
+                    count.followCount ?? 0,
                     onTap: () => _navigate(context, const MyFollowPage()),
                   ),
                   buildCountItem(
                     localizations.fansCount,
-                    _userInfo?.fansCount ?? 0,
+                    count.fansCount ?? 0,
                     onTap: () => _navigate(context, const MyFansPage()),
                   ),
                   buildCountItem(

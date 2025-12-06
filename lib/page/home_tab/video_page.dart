@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
-import 'package:live_app/provider/search_videos_provider.dart';
 import 'package:live_app/provider/video_detail_provider.dart';
 
 import 'package:live_app/widgets/video_type_toggle_button.dart';
@@ -73,11 +71,7 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
     if (state.loading && !_hasLoaded) {
       return Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: LoadingWidget(
-            message: AppLocalizations.of(context)!.loadingInProgress,
-          ),
-        ),
+        body: Center(child: LoadingWidget()),
       );
     }
 
@@ -87,9 +81,8 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
 
     if (_categories.isEmpty) {
       return Scaffold(
-        body: Center(
-          child: LoadingWidget(message: AppLocalizations.of(context)!.loading),
-        ),
+        backgroundColor: Colors.black,
+        body: Center(child: LoadingWidget()),
       );
     }
 
@@ -161,28 +154,24 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
                 ],
               ),
             ),
-            body: Stack(
-              children: [
-                TabBarView(
-                  controller: outerController,
-                  children: List.generate(
-                    _categories.length,
-                    (index) => VideoInnerTabSection(
-                      onUserTap: (info) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ref.read(currentVideoUserProvider.notifier).state =
-                              info.user;
-                        });
-                        widget.tkcontroller?.animateToRightWithTempGesture();
-                      },
-                      categoryId: _categories[index].id,
-                      outerController: outerController,
-                      sortTypeByCategory: _sortTypeByCategory,
-                      videoType: ref.watch(videoTypeProvider),
-                    ),
-                  ),
+            body: TabBarView(
+              controller: outerController,
+              children: List.generate(
+                _categories.length,
+                (index) => VideoInnerTabSection(
+                  onUserTap: (info) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      ref.read(currentVideoUserProvider.notifier).state =
+                          info.user;
+                    });
+                    widget.tkcontroller?.animateToRightWithTempGesture();
+                  },
+                  categoryId: _categories[index].id,
+                  outerController: outerController,
+                  sortTypeByCategory: _sortTypeByCategory,
+                  videoType: ref.watch(videoTypeProvider),
                 ),
-              ],
+              ),
             ),
           );
         },

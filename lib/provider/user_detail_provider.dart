@@ -39,7 +39,7 @@ class UserDetailNotifier extends StateNotifier<UserDetailState> {
   }
 
   /// 加载用户详情
-  Future<void> loadUserDetail(int userId) async {
+  Future<UserInfo?> loadUserDetail(int userId) async {
     state = state.copyWith(loading: true, clearError: true);
 
     try {
@@ -48,8 +48,10 @@ class UserDetailNotifier extends StateNotifier<UserDetailState> {
       final user = res.data;
 
       state = state.copyWith(user: user, loading: false);
+      return user;
     } catch (e) {
       state = state.copyWith(error: e.toString(), loading: false);
+      return null;
     }
   }
 

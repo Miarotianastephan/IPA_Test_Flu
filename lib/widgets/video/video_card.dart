@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/page/short_video_page.dart';
+
 import 'package:live_app/widgets/encrypted_image.dart';
 
 import '../../models/video_info.dart';
@@ -7,27 +10,31 @@ import '../../utils/responsive_utils.dart';
 import '../../utils/text_util.dart';
 import '../../utils/utils.dart';
 
-class VideoCard extends StatefulWidget {
+class VideoCard extends ConsumerStatefulWidget {
   const VideoCard({super.key, required this.video, this.onUserTap});
 
   final VideoInfo video;
-
-  /// 用户点击头像/昵称事件，可选
-
   final Function(VideoInfo videoInfo)? onUserTap;
 
   @override
-  State<VideoCard> createState() => _VideoCardState();
+  ConsumerState<VideoCard> createState() => _VideoCardState();
 }
 
-class _VideoCardState extends State<VideoCard> {
-  void _openVideoDetail() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LongVideoDetailPage(video: widget.video),
-      ),
-    );
+class _VideoCardState extends ConsumerState<VideoCard> {
+  void _openVideoDetail(VideoInfo video) {
+    widget.video.type == 2
+        ? Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LongVideoDetailPage(video: widget.video),
+            ),
+          )
+        : Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ShortVideoPage(videoId: video.id),
+            ),
+          );
   }
 
   void _handleUserTap() {
@@ -51,9 +58,11 @@ class _VideoCardState extends State<VideoCard> {
         : screenWidth * 4 / 5;
     final height = widget.video.type == 2
         ? screenWidth * 0.3
-        : screenWidth * 2 / 3;
+        : screenWidth * 2 / 3.1;
     return GestureDetector(
-      onTap: _openVideoDetail,
+      onTap: () {
+        _openVideoDetail(widget.video);
+      },
       child: SizedBox(
         height: cardHeight,
         child: Card(
@@ -152,7 +161,7 @@ class _VideoCardState extends State<VideoCard> {
               ),
 
               /// 标题
-              Flexible(
+              Expanded(
                 child: Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: responsive.videoCardHorizontalPadding,
@@ -171,7 +180,6 @@ class _VideoCardState extends State<VideoCard> {
                   ),
                 ),
               ),
-              SizedBox(height: 4),
 
               /// 用户信息
               Padding(

@@ -7,7 +7,7 @@ void requireLogin({
   required Function action,
   required UserInfo? userInfo,
 }) {
-  if (userInfo == null || userInfo.isVisitor) {
+  if (userInfo == null) {
     ToastUtil.warning(localizations.mustConnect);
   } else {
     action();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/banner_provider.dart';
 import 'package:live_app/widgets/video/video_list.dart';
 
 import '../../models/sort_tab.dart';
@@ -31,6 +32,7 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
     with AutomaticKeepAliveClientMixin {
   bool _initialFetched = false;
   final Map<String, SearchVideoParams> _paramsCache = {};
+  Locale? _lastLocale;
 
   SearchVideoParams _getParams(int categoryId, String sort, int type) {
     final key = '$categoryId-$sort-$type';
@@ -51,7 +53,9 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
       final currentSort = widget.sortTypeByCategory[categoryId] ?? 'latest';
       final typeId = widget.videoType;
       final params = _getParams(categoryId, currentSort, typeId);
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(bannerListProvider.notifier).loadBanners(refresh: true);
         ref.read(searchVideosProvider(params).notifier).fetch(refresh: true);
       });
     });
@@ -77,12 +81,24 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentLocale = Localizations.localeOf(context);
+
+    if (_lastLocale != null && _lastLocale != currentLocale) {
+      setState(() {});
+    }
+    _lastLocale = currentLocale;
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
     final categoryId = widget.categoryId;
     final currentSort = widget.sortTypeByCategory[categoryId] ?? 'latest';
 
     return DefaultTabController(
+      key: ValueKey(Localizations.localeOf(context).languageCode),
       length: getSortTabs(context).length,
       initialIndex:
           getSortTabs(context).indexWhere((t) => t.type == currentSort) >= 0
@@ -122,26 +138,32 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
             headerSliverBuilder: (context, inner) {
               return [
                 SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 160,
-                    child: BannerCarousel(
-                      items: [
-                        BannerItem(
-                          img: 'https://picsum.photos/400/160?random=0',
-                          action: "1",
-                        ),
-                        BannerItem(
-                          img: 'https://picsum.photos/400/160?random=1',
-                          action: "1",
-                        ),
-                        BannerItem(
-                          img: 'https://picsum.photos/400/160?random=2',
-                          action: "1",
-                        ),
-                      ],
-                    ),
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final bannerState = ref.watch(bannerListProvider);
+
+                      if (bannerState.isLoading ||
+                          bannerState.banners.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final items = bannerState.banners
+                          .map(
+                            (b) => BannerItem(
+                              img: b.urlImage,
+                              action: b.id.toString(),
+                            ),
+                          )
+                          .toList();
+
+                      return SizedBox(
+                        height: 160,
+                        child: BannerCarousel(items: items),
+                      );
+                    },
                   ),
                 ),
+
                 SliverOverlapAbsorber(
                   handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
                     context,
@@ -187,8 +209,11 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
                       child: RefreshIndicator(
                         color: Colors.white,
                         backgroundColor: Colors.black,
+                        strokeWidth: 2.0,
+                        elevation: 0.0,
                         onRefresh: onRefresh,
                         child: CustomScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           key: PageStorageKey(
                             'list-$categoryId-${sortTab.type}',
                           ),

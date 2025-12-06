@@ -6,11 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/userinfo.dart';
-import 'package:live_app/page/login/login_with_username.dart';
-import 'package:live_app/widgets/empty_retry.dart';
 import 'package:live_app/widgets/empty_widget.dart';
-
-import '../api/services/user_service.dart';
 import '../models/forum_attachment.dart';
 import '../models/forum_comment.dart';
 import '../models/forum_post.dart';
@@ -40,7 +36,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   ForumComment? _replyingTo;
-  late final UserService userService;
+
   ForumPost? forumPost;
 
   @override
@@ -49,7 +45,6 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
     Future.microtask(() {
       getUserFromCache();
     });
-    userService = ref.read(userServiceProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 加载帖子详情
       ref
@@ -110,7 +105,10 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
     );
   }
 
-  Widget _buildContent(AppLocalizations localisations, ForumPost post) {
+  Widget _buildContent(AppLocalizations localisations, ForumPost? post) {
+    if (post == null) {
+      return Center(child: CircularProgressIndicator());
+    }
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.all(12),
@@ -280,16 +278,23 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                     AspectRatio(
                                       aspectRatio: 16 / 9,
                                       child: Image.network(
-                                        video.thumbnailUrl ??
-                                            "https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg",
+                                        (video.thumbnailUrl ?? '').isEmpty
+                                            ? 'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg'
+                                            : video.thumbnailUrl!,
                                         fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Image.network(
+                                            'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg',
+                                            fit: BoxFit.cover,
+                                          );
+                                        },
                                       ),
                                     ),
                                     const Positioned.fill(
                                       child: Center(
                                         child: Icon(
                                           Icons.play_circle_fill,
-                                          color: Colors.black45,
+                                          color: Colors.white70,
                                           size: 50,
                                         ),
                                       ),
@@ -319,8 +324,10 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                               8,
                                             ),
                                             child: Image.network(
-                                              video.thumbnailUrl ??
-                                                  "https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg",
+                                              video.thumbnailUrl == null ||
+                                                      video.thumbnailUrl == ""
+                                                  ? "https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg"
+                                                  : video.thumbnailUrl!,
                                               fit: BoxFit.cover,
                                               width: 160,
                                               height: 120,
@@ -330,7 +337,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                             child: Center(
                                               child: Icon(
                                                 Icons.play_circle_fill,
-                                                color: Colors.black45,
+                                                color: Colors.white70,
                                                 size: 40,
                                               ),
                                             ),
@@ -549,14 +556,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
               ),
               const SizedBox(width: 10),
 
-              FollowButton(
-                isFollowed: post?.user?.isFollowed ?? false,
-                onPressed: (v) async {
-                  ref
-                      .read(postDetailProvider(widget.postId).notifier)
-                      .toggleFollow();
-                },
-              ),
+              FollowButton(userId: post?.userId.toString() ?? ""),
             ],
           ),
           backgroundColor: Colors.black,
@@ -581,68 +581,55 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                     );
                   }
 
-                  if (post == null) {
-                    return EmptyWithRetry(
-                      onRetry: () {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ref
-                              .read(postDetailProvider(widget.postId).notifier)
-                              .loadPostDetail(widget.postId);
-                        });
-                      },
-                    );
-                  }
-
                   return _buildContent(localisations, post);
                 },
               ),
             ),
 
             /// ---- 底部评论输入框 ----
-            if (!(_userInfo?.isVisitor ?? true))
-              Container(
-                color: Colors.black,
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                ),
-                child: CommentInputBar(
-                  controller: _commentController,
-                  replyingToName: _replyingTo?.commentUser?.nickname,
-                  onCancelReply: () {
-                    setState(() => _replyingTo = null);
-                  },
-                  onSend: (content) async {
-                    final service = ref.read(forumServiceProvider);
-
-                    // --- 发评论 ---
-                    final resp = await service.comment(
-                      widget.postId,
-                      content,
-                      parentId: _replyingTo?.id,
-                    );
-
-                    // resp.data 是 ForumComment
-                    final newComment = resp.data;
-
-                    // 清除回复对象
-                    setState(() => _replyingTo = null);
-
-                    // provider 追加新评论
-                    ref
-                        .read(forumCommentsProvider(widget.postId).notifier)
-                        .addComment(newComment);
-
-                    // 更新贴子评论数
-                    ref
-                        .read(postDetailProvider(widget.postId).notifier)
-                        .increaseCommentCount();
-
-                    //  自动滚动到最新评论
-                    _scrollToBottom();
-                  },
-                  darkStyle: false,
-                ),
+            Container(
+              color: Colors.black,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
+              child: CommentInputBar(
+                controller: _commentController,
+                replyingToName: _replyingTo?.commentUser?.nickname,
+                onCancelReply: () {
+                  setState(() => _replyingTo = null);
+                },
+                onSend: (content) async {
+                  final service = ref.read(forumServiceProvider);
+
+                  // --- 发评论 ---
+                  final resp = await service.comment(
+                    widget.postId,
+                    content,
+                    parentId: _replyingTo?.id,
+                  );
+
+                  // resp.data 是 ForumComment
+                  final newComment = resp.data;
+
+                  // 清除回复对象
+                  setState(() => _replyingTo = null);
+
+                  // provider 追加新评论
+                  ref
+                      .read(forumCommentsProvider(widget.postId).notifier)
+                      .addComment(newComment);
+
+                  // 更新贴子评论数
+                  ref
+                      .read(postDetailProvider(widget.postId).notifier)
+                      .increaseCommentCount();
+
+                  //  自动滚动到最新评论
+                  _scrollToBottom();
+                },
+                darkStyle: false,
+              ),
+            ),
           ],
         ),
       ),

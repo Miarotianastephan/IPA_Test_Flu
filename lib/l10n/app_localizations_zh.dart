@@ -544,4 +544,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get botCommand => '机器人命令';
+
+  @override
+  String get showLess => '收起';
+
+  @override
+  String get checkForUpdates => '检查更新';
+
+  @override
+  String get version => '版本';
+
+  @override
+  String get noUpdateAvailable => '无可用更新';
 }

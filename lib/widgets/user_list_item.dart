@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/userinfo.dart';
 import '../page/user_detail_page.dart';
-import '../provider/api_provider.dart';
 import 'follow_button.dart';
 
 final _followStateProvider = StateProvider.family<bool, UserInfo>(
@@ -80,21 +79,7 @@ class UserListItem extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 20),
-            FollowButton(
-              isFollowed: isFollowed,
-              onPressed: (v) async {
-                if (v) {
-                  await ref.read(userServiceProvider).follow(user.id);
-                } else {
-                  await ref.read(userServiceProvider).unfollow(user.id);
-                }
-
-                // 乐观更新
-                ref.read(_followStateProvider(user).notifier).state = v;
-
-                onFollowTap?.call();
-              },
-            ),
+            FollowButton(userId: user.id.toString()),
           ],
         ),
       ),

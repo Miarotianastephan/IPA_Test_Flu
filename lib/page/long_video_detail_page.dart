@@ -28,11 +28,15 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
     _tabController = TabController(length: 2, vsync: this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(videoDetailProvider(widget.video.id).notifier)
-          .loadVideoDetail(widget.video.id);
-      ref.read(videoDetailProvider(widget.video.id).notifier).markSeen();
+      markSeen();
     });
+  }
+
+  Future<void> markSeen() async {
+    await ref
+        .read(videoDetailProvider(widget.video.id).notifier)
+        .loadVideoDetail(widget.video.id);
+    ref.read(videoDetailProvider(widget.video.id).notifier).markSeen();
   }
 
   @override
@@ -69,7 +73,7 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
         body: SafeArea(
           bottom: false,
           child: SingleChildScrollView(
-            physics: NeverScrollableScrollPhysics(),
+            physics: BouncingScrollPhysics(),
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.97,
               child: Center(
@@ -83,9 +87,26 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
                     return Column(
                       children: [
                         // 🎬 上半部分：视频播放器
-                        AspectRatio(
-                          aspectRatio: ratio,
-                          child: Center(child: VideoScreen(videoUrl: widget.video.url)),
+                        Stack(
+                          children: [
+                            AspectRatio(
+                              aspectRatio: ratio,
+                              child: Center(
+                                child: VideoScreen(videoUrl: widget.video.url),
+                              ),
+                            ),
+                            Positioned(
+                              top: MediaQuery.of(context).padding.top,
+                              left: 0,
+                              child: TextButton(
+                                onPressed: Navigator.of(context).pop,
+                                child: Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
 
                         ref.read(fullscreenProvider) == true

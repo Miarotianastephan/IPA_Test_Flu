@@ -60,13 +60,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
 
       final currentUser = UserInfo.fromJson(jsonDecode(jsonString));
 
-      if (currentUser.isVisitor) {
-        setState(() {
-          isLike = false;
-        });
-        return;
-      }
-
       bool userHasLiked = false;
 
       if (!widget.comment.isLike) {
@@ -91,24 +84,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
 
   Future<void> toggleLike() async {
     try {
-      if (!isLike) {
-        final jsonString = await StorageService.instance.getValue("user_info");
-        if (jsonString == null || jsonString.isEmpty) {
-          throw Exception("Utilisateur non connecté");
-        }
-        final currentUser = UserInfo.fromJson(jsonDecode(jsonString));
-        if (currentUser.isVisitor) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(AppLocalizations.of(context)!.mustBeLoggedIn),
-              ),
-            );
-          }
-          return;
-        }
-      }
-
       final previousIsLike = isLike;
 
       setState(() {

@@ -26,7 +26,7 @@ Widget getSortTabBar(BuildContext context, TabController? tabController) {
     isScrollable: false,
     padding: const EdgeInsets.only(bottom: 10),
     labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-    indicatorColor: Colors.redAccent,
+    indicatorColor: Colors.white,
     labelColor: Colors.white,
     unselectedLabelColor: Colors.grey,
     labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),

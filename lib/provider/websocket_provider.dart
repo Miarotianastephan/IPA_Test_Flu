@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../database/app_database.dart';
 import '../database/dao/message_dao.dart';
 import '../models/message.dart';
 import '../models/userinfo.dart';
@@ -12,6 +11,7 @@ import '../protos/socket_message.pb.dart';
 import '../websocket/websocket_manager.dart';
 import 'conversation_list_provider.dart';
 import 'conversation_provider.dart';
+import 'current_user_provider.dart';
 
 class WebSocketState {
   final bool isConnected;
@@ -82,8 +82,13 @@ class WebSocketNotifier extends StateNotifier<WebSocketState> {
   }
 
   Future<void> _handleMessageReceived(Message message) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) {
+      return;
+    }
+
     try {
-      final db = ref.read(AppDatabase.provider);
+      final db = ref.read(currentUserDatabaseProvider);
       final messageDao = MessageDao(db);
       await messageDao.insertMessage(message);
     } catch (e) {

@@ -10,6 +10,7 @@ import '../../config/storage_config.dart';
 import '../../models/conversation.dart';
 import '../../models/conversation_user.dart';
 import '../../provider/conversation_list_provider.dart';
+import '../../provider/current_user_provider.dart';
 import '../../provider/websocket_provider.dart';
 import '../../widgets/message_popup_menu_route.dart';
 import '../../widgets/system_notification_tile.dart';
@@ -27,7 +28,6 @@ class MessageTabPage extends ConsumerStatefulWidget {
 
 class _MessageTabPageState extends ConsumerState<MessageTabPage> {
   int? selfUserId;
-  bool _initialLoading = true;
 
   @override
   void initState() {
@@ -49,17 +49,24 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
         .loadConversationsAndHistory();
 
     if (mounted) {
-      setState(() {
-        _initialLoading = false;
-      });
+      setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final localisations = AppLocalizations.of(context)!;
+
+    final currentUser = ref.watch(currentUserProvider);
+    if (currentUser == null) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
+
     final convState = ref.watch(conversationListProvider);
     final wsState = ref.watch(webSocketProvider);
-    final localisations = AppLocalizations.of(context)!;
 
     final conversations = convState.conversations;
 
@@ -184,114 +191,123 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
         ],
       ),
 
-      body: _initialLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : RefreshIndicator(
-              color: Colors.white,
-              backgroundColor: Colors.black87,
-              onRefresh: () async {
-                // 下拉刷新：重新请求最新会话列表
-                await ref
-                    .read(conversationListProvider.notifier)
-                    .loadConversationsAndHistory(isRefresh: true);
-              },
-              child: (conversations.isEmpty)
-                  ? EmptyWidget(
-                      icon: Icons.chat_bubble_outline_outlined,
-                      message: localisations.noConversationFound,
-                    )
-                  : ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(), // 允许下拉
-                      padding: const EdgeInsets.all(10),
-                      itemCount: conversations.isEmpty
-                          ? 2
-                          : conversations.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return SystemNotificationTile(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const SystemNotificationPage(),
-                                ),
-                              );
-                            },
-                          );
-                        }
-
-                        final Conversation c = conversations[index - 1];
-
-                        // Détermine si c'est une conversation de groupe
-                        final isGroupChat = c.users.length > 2;
-
-                        ConversationUser? peer;
-                        for (final u in c.users) {
-                          if (u.userId != selfUserId) {
-                            peer = u;
-                            break;
-                          }
-                        }
-
-                        if (!isGroupChat &&
-                            (peer == null || peer.user == null)) {
-                          return ListTile(
-                            leading: CircleAvatar(backgroundColor: Colors.grey),
-                            title: Text(
-                              localisations.loading,
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            subtitle: Text(
-                              "",
-                              style: TextStyle(color: Colors.white54),
-                            ),
-                          );
-                        }
-
-                        final lastMsg = c.lastMessage?.content ?? "";
-                        String timeStr = "";
-                        final lm = c.lastMessage;
-                        if (lm != null) {
-                          timeStr = TimeOfDay.fromDateTime(
-                            lm.createdAt,
-                          ).format(context);
-                        }
-
-                        String displayTitle;
-                        if (isGroupChat) {
-                          displayTitle = c.name ?? localisations.groupChat;
-                        } else {
-                          displayTitle =
-                              peer?.user?.nickname ?? "用户${peer?.userId ?? ''}";
-                        }
-
-                        String? avatarUrl;
-                        if (!isGroupChat && peer?.user?.avatar != null) {
-                          avatarUrl = peer!.user!.avatar;
-                        }
-
-                        return SystemNotificationTile(
-                          title: displayTitle,
-                          lastMessage: lastMsg,
-                          timeStr: timeStr,
-                          unreadCount: c.unreadCount,
-                          avatarUrl: avatarUrl,
-                          isGroupChat: isGroupChat,
-                          onTap: () {
-                            if (!isGroupChat && peer?.user == null) return;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    ChatDetailPage(user: peer!.user!),
-                              ),
-                            );
-                          },
-                        );
-                      },
+      body: RefreshIndicator(
+        color: Colors.white,
+        backgroundColor: Colors.black87,
+        onRefresh: () async {
+          // 下拉刷新：重新请求最新会话列表
+          await ref
+              .read(conversationListProvider.notifier)
+              .loadConversationsAndHistory(isRefresh: true);
+        },
+        child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(), // 允许下拉
+          padding: const EdgeInsets.all(10),
+          itemCount: conversations.isEmpty ? 2 : conversations.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return SystemNotificationTile(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SystemNotificationPage(),
                     ),
-            ),
+                  );
+                },
+              );
+            }
+
+            if (conversations.isEmpty) {
+              return SizedBox(
+                height: MediaQuery.of(context).size.height - 300,
+                child: EmptyWidget(
+                  icon: Icons.chat_bubble_outline_outlined,
+                  message: localisations.noConversationFound,
+                ),
+              );
+            }
+
+            final Conversation c = conversations[index - 1];
+
+            final uniqueUsers = c.users.where((item) {
+              final currentId = item.user?.id;
+              return currentId != null &&
+                  c.users.indexWhere((i) => i.user?.id == currentId) ==
+                      c.users.indexOf(item);
+            }).toList();
+            final isGroupChat = uniqueUsers.length > 2;
+
+            ConversationUser? peer;
+            for (final u in c.users) {
+              if (u.userId != selfUserId) {
+                peer = u;
+                break;
+              }
+            }
+
+            if (!isGroupChat && (peer == null || peer.user == null)) {
+              return ListTile(
+                leading: CircleAvatar(backgroundColor: Colors.grey),
+                title: Text(
+                  localisations.loading,
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: Text("", style: TextStyle(color: Colors.white54)),
+              );
+            }
+
+            final lastMsg = c.lastMessage?.content ?? "";
+            String timeStr = "";
+            final lm = c.lastMessage;
+            if (lm != null) {
+              timeStr = TimeOfDay.fromDateTime(lm.createdAt).format(context);
+            }
+
+            String displayTitle;
+            if (isGroupChat) {
+              displayTitle = c.name ?? localisations.groupChat;
+            } else {
+              displayTitle = peer?.user?.nickname ?? "用户${peer?.userId ?? ''}";
+            }
+
+            String? avatarUrl;
+            if (!isGroupChat && peer?.user?.avatar != null) {
+              avatarUrl = peer!.user!.avatar;
+            }
+
+            return SystemNotificationTile(
+              title: displayTitle,
+              lastMessage: lastMsg,
+              timeStr: timeStr,
+              unreadCount: c.unreadCount,
+              avatarUrl: avatarUrl,
+              isGroupChat: isGroupChat,
+              nickname: c.users
+                  .firstWhere(
+                    (element) => element.userId != selfUserId,
+                    orElse: () => ConversationUser(
+                      userId: 0,
+                      id: 0,
+                      conversationId: 0,
+                      joinedAt: DateTime.now(),
+                    ),
+                  )
+                  .user
+                  ?.nickname,
+              onTap: () {
+                if (!isGroupChat && peer?.user == null) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChatDetailPage(user: peer!.user!),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
     );
   }
 }

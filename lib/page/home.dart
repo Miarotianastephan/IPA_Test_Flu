@@ -73,15 +73,14 @@ class _HomePageState extends ConsumerState<HomePage> {
       {"icon": Icons.person, "label": AppLocalizations.of(context)!.profile},
     ];
 
+    final unread = ref.watch(totalUnreadCountProvider);
+
     return SafeArea(
       top: false,
       child: Row(
         children: List.generate(navItems.length, (index) {
           final item = navItems[index];
           final isSelected = index == _currentIndex;
-
-          final unread = ref.watch(totalUnreadCountProvider);
-
           final isMessageTab = item["key"] == "message";
 
           return Expanded(

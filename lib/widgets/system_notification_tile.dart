@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/widgets/encrypted_image.dart';
 
 class SystemNotificationTile extends StatelessWidget {
   final String? title;
@@ -9,6 +10,7 @@ class SystemNotificationTile extends StatelessWidget {
   final String? timeStr;
   final String? avatarUrl;
   final bool isGroupChat;
+  final String? nickname;
 
   const SystemNotificationTile({
     super.key,
@@ -19,6 +21,7 @@ class SystemNotificationTile extends StatelessWidget {
     this.timeStr,
     this.avatarUrl,
     this.isGroupChat = false,
+    this.nickname,
   });
 
   @override
@@ -57,15 +60,7 @@ class SystemNotificationTile extends StatelessWidget {
       );
     }
 
-    return CircleAvatar(
-      backgroundColor: Colors.grey,
-      backgroundImage: (avatarUrl ?? "").isNotEmpty
-          ? NetworkImage(avatarUrl!)
-          : null,
-      child: (avatarUrl ?? "").isEmpty
-          ? Icon(isGroupChat ? Icons.group : Icons.person, color: Colors.white)
-          : null,
-    );
+    return UserAvatar(url: avatarUrl, nickname: nickname, size: 40);
   }
 
   Widget? _buildTrailing() {

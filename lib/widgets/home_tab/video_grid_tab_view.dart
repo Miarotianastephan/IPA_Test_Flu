@@ -72,7 +72,9 @@ class VideoGridViewState extends ConsumerState<VideoGridTabView> {
     _itemHeights = List<double?>.filled(state.list.length, 300);
 
     if (state.loading && state.list.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
     }
 
     if (!state.loading && state.list.isEmpty) {

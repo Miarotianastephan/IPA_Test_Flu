@@ -552,4 +552,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get botCommand => 'Comando del bot';
+
+  @override
+  String get showLess => 'Mostrar menos';
+
+  @override
+  String get checkForUpdates => 'Buscar actualizaciones';
+
+  @override
+  String get version => 'Versión';
+
+  @override
+  String get noUpdateAvailable => 'No hay actualizaciones disponibles';
 }

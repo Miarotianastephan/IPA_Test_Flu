@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:live_app/models/first_open.dart';
 
 import '../../models/api_response.dart';
 import '../../models/page_response.dart';
@@ -17,10 +18,23 @@ class UserService extends BaseService {
     );
   }
 
-  Future<ApiResponse<UserInfo>> visitorLogin([String code = ""]) {
+  Future<ApiResponse<UserInfo>> visitorLogin(
+    int idFirstOpen, {
+    String? userid,
+    String? code,
+  }) {
+    Map<String, dynamic> body = {"id_first_open": idFirstOpen};
+
+    if (userid != null) {
+      body["user_id"] = userid;
+    }
+    if (code != null) {
+      body["code"] = code;
+    }
+
     return post<UserInfo>(
       UserApi.visitorLogin,
-      body: {"code": code},
+      body: body,
       fromJson: (json) => UserInfo.fromJson(json),
     );
   }
@@ -59,10 +73,14 @@ class UserService extends BaseService {
     );
   }
 
-  Future<ApiResponse<String>> bindPassword(String username, String nickname,String password) {
+  Future<ApiResponse<String>> bindPassword(
+    String username,
+    String nickname,
+    String password,
+  ) {
     return post<String>(
       UserApi.bindPassword,
-      body: {"username": username, "nickname":nickname,"password": password},
+      body: {"username": username, "nickname": nickname, "password": password},
       fromJson: (json) => json.toString(),
     );
   }
@@ -158,11 +176,18 @@ class UserService extends BaseService {
     );
   }
 
-  Future<ApiResponse<String>> firstOpen(Map<String, dynamic> deviceData) {
-    return post<String>(
+  Future<ApiResponse<FirstOpen>> firstOpen(
+    Map<String, dynamic> deviceData,
+  ) async {
+    final responseMap = await post<Map<String, dynamic>>(
       UserApi.firstOpen,
       body: deviceData,
-      fromJson: (json) => json.toString(),
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+
+    return ApiResponse<FirstOpen>.fromJson(
+      responseMap.toJson((value) => value),
+      (json) => FirstOpen.fromJson(json as Map<String, dynamic>),
     );
   }
 }

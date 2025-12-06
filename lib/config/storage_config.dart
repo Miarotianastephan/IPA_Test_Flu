@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
@@ -102,4 +106,23 @@ class StorageService {
   String? get userToken => getValue<String>('token');
 
   String? get userInfoJson => getValue<String>('user_info');
+
+  Future<void> deleteDatabaseForUser(int userId) async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final dbFile = File('${dir.path}/chat_user_$userId.sqlite');
+
+      if (await dbFile.exists()) {
+        await dbFile.delete();
+      }
+
+      final walFile = File('${dir.path}/chat_user_$userId.sqlite-wal');
+      if (await walFile.exists()) await walFile.delete();
+
+      final shmFile = File('${dir.path}/chat_user_$userId.sqlite-shm');
+      if (await shmFile.exists()) await shmFile.delete();
+    } catch (e, stack) {
+      debugPrintStack(stackTrace: stack);
+    }
+  }
 }

@@ -180,5 +180,9 @@
   "notProvided": "Not provided",
   "reachedEnd": "Reached the end",
   "systemEvent": "System Event",
-  "botCommand": "Bot Command"
+  "botCommand": "Bot Command",
+  "showLess": "Show less",
+  "checkForUpdates": "Check for updates",
+  "version": "Version",
+  "noUpdateAvailable": "No update available"
 }

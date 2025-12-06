@@ -18,13 +18,13 @@ List<FilterTab> getFilterTabs(BuildContext context) {
   ];
 }
 
-getFilterTabBar(TabController? tabController, context) {
+TabBar getFilterTabBar(TabController? tabController, context) {
   return TabBar(
     controller: tabController,
     isScrollable: false,
     padding: EdgeInsets.only(bottom: 10),
     labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-    indicatorColor: Colors.redAccent,
+    indicatorColor: Colors.white,
     labelColor: Colors.white,
     unselectedLabelColor: Colors.grey,
     labelStyle: TextStyle(

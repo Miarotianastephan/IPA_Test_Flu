@@ -104,7 +104,7 @@ class _ForumTabPageState extends ConsumerState<ForumTabPage>
         sort: sort,
         categoryId: categoryId,
       );
-      
+
       setState(() {
         _posts = res.data?.list ?? [];
         _hasMore = (res.data?.list.length ?? 0) == 20;
@@ -354,18 +354,7 @@ class _ForumTabPageState extends ConsumerState<ForumTabPage>
                               ),
                             );
                           }
-                          final post = _posts[index];
-                          if (index == _posts.length - 1 && _isLoadingMore) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            );
-                          }
-                          return ForumPostCard(post: post);
+                          return ForumPostCard(post: _posts[index]);
                         },
                       ),
                     ),

@@ -16,6 +16,7 @@ import '../provider/user_post_list_provider.dart';
 import '../provider/user_videos_provider.dart';
 import '../widgets/encrypted_image.dart';
 import '../widgets/video/user_video_grid.dart';
+import 'chat_detail_page.dart';
 
 class UserDetailPage extends ConsumerStatefulWidget {
   final UserInfo user;
@@ -137,7 +138,14 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                     actions: [
                       IconButton(
                         icon: const Icon(Icons.more_horiz, color: Colors.white),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChatDetailPage(user: user),
+                            ),
+                          );
+                        },
                       ),
                     ],
                     title: LayoutBuilder(

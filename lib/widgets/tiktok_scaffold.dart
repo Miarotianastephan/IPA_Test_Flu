@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -297,17 +298,19 @@ class TikTokScaffoldState extends State<TikTokScaffold>
   }
 
   // 水平方向滑动结束
-  onHorizontalDragEnd(details, screenWidth) {
-    if (!_enableGesture) return;
+  Future<dynamic>? onHorizontalDragEnd(DragEndDetails details, double screenWidth) {
+    if (!_enableGesture) return null;
     var vOffset = details.velocity.pixelsPerSecond.dx;
 
     // 速度很快时
     if (vOffset > scrollSpeed && inMiddle == 0) {
       // 去右边页面
       // return animateToPage(TikTokPagePositon.left);
+      return null;
     } else if (vOffset < -scrollSpeed && inMiddle == 0) {
       // 去左边页面
       // return animateToPage(TikTokPagePositon.right);
+      return null;
     } else if (inMiddle > 0 && vOffset < -scrollSpeed) {
       return animateToPage(TikTokPagePositon.middle, 0);
     } else if (inMiddle < 0 && vOffset > scrollSpeed) {
@@ -320,6 +323,7 @@ class TikTokScaffoldState extends State<TikTokScaffold>
     } else if (offsetX > 0) {
       // 去左边页面
       // return animateToPage(TikTokPagePositon.left);
+      return null;
     } else {
       // 去右边页面
       return animateToPage(TikTokPagePositon.right, 0);

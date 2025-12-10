@@ -269,31 +269,19 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
               leading: const Icon(Icons.favorite),
               title: Text(localizations.favorites),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => requireLogin(
-                localizations: localizations,
-                action: () => _navigate(context, const FavoritePage()),
-                userInfo: _userInfo,
-              ),
+              onTap: () => _navigate(context, const FavoritePage()),
             ),
             ListTile(
               leading: const Icon(Icons.history),
               title: Text(localizations.history),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => requireLogin(
-                localizations: localizations,
-                action: () => _navigate(context, const HistoryPage()),
-                userInfo: _userInfo,
-              ),
+              onTap: () => _navigate(context, const HistoryPage()),
             ),
             ListTile(
               leading: const Icon(Icons.thumb_up),
               title: Text(localizations.likes),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => requireLogin(
-                localizations: localizations,
-                action: () => _navigate(context, const LikePage()),
-                userInfo: _userInfo,
-              ),
+              onTap: () => _navigate(context, const LikePage()),
             ),
 
             if (!isVisitorUser(_userInfo))

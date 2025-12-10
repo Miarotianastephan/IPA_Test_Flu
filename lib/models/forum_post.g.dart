@@ -38,7 +38,7 @@ ForumPost _$ForumPostFromJson(Map<String, dynamic> json) => ForumPost(
   user: json['user'] == null
       ? null
       : SimpleUser.fromJson(json['user'] as Map<String, dynamic>),
-  tags: (json['tags'] as List<dynamic>?)
+  tags: (json['postTags'] as List<dynamic>?)
       ?.map((e) => ForumTag.fromJson(e as Map<String, dynamic>))
       .toList(),
 );
@@ -67,5 +67,5 @@ Map<String, dynamic> _$ForumPostToJson(ForumPost instance) => <String, dynamic>{
   'is_favorited': instance.isFavorited,
   'is_downvoted': instance.isDownvoted,
   'user': instance.user?.toJson(),
-  'tags': instance.tags?.map((e) => e.toJson()).toList(),
+  'postTags': instance.tags?.map((e) => e.toJson()).toList(),
 };

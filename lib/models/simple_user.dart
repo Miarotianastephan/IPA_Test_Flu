@@ -8,6 +8,7 @@ class SimpleUser {
   @JsonKey(fromJson: parseInt)
   final int id;
   final String nickname;
+  @JsonKey(defaultValue: "")
   final String avatar;
   @JsonKey(fromJson: parseBool)
   final bool isFollowed;

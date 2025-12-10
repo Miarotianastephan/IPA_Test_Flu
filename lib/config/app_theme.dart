@@ -76,12 +76,12 @@ class AppTheme {
         selectedItemColor: onPrimary,
         unselectedItemColor: onSurface.withAlpha(70),
         selectedLabelStyle: TextStyle(
-          fontSize: 16,
+          fontSize: 15,
           fontWeight: FontWeight.bold,
         ),
 
         unselectedLabelStyle: const TextStyle(
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: FontWeight.normal,
         ),
       ),

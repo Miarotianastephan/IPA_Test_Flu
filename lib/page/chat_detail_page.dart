@@ -228,8 +228,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                       }
 
                       final senderUserInfo = senderConvUser?.user;
-                      final avatarUrl =
-                          senderUserInfo?.avatar ?? widget.user.avatar ?? "";
+       
                       final nickname =
                           senderUserInfo?.nickname ??
                           senderUserInfo?.username ??
@@ -258,7 +257,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                               message: msg.content,
                               isSelf: msg.isSelf,
                               createdAt: msg.createdAt,
-                              avatarUrl: avatarUrl,
+                              avatarUrl: senderUserInfo?.avatar ?? "",
                               nickname: nickname,
                               userId: senderConvUser?.userId,
                               showFailed: msg.sendFailed,
@@ -298,7 +297,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                         message: msg.content,
                         isSelf: msg.isSelf,
                         createdAt: msg.createdAt,
-                        avatarUrl: avatarUrl,
+                        avatarUrl: senderUserInfo?.avatar ?? "",
                         nickname: nickname,
                         userId: senderConvUser?.userId,
                         showFailed: msg.sendFailed,

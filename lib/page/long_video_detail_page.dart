@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/video_info.dart';
+import 'package:live_app/widgets/video/mobile_video_player.dart';
 import 'package:live_app/widgets/video_screen.dart';
 
 import '../provider/video_detail_provider.dart';
@@ -21,12 +22,12 @@ class LongVideoDetailPage extends ConsumerStatefulWidget {
 class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
+  late VideoScreenController _videoController;
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-
+    _videoController = VideoScreenController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       markSeen();
     });
@@ -47,6 +48,7 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
   }
 
   void _pauseAndNavigate(VideoInfo video) {
+    _videoController.pause?.call();
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => LongVideoDetailPage(video: video)),
@@ -92,7 +94,10 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
                             AspectRatio(
                               aspectRatio: ratio,
                               child: Center(
-                                child: VideoScreen(videoUrl: widget.video.url),
+                                child: VideoScreen(
+                                  videoUrl: widget.video.url,
+                                  controller: _videoController,
+                                ),
                               ),
                             ),
                             Positioned(

@@ -1,55 +1,171 @@
+import 'dart:io';
+import 'package:chewie/chewie.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:live_app/widgets/video/mobile_video_controls_overlay.dart';
 import 'package:live_app/widgets/video/mobile_video_interaction_layer.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:video_player/video_player.dart';
 
 class MobileVideoPlayer extends StatefulWidget {
   final String videoUrl;
-
-  const MobileVideoPlayer({super.key, required this.videoUrl});
+  final VideoScreenController? controller;
+  const MobileVideoPlayer({
+    super.key,
+    required this.videoUrl,
+    required this.controller,
+  });
 
   @override
   State<MobileVideoPlayer> createState() => _MobileVideoPlayerState();
 }
 
-class _MobileVideoPlayerState extends State<MobileVideoPlayer> {
-  late final Player player;
-  late final VideoController controller;
+class VideoScreenController {
+  VoidCallback? pause;
+}
+
+class _MobileVideoPlayerState extends State<MobileVideoPlayer>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+  bool useMediaKit = false;
+  bool isInitialized = false;
+  Player? player;
+  VideoController? mediaKitController;
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
 
   @override
   void initState() {
     super.initState();
-    player = Player();
-    controller = VideoController(player);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      initPlayer();
+
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      useMediaKit = await _isHarmonyOS();
+      if (useMediaKit) {
+        await _initializeMediaKit();
+      } else {
+        await _initializeChewie();
+      }
+      widget.controller != null
+          ? widget.controller!.pause = () {
+              if (useMediaKit) {
+                player?.pause();
+              } else {}
+            }
+          : null;
+
+      if (useMediaKit) {
+        player?.play();
+      } else {
+        _videoPlayerController?.play();
+      }
+
+      setState(() {
+        isInitialized = true;
+      });
     });
   }
 
-  Future initPlayer() async {
-    await player.open(Media(widget.videoUrl), play: false);
-    await player.seek(Duration.zero);
-    await player.play();
-    await player.setVolume(100.0);
+  Future<bool> _isHarmonyOS() async {
+    if (!Platform.isAndroid) return false;
+    final info = await DeviceInfoPlugin().androidInfo;
+    return info.manufacturer.toLowerCase() == 'huawei';
+  }
+
+  Future<void> _initializeMediaKit() async {
+    WidgetsBinding.instance.removeObserver(this);
+    if (player != null) {
+      mediaKitController = null;
+      player!.pause();
+      player?.dispose();
+    }
+    player = Player();
+    mediaKitController = VideoController(player!);
+
+    try {
+      await player!.open(Media(widget.videoUrl), play: false);
+      await player!.play();
+
+      setState(() {
+        isInitialized = true;
+      });
+    } catch (e) {
+      debugPrint('Error initializing MediaKit: $e');
+    }
+  }
+
+  Future<void> _initializeChewie() async {
+    _videoPlayerController = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoUrl),
+    );
+
+    try {
+      await _videoPlayerController!.initialize();
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController!,
+        autoPlay: true,
+        looping: false,
+        showControls: false,
+        autoInitialize: true,
+      );
+    } catch (e) {
+      debugPrint('Error initializing Chewie: $e');
+    }
   }
 
   @override
   void dispose() {
-    player.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    player?.pause();
+    player?.dispose();
+    player = null;
+    mediaKitController = null;
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+
     super.dispose();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      player?.pause();
+      _videoPlayerController?.pause();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
-      body: Stack(
-        children: [
-          Video(controller: controller, controls: null),
-          MobileVideoInteractionLayer(player: player),
-          MobileVideoControlsOverlay(player: player, controller: controller),
-        ],
-      ),
+      backgroundColor: Colors.black,
+      body: isInitialized
+          ? Stack(
+              children: [
+                useMediaKit
+                    ? Video(controller: mediaKitController!, controls: null)
+                    : _chewieController != null
+                    ? Chewie(controller: _chewieController!)
+                    : const SizedBox.shrink(),
+                MobileVideoInteractionLayer(
+                  player: player,
+                  useMediaKit: useMediaKit,
+                  chewieController: _chewieController,
+                ),
+                MobileVideoControlsOverlay(
+                  player: player,
+                  useMediaKit: useMediaKit,
+                  chewieController: _chewieController,
+                  videoController: _videoPlayerController,
+                ),
+              ],
+            )
+          : const Center(child: CircularProgressIndicator(color: Colors.white)),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }

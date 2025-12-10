@@ -223,6 +223,18 @@ class VideoDetailNotifier extends StateNotifier<VideoDetailState> {
       debugPrint(e.toString());
     }
   }
+
+  /// 增加评论数
+  void incrementCommentCount() {
+    final video = state.video;
+    if (video == null) return;
+
+    state = state.copyWith(
+      video: video.copyWith(
+        commentCount: video.commentCount + 1,
+      ),
+    );
+  }
 }
 
 final videoDetailProvider =

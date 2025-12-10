@@ -24,8 +24,8 @@ Future<void> main() async {
   await Firebase.initializeApp();
   await dotenv.load(fileName: ".env");
   await NotificationService.instance.init();
-  MediaKit.ensureInitialized();
   await initWindowManager();
+  MediaKit.ensureInitialized();
   await StorageService.instance.init();
   runApp(const ProviderScope(child: MyApp()));
 }

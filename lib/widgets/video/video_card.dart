@@ -117,7 +117,7 @@ class _VideoCardState extends ConsumerState<VideoCard> {
                             children: [
                               Icon(
                                 Icons.play_arrow,
-                                size: responsive.videoCardIconSize,
+                                size: 20,
                                 color: Colors.white,
                               ),
                               const SizedBox(width: 2),

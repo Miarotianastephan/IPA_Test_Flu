@@ -46,7 +46,6 @@ class _GalleryPageState extends State<GalleryPage> {
               pageController: _pageController,
               builder: (ctx, index) {
                 final item = widget.items[index];
-                debugPrint("Video URLLLLL : ${item.url}");
                 if (item.isVideo) {
                   return PhotoViewGalleryPageOptions.customChild(
                     child: _VideoPlayerView(url: item.url),
@@ -129,13 +128,7 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
-      ..initialize().then((_) {
-        setState(() {
-          isLoad = true;
-        });
-        _controller.play();
-      });
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
   }
 
   @override
@@ -146,15 +139,6 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
 
   @override
   Widget build(BuildContext context) {
-    return isLoad == false
-        ? VideoScreen(videoUrl: widget.url)
-        : Center(
-            child: _controller.value.isInitialized
-                ? AspectRatio(
-                    aspectRatio: _controller.value.aspectRatio,
-                    child: VideoPlayer(_controller),
-                  )
-                : const CircularProgressIndicator(color: Colors.white),
-          );
+    return VideoScreen(videoUrl: widget.url, controller: null,);
   }
 }

@@ -173,6 +173,7 @@ class VideoGridItem extends StatelessWidget {
                   VideoStatItem(
                     icon: Icons.play_arrow_rounded,
                     count: video.viewCount,
+                    size: 20,
                   ),
                   VideoStatItem(icon: Icons.comment, count: video.commentCount),
                 ],

@@ -84,18 +84,21 @@ class _HomePageState extends ConsumerState<HomePage> {
           final isMessageTab = item["key"] == "message";
 
           return Expanded(
-            child: _buildItem(
-              context,
-              theme,
-              item["icon"],
-              item["label"],
-              isSelected,
-              onTap: () {
-                setState(() => _currentIndex = index);
-                tkController.enableGesture = (index == 0);
-              },
-              showBadge: isMessageTab && unread > 0,
-              badgeCount: unread,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: _buildItem(
+                context,
+                theme,
+                item["icon"],
+                item["label"],
+                isSelected,
+                onTap: () {
+                  setState(() => _currentIndex = index);
+                  tkController.enableGesture = (index == 0);
+                },
+                showBadge: isMessageTab && unread > 0,
+                badgeCount: unread,
+              ),
             ),
           );
         }),

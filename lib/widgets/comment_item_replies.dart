@@ -111,98 +111,101 @@ class _CommentItemRepliesState extends ConsumerState<CommentItemReplies> {
 
     return Material(
       color: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            UserAvatar(
-              userId: toUser?.id ?? user?.id,
-              url: toUser?.avatar ?? user?.avatar,
-              nickname: toUser?.nickname ?? user?.nickname,
-              size: 32,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        toUser?.nickname ??
-                            user?.nickname ??
-                            localizations.unknownUser,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      if (toUser != null && user != null) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.chevron_right,
-                          size: 16,
-                          color: subTextColor,
-                        ),
-                        const SizedBox(width: 4),
+      child: InkWell(
+        onTap: widget.onClick != null ? () => widget.onClick!(widget.comment) : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              UserAvatar(
+                userId: toUser?.id ?? user?.id,
+                url: toUser?.avatar ?? user?.avatar,
+                nickname: toUser?.nickname ?? user?.nickname,
+                size: 32,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
                         Text(
-                          user.nickname ?? "",
+                          toUser?.nickname ??
+                              user?.nickname ??
+                              localizations.unknownUser,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: replyColor,
+                            color: textColor,
+                          ),
+                        ),
+                        if (toUser != null && user != null) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 16,
+                            color: subTextColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            user.nickname ?? "",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: replyColor,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.comment.content,
+                      style: TextStyle(color: textColor),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          DateFormat(
+                            'yyyy-MM-dd  HH:mm',
+                          ).format(widget.comment.createdAt),
+                          style: TextStyle(color: subTextColor, fontSize: 12),
+                        ),
+                        const Spacer(),
+                        InkWell(
+                          onTap: toggleLike,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isLike ? Icons.favorite : Icons.favorite_border,
+                                color: isLike
+                                    ? Colors.red
+                                    : (widget.darkStyle
+                                          ? Colors.grey
+                                          : Colors.white70),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                "$likeCount",
+                                style: TextStyle(
+                                  color: subTextColor,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    widget.comment.content,
-                    style: TextStyle(color: textColor),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        DateFormat(
-                          'yyyy-MM-dd  HH:mm',
-                        ).format(widget.comment.createdAt),
-                        style: TextStyle(color: subTextColor, fontSize: 12),
-                      ),
-                      const Spacer(),
-                      InkWell(
-                        onTap: toggleLike,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isLike ? Icons.favorite : Icons.favorite_border,
-                              color: isLike
-                                  ? Colors.red
-                                  : (widget.darkStyle
-                                        ? Colors.grey
-                                        : Colors.white70),
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "$likeCount",
-                              style: TextStyle(
-                                color: subTextColor,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

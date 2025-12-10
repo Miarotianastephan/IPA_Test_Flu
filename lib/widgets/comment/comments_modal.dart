@@ -5,9 +5,7 @@ import 'package:live_app/models/video_comment.dart';
 import 'package:live_app/widgets/comment_item_replies.dart';
 import 'package:live_app/widgets/empty_widget.dart';
 
-import '../../api/services/video_service.dart';
-import '../../models/page_params.dart';
-import '../../provider/api_provider.dart';
+import '../../provider/video_comments_provider.dart';
 import '../comment_item.dart';
 import 'comment_input_bar.dart';
 
@@ -30,114 +28,24 @@ class CommentsModal extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<CommentsModal> createState() => CommentsModalState();
+  ConsumerState<CommentsModal> createState() => _CommentsModalState();
 }
 
-class CommentsModalState extends ConsumerState<CommentsModal> {
+class _CommentsModalState extends ConsumerState<CommentsModal> {
   final Set<int> _expandedComments = {};
-  List<VideoComment> comments = [];
-  late final VideoService videoService;
   final TextEditingController _commentController = TextEditingController();
-
-  int page = 1;
-  bool _loaded = false; // 是否加载过
-  bool _loading = false; // 是否正在加载
-  bool _finished = false; // 是否加载完成所有评论
-
-  double? dragStartX;
-
   VideoComment? _replyingTo;
   String? _replyingToName;
 
   @override
   void initState() {
     super.initState();
-    videoService = ref.read(videoServiceProvider);
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    if (_loaded || _loading) return;
-    await fetchComments(refresh: true);
-  }
-
-  Future<void> fetchComments({bool refresh = false}) async {
-    try {
-      if (refresh) {
-        setState(() {
-          _loading = true;
-          _finished = false;
-        });
-      }
-
-      final nextPage = refresh ? 1 : page + 1;
-      final apiResponse = await videoService.videoRootCommentList(
-        PageParams(page: nextPage),
-        widget.videoId,
-      );
-      if (!mounted) return;
-
-      final newList = (apiResponse.data?.list ?? [])
-          .map((e) => VideoComment.fromJson(e.toJson()))
-          .where((comment) => comment.parentId == 0)
-          .toList();
-
-      for (var comment in newList) {
-        try {
-          final childResponse = await videoService.videoChildCommentList(
-            PageParams(page: 1),
-            comment.id,
-          );
-          if (!mounted) return;
-
-          final index = newList.indexOf(comment);
-          if (index != -1) {
-            newList[index] = VideoComment(
-              id: comment.id,
-              videoId: comment.videoId,
-              userId: comment.userId,
-              content: comment.content,
-              parentId: comment.parentId,
-              likeCount: comment.likeCount,
-              createdAt: comment.createdAt,
-              childCount: childResponse.data?.total ?? comment.childCount,
-              isLike: comment.isLike,
-              commentUser: comment.commentUser,
-              commentToUser: comment.commentToUser,
-              vCommentLikes: comment.vCommentLikes,
-            );
-          }
-        } catch (e) {
-          debugPrint(
-            'Error fetching child count for comment ${comment.id}: $e',
-          );
-        }
-      }
-
-      setState(() {
-        page = nextPage;
-        if (refresh) {
-          comments = newList;
-          _loading = false;
-        } else {
-          comments.addAll(newList);
-        }
-        _loaded = true;
-        if (apiResponse.data?.total != null &&
-            comments.length >= apiResponse.data!.total) {
-          _finished = true;
-        }
-      });
-    } catch (e, st) {
-      debugPrint("${refresh ? '刷新' : '加载更多'}评论失败: $e");
-      debugPrintStack(stackTrace: st);
-      if (refresh && mounted) {
-        setState(() {
-          _loading = false;
-          _loaded = true;
-        });
-      }
-    }
+    // Charger les commentaires initiaux
+    Future.microtask(
+      () => ref
+          .read(commentsProvider(widget.videoId).notifier)
+          .fetch(refresh: true),
+    );
   }
 
   void onReplyComment(VideoComment comment) {
@@ -154,13 +62,15 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
 
   @override
   Widget build(BuildContext context) {
-    final topLevelComments = comments;
+    final state = ref.watch(commentsProvider(widget.videoId));
     final localisations = AppLocalizations.of(context)!;
+    final comments = state.comments;
 
     return Container(
       decoration: const BoxDecoration(color: Colors.white),
       child: Column(
         children: [
+          // Drag handle & header
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onVerticalDragUpdate: (details) {
@@ -168,10 +78,8 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
                   details.primaryDelta! / widget.height;
             },
             onVerticalDragEnd: (details) {
-              if (details.velocity.pixelsPerSecond.dy > 700) {
-                widget.transitionController.fling(velocity: -1);
-                widget.onTapClose();
-              } else if (widget.transitionController.value < 0.5) {
+              if (details.velocity.pixelsPerSecond.dy > 700 ||
+                  widget.transitionController.value < 0.5) {
                 widget.transitionController.fling(velocity: -1);
                 widget.onTapClose();
               } else {
@@ -181,7 +89,7 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
             child: Column(
               children: [
                 Container(
-                  margin: const EdgeInsets.only(top: 8, bottom: 8),
+                  margin: const EdgeInsets.symmetric(vertical: 8),
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
@@ -196,8 +104,8 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        AppLocalizations.of(context)!.comments,
-                        style: TextStyle(
+                        localisations.comments,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: Colors.black,
@@ -213,49 +121,55 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
               ],
             ),
           ),
+          // Comments list
           Expanded(
             child: RefreshIndicator(
               backgroundColor: Colors.white,
-              onRefresh: () => fetchComments(refresh: true),
+              onRefresh: () async {
+                await ref
+                    .read(commentsProvider(widget.videoId).notifier)
+                    .fetch(refresh: true);
+              },
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
                   if (notification.metrics.pixels >=
                           notification.metrics.maxScrollExtent - 100 &&
-                      !_loading &&
-                      !_finished) {
-                    fetchComments();
+                      !state.loading &&
+                      !state.finished) {
+                    ref.read(commentsProvider(widget.videoId).notifier).fetch();
                   }
                   return false;
                 },
-                child: (topLevelComments.isEmpty)
-                    ? Expanded(
-                        child: Center(
-                          child: SingleChildScrollView(
-                            child: EmptyWidget(
-                              icon: Icons.message_outlined,
-                              message: localisations.noCommentsYet,
-                            ),
+                child: state.loading && !state.loadedOnce
+                    ? const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : comments.isEmpty
+                    ? Center(
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: EmptyWidget(
+                            icon: Icons.message_outlined,
+                            message: localisations.noCommentsYet,
                           ),
                         ),
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.only(bottom: 0, top: 10),
-                        itemCount: topLevelComments.length + 1,
+                        itemCount: comments.length + 1,
                         itemBuilder: (context, index) {
-                          if (index == topLevelComments.length) {
-                            if (_finished) {
+                          if (index == comments.length) {
+                            if (state.finished) {
                               return Padding(
-                                padding: EdgeInsets.all(16.0),
+                                padding: const EdgeInsets.all(16.0),
                                 child: Center(
                                   child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.noMoreComments,
-                                    style: TextStyle(color: Colors.grey),
+                                    localisations.noMoreComments,
+                                    style: const TextStyle(color: Colors.grey),
                                   ),
                                 ),
                               );
-                            } else if (_loading) {
+                            } else if (state.loading) {
                               return const Padding(
                                 padding: EdgeInsets.all(16.0),
                                 child: Center(
@@ -268,10 +182,13 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
                               return const SizedBox.shrink();
                             }
                           }
-                          final comment = topLevelComments[index];
+                          final comment = comments[index];
                           final expanded = _expandedComments.contains(
                             comment.id,
                           );
+                          final repliesState =
+                              state.repliesMap[comment.id] ?? RepliesState();
+
                           return CommentItem(
                             key: ValueKey(comment.id),
                             comment: comment,
@@ -279,13 +196,21 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
                             expanded: expanded,
                             onClick: onReplyComment,
                             onToggleExpand: () {
-                              setState(() {
-                                if (expanded) {
+                              if (expanded) {
+                                setState(() {
                                   _expandedComments.remove(comment.id);
-                                } else {
+                                });
+                              } else {
+                                setState(() {
                                   _expandedComments.add(comment.id);
-                                }
-                              });
+                                });
+                                // Charger les replies au moment de l'expansion
+                                ref
+                                    .read(
+                                      commentsProvider(widget.videoId).notifier,
+                                    )
+                                    .fetchReplies(comment.id);
+                              }
                             },
                             childComments: expanded
                                 ? Padding(
@@ -293,9 +218,49 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
                                       left: 56.0,
                                       bottom: 8.0,
                                     ),
-                                    child: ChildCommentsList(
-                                      parentId: comment.id,
-                                      onClick: onReplyComment,
+                                    child: Column(
+                                      children: [
+                                        ...repliesState.list.map(
+                                          (c) => Padding(
+                                            key: ValueKey(c.id),
+                                            padding: const EdgeInsets.only(
+                                              bottom: 8.0,
+                                            ),
+                                            child: CommentItemReplies(
+                                              comment: c,
+                                              darkStyle: true,
+                                              onClick: onReplyComment,
+                                            ),
+                                          ),
+                                        ),
+                                        if (repliesState.loading)
+                                          const Padding(
+                                            padding: EdgeInsets.all(8.0),
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        if (!repliesState.finished &&
+                                            !repliesState.loading &&
+                                            repliesState.list.isNotEmpty)
+                                          TextButton(
+                                            onPressed: () {
+                                              ref
+                                                  .read(
+                                                    commentsProvider(
+                                                      widget.videoId,
+                                                    ).notifier,
+                                                  )
+                                                  .fetchReplies(comment.id);
+                                            },
+                                            child: Text(
+                                              localisations.loadMoreReplies,
+                                              style: const TextStyle(
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   )
                                 : null,
@@ -307,6 +272,7 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
               ),
             ),
           ),
+          // Comment input
           AnimatedPadding(
             duration: const Duration(milliseconds: 0),
             padding: EdgeInsets.only(
@@ -322,9 +288,8 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
                 color: Colors.white,
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 0),
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
                   child: CommentInputBar(
                     controller: _commentController,
                     replyingToName: _replyingToName,
@@ -336,16 +301,32 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
                     },
                     darkStyle: true,
                     onSend: (content) async {
-                      await videoService.commentVideo(
-                        widget.videoId,
-                        content,
-                        parentId: _replyingTo?.id,
-                      );
+                      final parentId = _replyingTo?.id;
+
+                      final response = await ref
+                          .read(commentsProvider(widget.videoId).notifier)
+                          .videoService
+                          .commentVideo(
+                            widget.videoId,
+                            content,
+                            parentId: parentId,
+                          );
+
                       setState(() {
                         _replyingTo = null;
                         _replyingToName = null;
                       });
-                      fetchComments(refresh: true);
+
+                      if (response.data != null) {
+                        await ref
+                            .read(commentsProvider(widget.videoId).notifier)
+                            .addComment(response.data!);
+                      }
+
+                      await ref
+                          .read(commentsProvider(widget.videoId).notifier)
+                          .refreshAfterComment(parentId: parentId);
+
                       widget.onComment();
                     },
                   ),
@@ -355,105 +336,6 @@ class CommentsModalState extends ConsumerState<CommentsModal> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class ChildCommentsList extends ConsumerStatefulWidget {
-  final int parentId;
-  final void Function(VideoComment) onClick;
-  final bool darkStyle;
-
-  const ChildCommentsList({
-    super.key,
-    required this.parentId,
-    required this.onClick,
-    this.darkStyle = true,
-  });
-
-  @override
-  ConsumerState<ChildCommentsList> createState() => _ChildCommentsListState();
-}
-
-class _ChildCommentsListState extends ConsumerState<ChildCommentsList> {
-  List<VideoComment> _childComments = [];
-  int _page = 1;
-  bool _loading = false;
-  bool _finished = false;
-
-  late final VideoService videoService;
-
-  @override
-  void initState() {
-    super.initState();
-    videoService = ref.read(videoServiceProvider);
-    _fetchData(refresh: true);
-  }
-
-  Future<void> _fetchData({bool refresh = false}) async {
-    if (_loading || _finished && !refresh) return;
-
-    setState(() => _loading = true);
-    try {
-      final nextPage = refresh ? 1 : _page + 1;
-      final apiResponse = await videoService.videoChildCommentList(
-        PageParams(page: nextPage),
-        widget.parentId,
-      );
-
-      final newList = (apiResponse.data?.list ?? [])
-          .map((e) => VideoComment.fromJson(e.toJson()))
-          .toList();
-
-      setState(() {
-        if (refresh) {
-          _childComments = newList;
-          _page = 1;
-          _finished = newList.isEmpty;
-        } else {
-          _childComments.addAll(newList);
-          _page = nextPage;
-          if (newList.isEmpty) _finished = true;
-        }
-        if (apiResponse.data?.total == _childComments.length) {
-          _finished = true;
-        }
-      });
-    } catch (e, st) {
-      debugPrint("加载子评论失败: $e");
-      debugPrintStack(stackTrace: st);
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ..._childComments.map(
-          (c) => Padding(
-            key: ValueKey(c.id),
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: CommentItemReplies(comment: c, darkStyle: widget.darkStyle),
-          ),
-        ),
-        if (_loading)
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        if (!_finished && !_loading)
-          TextButton(
-            onPressed: () => _fetchData(),
-            child: Text(
-              AppLocalizations.of(context)!.loadMoreReplies,
-              style: TextStyle(
-                color: widget.darkStyle ? Colors.blue : Colors.lightBlueAccent,
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

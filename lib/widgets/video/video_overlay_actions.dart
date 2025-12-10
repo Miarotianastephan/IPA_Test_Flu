@@ -19,6 +19,7 @@ class VideoOverlayActions extends ConsumerStatefulWidget {
   final Future<void> Function(bool) onFavoriteChanged; // 新增收藏回调
   final void Function(VideoInfo) onUserTap;
   final void Function(bool) onHidden;
+  final VoidCallback? onCommentAdded; // Nouveau callback
 
   const VideoOverlayActions({
     super.key,
@@ -33,6 +34,7 @@ class VideoOverlayActions extends ConsumerStatefulWidget {
     required this.onFavoriteChanged,
     required this.onUserTap,
     required this.onHidden,
+    this.onCommentAdded,
   });
 
   @override
@@ -50,12 +52,14 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
   OverlayEntry? _splashEntry;
   int _favoriteCount = 0;
   int _likeCount = 0;
+  int _commentCount = 0;
 
   @override
   void initState() {
     super.initState();
     _favoriteCount = widget.video.favoriteCount;
     _likeCount = widget.video.likeCount;
+    _commentCount = widget.commentCount;
     _likeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -82,6 +86,22 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
         weight: 50, // 后 50% 的时间淡出
       ),
     ]).animate(_likeController);
+  }
+
+  @override
+  void didUpdateWidget(VideoOverlayActions oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.commentCount != widget.commentCount) {
+      setState(() {
+        _commentCount = widget.commentCount;
+      });
+    }
+  }
+
+  void incrementCommentCount() {
+    setState(() {
+      _commentCount++;
+    });
   }
 
   @override
@@ -320,9 +340,11 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                       _buildAction(
                         icon: Icons.comment,
                         color: Colors.white,
-                        onTap: () => widget.showModal(),
+                        onTap: () {
+                          widget.showModal();
+                        },
                         showText: true,
-                        count: widget.commentCount,
+                        count: _commentCount,
                       ),
                       const SizedBox(height: 15),
 

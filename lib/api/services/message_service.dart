@@ -97,7 +97,7 @@ class MessageService extends BaseService {
   Future<ApiResponse<Conversation>> getConversationBetween(int userId) {
     return post<Conversation>(
       MessageApi.conversationBetween,
-      body: {"id": userId.toString()},
+      body: {"id": userId.toString(), "type": "single"},
       fromJson: (json) => Conversation.fromJson(json),
     );
   }

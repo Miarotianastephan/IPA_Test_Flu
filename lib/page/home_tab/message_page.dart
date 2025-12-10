@@ -68,7 +68,11 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
     final convState = ref.watch(conversationListProvider);
     final wsState = ref.watch(webSocketProvider);
 
-    final conversations = convState.conversations;
+    final conversationsState = convState.conversations;
+    final  conversations = conversationsState
+    .where((c) => c.lastMessageId != 0)
+    .toList();
+
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -275,36 +279,36 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
             if (!isGroupChat && peer?.user?.avatar != null) {
               avatarUrl = peer!.user!.avatar;
             }
-
-            return SystemNotificationTile(
-              title: displayTitle,
-              lastMessage: lastMsg,
-              timeStr: timeStr,
-              unreadCount: c.unreadCount,
-              avatarUrl: avatarUrl,
-              isGroupChat: isGroupChat,
-              nickname: c.users
-                  .firstWhere(
-                    (element) => element.userId != selfUserId,
-                    orElse: () => ConversationUser(
-                      userId: 0,
-                      id: 0,
-                      conversationId: 0,
-                      joinedAt: DateTime.now(),
+         
+              return SystemNotificationTile(
+                title: displayTitle,
+                lastMessage: lastMsg,
+                timeStr: timeStr,
+                unreadCount: c.unreadCount,
+                avatarUrl: avatarUrl,
+                isGroupChat: isGroupChat,
+                nickname: c.users
+                    .firstWhere(
+                      (element) => element.userId != selfUserId,
+                      orElse: () => ConversationUser(
+                        userId: 0,
+                        id: 0,
+                        conversationId: 0,
+                        joinedAt: DateTime.now(),
+                      ),
+                    )
+                    .user
+                    ?.nickname,
+                onTap: () {
+                  if (!isGroupChat && peer?.user == null) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChatDetailPage(user: peer!.user!),
                     ),
-                  )
-                  .user
-                  ?.nickname,
-              onTap: () {
-                if (!isGroupChat && peer?.user == null) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ChatDetailPage(user: peer!.user!),
-                  ),
-                );
-              },
-            );
+                  );
+                },
+              );
           },
         ),
       ),

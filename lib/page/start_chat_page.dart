@@ -17,7 +17,7 @@ class StartChatPage extends ConsumerStatefulWidget {
 }
 
 class _StartChatPageState extends ConsumerState<StartChatPage> {
-  String _keyword = "za";
+  String _keyword = "";
   bool _userLoaded = false;
   bool _hasSearched = false; // 是否发起过搜索
 

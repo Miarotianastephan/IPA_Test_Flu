@@ -9,7 +9,7 @@ part of 'simple_user.dart';
 SimpleUser _$SimpleUserFromJson(Map<String, dynamic> json) => SimpleUser(
   id: parseInt(json['id']),
   nickname: json['nickname'] as String,
-  avatar: json['avatar'] as String,
+  avatar: json['avatar'] as String? ?? '',
   bio: json['bio'] as String,
   isFollowed: json['isFollowed'] == null
       ? false

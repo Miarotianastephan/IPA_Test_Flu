@@ -15,6 +15,7 @@ BaseListState<T> _$BaseListStateFromJson<T>(
   total: (json['total'] as num?)?.toInt() ?? 0,
   loading: json['loading'] == null ? false : parseBool(json['loading']),
   finished: json['finished'] == null ? false : parseBool(json['finished']),
+  offset: (json['offset'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$BaseListStateToJson<T>(
@@ -26,4 +27,5 @@ Map<String, dynamic> _$BaseListStateToJson<T>(
   'total': instance.total,
   'loading': instance.loading,
   'finished': instance.finished,
+  'offset': instance.offset,
 };

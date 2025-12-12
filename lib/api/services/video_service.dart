@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/rendering.dart';
 import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/models/search_video_request.dart';
 import 'package:live_app/models/userinfo.dart';
@@ -33,9 +32,7 @@ class VideoService extends BaseService {
   Future<ApiResponse<String>> favoriteVideo(int videoId) async {
     return post<String>(
       VideoApi.favoriteVideo,
-      body: {
-        "video_id": videoId.toString(),
-      },
+      body: {"video_id": videoId.toString()},
       fromJson: (json) => json.toString(),
     );
   }
@@ -43,9 +40,7 @@ class VideoService extends BaseService {
   Future<ApiResponse<String>> unFavoriteVideo(int videoId) async {
     return post<String>(
       VideoApi.unFavoriteVideo,
-      body: {
-        "video_id": videoId.toString(),
-      },
+      body: {"video_id": videoId.toString()},
       fromJson: (json) => json.toString(),
     );
   }
@@ -61,9 +56,7 @@ class VideoService extends BaseService {
   Future<ApiResponse<String>> unlikeVideo(int videoId) async {
     return post<String>(
       VideoApi.unlikeVideo,
-      body: {
-        "video_id": videoId.toString(),
-      },
+      body: {"video_id": videoId.toString()},
       fromJson: (json) => json.toString(),
     );
   }
@@ -71,9 +64,7 @@ class VideoService extends BaseService {
   Future<ApiResponse<String>> likeVideo(int videoId) async {
     return post<String>(
       VideoApi.likeVideo,
-      body: {
-        "video_id": videoId.toString(),
-      },
+      body: {"video_id": videoId.toString()},
       fromJson: (json) => json.toString(),
     );
   }
@@ -137,7 +128,7 @@ class VideoService extends BaseService {
   Future<ApiResponse<String>> cancelCommentLike(int commentId) async {
     return post<String>(
       VideoApi.cancelCommentLike,
-      body: {"comment_id": commentId.toString() },
+      body: {"comment_id": commentId.toString()},
       fromJson: (json) => json.toString(),
     );
   }

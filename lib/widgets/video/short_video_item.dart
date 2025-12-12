@@ -72,7 +72,7 @@ class ShortVideoItem extends ConsumerStatefulWidget {
 }
 
 class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with SingleTickerProviderStateMixin {
   late bool _isFollowed;
   late bool _isLike;
   late bool _isFavorite;
@@ -140,7 +140,6 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
           VideoPlayerController.networkUrl(Uri.parse(widget.videoInfo.url))
             ..initialize().then((_) {
               setState(() {});
-              _videoController!.play();
             });
     }
 
@@ -153,7 +152,6 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
 
     try {
       await _player!.open(Media(widget.videoInfo.url), play: false);
-      await _player!.play();
     } catch (e) {
       debugPrint('Error initializing MediaKit: $e');
     }
@@ -261,12 +259,15 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
   void dispose() {
     _hideTimer?.cancel();
     _transitionController.dispose();
+
     if (useMediaKit) {
+      _player?.pause();
       _player?.dispose();
     } else {
-      _videoController!.pause();
-      _videoController!.dispose();
+      _videoController?.pause();
+      _videoController?.dispose();
     }
+
     super.dispose();
   }
 
@@ -284,8 +285,6 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-
     final video = widget.videoInfo;
     final mediaQuery = MediaQuery.of(context);
     double availableHeight = 0;
@@ -311,9 +310,17 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
         key: Key(video.id.toString()),
         onVisibilityChanged: (info) {
           if (info.visibleFraction == 0) {
-            useMediaKit ? _player?.pause() : _videoController!.pause();
+            if (useMediaKit) {
+              _player?.pause();
+            } else {
+              _videoController?.pause();
+            }
           } else if (info.visibleFraction > 0.8) {
-            useMediaKit ? _player?.play() : _videoController!.play();
+            if (useMediaKit) {
+              _player?.play();
+            } else {
+              _videoController?.play();
+            }
           }
         },
         child: Stack(
@@ -337,7 +344,10 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
                                   : BoxFit.cover,
                               controls: null,
                             )
-                          : VideoPlayer(_videoController!),
+                          : SizedBox(
+                              width: double.infinity,
+                              child: VideoPlayer(_videoController!),
+                            ),
                     ),
 
                     SizedBox(
@@ -352,7 +362,27 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: _toggleControls,
+                onTap: () {
+                  _toggleControls();
+
+                  if (useMediaKit) {
+                    if (_player!.state.playing) {
+                      _player!.pause();
+                      setState(() => isPlaying = false);
+                    } else {
+                      _player!.play();
+                      setState(() => isPlaying = true);
+                    }
+                  } else {
+                    if (_videoController!.value.isPlaying) {
+                      _videoController!.pause();
+                      setState(() => isPlaying = false);
+                    } else {
+                      _videoController!.play();
+                      setState(() => isPlaying = true);
+                    }
+                  }
+                },
                 child: Center(
                   child: AnimatedOpacity(
                     opacity: _controlsVisible ? 1 : 0,
@@ -468,28 +498,30 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
                           },
                           child: SizedBox(
                             height: 6,
-                            child: SliderTheme(
-                              data: SliderTheme.of(context).copyWith(
-                                trackHeight: 4,
-                                thumbShape: const RoundSliderThumbShape(
-                                  enabledThumbRadius: 6,
+                            child: MaterialWrapper(
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  trackHeight: 4,
+                                  thumbShape: const RoundSliderThumbShape(
+                                    enabledThumbRadius: 6,
+                                  ),
+                                  overlayShape: const RoundSliderOverlayShape(
+                                    overlayRadius: 12,
+                                  ),
+                                  activeTrackColor: Colors.white,
+                                  inactiveTrackColor: Colors.white30,
+                                  thumbColor: Colors.white,
+                                  overlayColor: Colors.white24,
                                 ),
-                                overlayShape: const RoundSliderOverlayShape(
-                                  overlayRadius: 12,
+                                child: Slider(
+                                  value: progress.isNaN
+                                      ? 0.0
+                                      : progress.clamp(0.0, 1.0),
+                                  onChanged: (value) {
+                                    _showControls();
+                                    _player!.seek(duration * value);
+                                  },
                                 ),
-                                activeTrackColor: Colors.white,
-                                inactiveTrackColor: Colors.white30,
-                                thumbColor: Colors.white,
-                                overlayColor: Colors.white24,
-                              ),
-                              child: Slider(
-                                value: progress.isNaN
-                                    ? 0.0
-                                    : progress.clamp(0.0, 1.0),
-                                onChanged: (value) {
-                                  _showControls();
-                                  _player!.seek(duration * value);
-                                },
                               ),
                             ),
                           ),
@@ -541,33 +573,35 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
                           },
                           child: SizedBox(
                             height: 6,
-                            child: SliderTheme(
-                              data: SliderTheme.of(context).copyWith(
-                                trackHeight: 4,
-                                thumbShape: const RoundSliderThumbShape(
-                                  enabledThumbRadius: 6,
+                            child: MaterialWrapper(
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  trackHeight: 4,
+                                  thumbShape: const RoundSliderThumbShape(
+                                    enabledThumbRadius: 6,
+                                  ),
+                                  overlayShape: const RoundSliderOverlayShape(
+                                    overlayRadius: 12,
+                                  ),
+                                  activeTrackColor: Colors.white,
+                                  inactiveTrackColor: Colors.white30,
+                                  thumbColor: Colors.white,
+                                  overlayColor: Colors.white24,
                                 ),
-                                overlayShape: const RoundSliderOverlayShape(
-                                  overlayRadius: 12,
+                                child: Slider(
+                                  value: progress.isNaN
+                                      ? 0.0
+                                      : progress.clamp(0.0, 1.0),
+                                  onChanged: (value) {
+                                    _showControls();
+                                    final seekPos = Duration(
+                                      milliseconds:
+                                          (duration.inMilliseconds * value)
+                                              .round(),
+                                    );
+                                    _videoController!.seekTo(seekPos);
+                                  },
                                 ),
-                                activeTrackColor: Colors.white,
-                                inactiveTrackColor: Colors.white30,
-                                thumbColor: Colors.white,
-                                overlayColor: Colors.white24,
-                              ),
-                              child: Slider(
-                                value: progress.isNaN
-                                    ? 0.0
-                                    : progress.clamp(0.0, 1.0),
-                                onChanged: (value) {
-                                  _showControls();
-                                  final seekPos = Duration(
-                                    milliseconds:
-                                        (duration.inMilliseconds * value)
-                                            .round(),
-                                  );
-                                  _videoController!.seekTo(seekPos);
-                                },
                               ),
                             ),
                           ),
@@ -635,7 +669,14 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
       ),
     );
   }
+}
+
+class MaterialWrapper extends StatelessWidget {
+  final Widget child;
+  const MaterialWrapper({super.key, required this.child});
 
   @override
-  bool get wantKeepAlive => true;
+  Widget build(BuildContext context) {
+    return Material(color: Colors.transparent, child: child);
+  }
 }

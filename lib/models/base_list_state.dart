@@ -5,6 +5,8 @@ part 'base_list_state.g.dart';
 
 @JsonSerializable(genericArgumentFactories: true)
 class BaseListState<T> {
+  static const int maxVideosInMemory = 100;
+
   final List<T> list;
   final int page;
   final int total;
@@ -12,6 +14,7 @@ class BaseListState<T> {
   final bool loading;
   @JsonKey(fromJson: parseBool)
   final bool finished;
+  final int offset;
 
   BaseListState({
     List<T>? list,
@@ -19,6 +22,7 @@ class BaseListState<T> {
     this.total = 0,
     this.loading = false,
     this.finished = false,
+    this.offset = 0,
   }) : list = list ?? <T>[];
 
   BaseListState<T> copyWith({
@@ -27,6 +31,7 @@ class BaseListState<T> {
     int? total,
     bool? loading,
     bool? finished,
+    int? offset,
   }) {
     return BaseListState<T>(
       list: list ?? this.list,
@@ -34,6 +39,7 @@ class BaseListState<T> {
       total: total ?? this.total,
       loading: loading ?? this.loading,
       finished: finished ?? this.finished,
+      offset: offset ?? this.offset,
     );
   }
 

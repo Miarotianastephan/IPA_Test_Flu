@@ -5,9 +5,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/page/splash_page.dart';
 import 'package:live_app/provider/message_dispatcher_provider.dart';
+import 'package:live_app/utils/platform_check.dart';
 import 'package:live_app/utils/route_utils.dart';
-import 'package:media_kit/media_kit.dart';
-
 import 'api/services/notification_service.dart';
 import 'config/storage_config.dart';
 import 'l10n/app_localizations.dart';
@@ -25,7 +24,7 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
   await NotificationService.instance.init();
   await initWindowManager();
-  MediaKit.ensureInitialized();
+  await PlatformCheck.initMediaKitIfHuawei();
   await StorageService.instance.init();
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -38,6 +37,7 @@ class MyApp extends ConsumerWidget {
     final theme = ref.watch(currentThemeProvider);
     final locale = ref.watch(localeProvider);
     ref.watch(globalInitializerProvider);
+    ref.watch(initializeLocaleProvider);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Xo',

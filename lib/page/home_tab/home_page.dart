@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/widgets/home_tab/short_video_grid_page.dart';
 import '../../widgets/home_tab/short_videos_page.dart';
 import '../../widgets/tiktok_header.dart';

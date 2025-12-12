@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/video_info.dart';
@@ -26,6 +27,10 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     _tabController = TabController(length: 2, vsync: this);
     _videoController = VideoScreenController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -42,6 +47,12 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
 
   @override
   void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _tabController.dispose();
 
     super.dispose();
@@ -64,7 +75,7 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
     final video = videoState.video;
 
     return PopScope(
-      canPop: true,
+      canPop: ref.read(fullscreenProvider) == true ? false : true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
           ref.read(fullscreenProvider.notifier).state = false;
@@ -100,17 +111,19 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
                                 ),
                               ),
                             ),
-                            Positioned(
-                              top: MediaQuery.of(context).padding.top,
-                              left: 0,
-                              child: TextButton(
-                                onPressed: Navigator.of(context).pop,
-                                child: Icon(
-                                  Icons.arrow_back,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
+                            ref.read(fullscreenProvider) == true
+                                ? SizedBox()
+                                : Positioned(
+                                    top: MediaQuery.of(context).padding.top,
+                                    left: 0,
+                                    child: TextButton(
+                                      onPressed: Navigator.of(context).pop,
+                                      child: Icon(
+                                        Icons.arrow_back,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
                           ],
                         ),
 

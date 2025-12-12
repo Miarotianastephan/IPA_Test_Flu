@@ -265,7 +265,8 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
             String timeStr = "";
             final lm = c.lastMessage;
             if (lm != null) {
-              timeStr = TimeOfDay.fromDateTime(lm.createdAt).format(context);
+              final localTime = lm.createdAt.toLocal();
+              timeStr = TimeOfDay.fromDateTime(localTime).format(context);
             }
 
             String displayTitle;

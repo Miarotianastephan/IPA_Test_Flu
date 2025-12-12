@@ -15,6 +15,7 @@ import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/page/home.dart';
 import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/utils/toast_util.dart';
+import 'package:live_app/utils/username_formatter.dart';
 import 'package:live_app/widgets/cover_image_picker.dart';
 import 'package:live_app/widgets/profile_image_picker.dart';
 import 'package:live_app/widgets/save_button_edit_user.dart';
@@ -335,6 +336,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
                           icon: Icons.person_outline,
                           value: _username,
                           isEditing: _isEditing,
+                          inputFormatters: [UsernameFormatter()],
                           onSaved: (value) => _username = value ?? '',
                         ),
                         const SizedBox(height: 16),
@@ -359,6 +361,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
                           icon: Icons.phone,
                           value: _phone,
                           isEditing: _isEditing,
+                          keyboardType: TextInputType.number,
                           onSaved: (value) => _phone = value ?? '',
                         ),
                         SizedBox(height: 20),

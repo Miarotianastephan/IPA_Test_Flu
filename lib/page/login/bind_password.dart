@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/utils/username_formatter.dart';
 import '../../provider/api_provider.dart';
 import '../../utils/toast_util.dart';
 
@@ -88,6 +89,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
               // 账号输入
               TextField(
                 controller: _usernameController,
+                inputFormatters: [UsernameFormatter()],
                 cursorColor: theme.colorScheme.onSurface,
                 decoration: InputDecoration(
                   labelStyle: TextStyle(

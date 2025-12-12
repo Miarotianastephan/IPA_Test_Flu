@@ -564,4 +564,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get noUpdateAvailable => 'No hay actualizaciones disponibles';
+
+  @override
+  String get phoneNumberTooShort =>
+      'El número debe contener al menos 8 dígitos';
+
+  @override
+  String get phoneNumberTooLong =>
+      'El número debe contener como máximo 12 dígitos';
 }

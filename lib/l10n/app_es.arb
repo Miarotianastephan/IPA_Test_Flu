@@ -184,5 +184,7 @@
   "showLess": "Mostrar menos",
   "checkForUpdates": "Buscar actualizaciones",
   "version": "Versión",
-  "noUpdateAvailable": "No hay actualizaciones disponibles"
+  "noUpdateAvailable": "No hay actualizaciones disponibles",
+  "phoneNumberTooShort": "El número debe contener al menos 8 dígitos",
+  "phoneNumberTooLong": "El número debe contener como máximo 12 dígitos"
 }

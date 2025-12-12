@@ -60,7 +60,12 @@ class SystemNotificationTile extends StatelessWidget {
       );
     }
 
-    return UserAvatar(url: avatarUrl, nickname: nickname, size: 40);
+    return UserAvatar(
+      key: ValueKey(avatarUrl ?? nickname),
+      url: avatarUrl,
+      nickname: nickname,
+      size: 40,
+    );
   }
 
   Widget? _buildTrailing() {

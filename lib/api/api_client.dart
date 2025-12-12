@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'interceptors/auth_interceptor.dart';
+import 'interceptors/language_interceptor.dart';
 import 'package:path_provider/path_provider.dart';
 
 class ApiClient {
@@ -35,6 +36,8 @@ class ApiClient {
         maxWidth: 90,
         enabled: kDebugMode,
       ),
+      //语言
+      LanguageInterceptor(),
       //权限
       AuthInterceptor(),
       //重试
@@ -85,30 +88,31 @@ class ApiClient {
     return response.data;
   }
 
- Future<T> post<T>(
-  String path, {
-  dynamic data,
-  Map<String, dynamic>? queryParameters,
-  bool isForm = false,
-  String? baseUrl,
-}) async {
-  final payload = isForm && data != null
-      ? FormData.fromMap(data as Map<String, dynamic>)
-      : data;
+  Future<T> post<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    bool isForm = false,
+    String? baseUrl,
+  }) async {
+    final payload = isForm && data != null
+        ? FormData.fromMap(data as Map<String, dynamic>)
+        : data;
 
-  final fullUrl = (baseUrl ?? _baseUrl) + path;
+    final fullUrl = (baseUrl ?? _baseUrl) + path;
 
-  final response = await _dio.post(
-    fullUrl,
-    data: payload,
-    queryParameters: queryParameters,
-  );
+    final response = await _dio.post(
+      fullUrl,
+      data: payload,
+      queryParameters: queryParameters,
+    );
 
-  final result = response.data is String ? jsonDecode(response.data) : response.data;
+    final result = response.data is String
+        ? jsonDecode(response.data)
+        : response.data;
 
-  return result;
-}
-
+    return result;
+  }
 }
 
 extension ApiClientDownload on ApiClient {

@@ -11,6 +11,7 @@ class VideoListState extends BaseListState<VideoInfo> {
     super.total,
     super.loading,
     super.finished,
+    super.offset,
     Map<int, List<int>>? userVideoIndexMap,
     Map<int, int>? videoIndexMap,
   }) : userVideoIndexMap = userVideoIndexMap ?? <int, List<int>>{},
@@ -27,6 +28,7 @@ class VideoListState extends BaseListState<VideoInfo> {
     int? total,
     bool? loading,
     bool? finished,
+    int? offset,
     Map<int, List<int>>? userVideoIndexMap,
     Map<int, int>? videoIndexMap,
   }) {
@@ -36,6 +38,7 @@ class VideoListState extends BaseListState<VideoInfo> {
       total: total ?? this.total,
       loading: loading ?? this.loading,
       finished: finished ?? this.finished,
+      offset: offset ?? this.offset,
       userVideoIndexMap: userVideoIndexMap ?? this.userVideoIndexMap,
       videoIndexMap: videoIndexMap ?? this.videoIndexMap,
     );

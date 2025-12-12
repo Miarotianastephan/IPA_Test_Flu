@@ -556,4 +556,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noUpdateAvailable => '无可用更新';
+
+  @override
+  String get phoneNumberTooShort => '号码必须至少包含 8 位数字';
+
+  @override
+  String get phoneNumberTooLong => '号码最多可包含 12 位数字';
 }

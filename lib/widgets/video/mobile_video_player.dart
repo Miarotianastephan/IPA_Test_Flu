@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:chewie/chewie.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -33,7 +34,8 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
   VideoController? mediaKitController;
   VideoPlayerController? _videoPlayerController;
   ChewieController? _chewieController;
-
+  bool showControls = true;
+  Timer? _hideTimer;
   @override
   void initState() {
     super.initState();
@@ -63,6 +65,19 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
       setState(() {
         isInitialized = true;
       });
+      _showControls();
+    });
+  }
+
+  void _showControls() {
+    setState(() {
+      showControls = true;
+    });
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 10), () {
+      setState(() {
+        showControls = false;
+      });
     });
   }
 
@@ -81,7 +96,11 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
     }
     player = Player();
     mediaKitController = VideoController(player!);
-
+    player?.stream.playing.listen((isPlaying) {
+      if (!isPlaying && !showControls) {
+        setState(() => showControls = true);
+      }
+    });
     try {
       await player!.open(Media(widget.videoUrl), play: false);
       await player!.play();
@@ -101,7 +120,12 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
 
     try {
       await _videoPlayerController!.initialize();
-
+      _videoPlayerController?.addListener(() {
+        final isPaused = !_videoPlayerController!.value.isPlaying;
+        if (isPaused && !showControls) {
+          setState(() => showControls = true);
+        }
+      });
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController!,
         autoPlay: true,
@@ -123,7 +147,6 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
     mediaKitController = null;
     _videoPlayerController?.dispose();
     _chewieController?.dispose();
-
     super.dispose();
   }
 
@@ -142,25 +165,40 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
     return Scaffold(
       backgroundColor: Colors.black,
       body: isInitialized
-          ? Stack(
-              children: [
-                useMediaKit
-                    ? Video(controller: mediaKitController!, controls: null)
-                    : _chewieController != null
-                    ? Chewie(controller: _chewieController!)
-                    : const SizedBox.shrink(),
-                MobileVideoInteractionLayer(
-                  player: player,
-                  useMediaKit: useMediaKit,
-                  chewieController: _chewieController,
-                ),
-                MobileVideoControlsOverlay(
-                  player: player,
-                  useMediaKit: useMediaKit,
-                  chewieController: _chewieController,
-                  videoController: _videoPlayerController,
-                ),
-              ],
+          ? GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () {
+                if (showControls) {
+                  setState(() => showControls = false);
+                  _hideTimer?.cancel();
+                } else {
+                  _showControls();
+                }
+              },
+              child: Stack(
+                children: [
+                  useMediaKit
+                      ? Video(controller: mediaKitController!, controls: null)
+                      : _chewieController != null
+                      ? Chewie(controller: _chewieController!)
+                      : const SizedBox.shrink(),
+                  MobileVideoInteractionLayer(
+                    player: player,
+                    useMediaKit: useMediaKit,
+                    chewieController: _chewieController,
+                  ),
+                  AnimatedOpacity(
+                    opacity: showControls ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: MobileVideoControlsOverlay(
+                      player: player,
+                      useMediaKit: useMediaKit,
+                      chewieController: _chewieController,
+                      videoController: _videoPlayerController,
+                    ),
+                  ),
+                ],
+              ),
             )
           : const Center(child: CircularProgressIndicator(color: Colors.white)),
     );

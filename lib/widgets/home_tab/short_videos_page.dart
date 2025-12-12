@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+
 import '../../models/video_info.dart';
 import '../../provider/home_video_list_provider.dart';
 import '../empty_widget.dart';
@@ -38,6 +38,8 @@ class ShortVideosPage extends ConsumerStatefulWidget {
 class ShortVideosPageState extends ConsumerState<ShortVideosPage>
     with AutomaticKeepAliveClientMixin {
   bool _commentVisible = false;
+
+  static const int _paginationThreshold = 2;
 
   @override
   void initState() {
@@ -107,16 +109,20 @@ class ShortVideosPageState extends ConsumerState<ShortVideosPage>
       child = SafeArea(
         top: false,
         child: PageView.builder(
+          key: videos.length > 50 ? ValueKey('videos_${state.offset}') : null,
           controller: widget.controller,
           onPageChanged: (index) {
             if (widget.onPageChanged != null) {
               widget.onPageChanged!(index);
             }
-            // 倒数第二页触发加载更多
-            if (index >= videos.length - 2 &&
-                !state.loading &&
-                !state.finished) {
-              notifier.fetch();
+
+            if (index >= videos.length - _paginationThreshold &&
+                !state.loading) {
+              if (!state.finished) {
+                notifier.fetch();
+              } else {
+                notifier.recycleVideos();
+              }
             }
           },
           scrollDirection: Axis.vertical,

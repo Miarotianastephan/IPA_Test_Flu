@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/provider/locale_provider.dart';
 import 'package:live_app/api/services/version_component.dart';
+import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/models/version.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -236,8 +237,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     ],
                     onChanged: (locale) {
                       if (locale != null) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) async {
                           ref.read(localeProvider.notifier).state = locale;
+
+                          await StorageService.instance.setValue(
+                            'lang',
+                            locale.languageCode,
+                          );
                         });
                       }
                     },

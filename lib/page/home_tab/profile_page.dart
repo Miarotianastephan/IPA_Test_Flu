@@ -238,12 +238,12 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
                 children: [
                   buildCountItem(
                     localizations.followCount,
-                    count.followCount ?? 0,
+                    count.followCount,
                     onTap: () => _navigate(context, const MyFollowPage()),
                   ),
                   buildCountItem(
                     localizations.fansCount,
-                    count.fansCount ?? 0,
+                    count.fansCount,
                     onTap: () => _navigate(context, const MyFansPage()),
                   ),
                   buildCountItem(

@@ -53,7 +53,7 @@ class VideoComment {
     try {
       final result = _$VideoCommentFromJson(json);
       return result;
-    } catch (e, stackTrace) {
+    } catch (e) {
       rethrow;
     }
   }

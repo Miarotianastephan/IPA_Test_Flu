@@ -1197,6 +1197,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No update available'**
   String get noUpdateAvailable;
+
+  /// No description provided for @phoneNumberTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'The number must contain at least 8 digits'**
+  String get phoneNumberTooShort;
+
+  /// No description provided for @phoneNumberTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'The number must contain at most 12 digits'**
+  String get phoneNumberTooLong;
 }
 
 class _AppLocalizationsDelegate

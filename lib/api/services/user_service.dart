@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:live_app/models/emoji.dart';
 import 'package:live_app/models/first_open.dart';
+import 'package:live_app/models/page_params.dart';
 
 import '../../models/api_response.dart';
 import '../../models/page_response.dart';
@@ -188,6 +190,18 @@ class UserService extends BaseService {
     return ApiResponse<FirstOpen>.fromJson(
       responseMap.toJson((value) => value),
       (json) => FirstOpen.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  
+  Future<ApiResponse<PageResponse<Emoji>>> getEmojis(
+    PageParams params,
+  ) {
+    return post<PageResponse<Emoji>>(
+      UserApi.emojis,
+      body: {...params.toJson()},
+      fromJson: (json) =>
+          PageResponse.fromJson(json, (item) => Emoji.fromJson(item)),
     );
   }
 }

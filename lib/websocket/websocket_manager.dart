@@ -111,18 +111,30 @@ class WebSocketManager {
     _socket!.on("messageSent", (data) {
       try {
         final message = Message.fromJson(data);
-        log(":speech_balloon: Nouveau message reçu: ${message.sender}");
-        log(":sender: ${message.sender}");
+
         final userJson = jsonEncode(message.sender?.toJson());
         final encoded = Uri.encodeComponent(userJson);
+
+        final msgType;
+        final content;
+
+        final pattern = RegExp(r'\^\*#\*[\w]+\*#\*\^');
+        Map<String, dynamic> msgTojsn = jsonDecode(message.content);
+
+        msgType = msgTojsn['type'];
+        content = msgTojsn['content'];
+
+        String displayMessage = msgType == "text"
+            ? content.replaceAll(pattern, ' ')
+            : msgType;
 
         NotificationService.instance.showOrUpdateChatNotification(
           conversationId: message.conversationId,
           title: message.sender?.nickname ?? "Message",
-          message: message.content,
+          message: displayMessage,
           payload:
               "route:/ChatDetailPage?conversationId=${message.conversationId}&user=$encoded",
-              imageUrl: message.sender?.avatar,
+          imageUrl: message.sender?.avatar,
         );
 
         onMessageSent?.call(message);

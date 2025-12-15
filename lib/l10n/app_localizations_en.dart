@@ -255,16 +255,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collapse => 'Collapse';
 
   @override
-  String get unknownUser => 'Unknown User';
-
-  @override
   String get reload => 'Reload';
 
   @override
   String get user => 'User';
-
-  @override
-  String get allCategories => 'All categories';
 
   @override
   String get allTags => 'All Tags';
@@ -358,9 +352,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get alreadyFollowed => 'Already followed';
-
-  @override
-  String get all => 'all';
 
   @override
   String get about => 'About';
@@ -502,7 +493,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newMessage => 'New message';
 
   @override
+  String get allCategories => 'All categories';
+
+  @override
+  String get all => 'all';
+
+  @override
   String get noCommentsYet => 'No comments yet';
+
+  @override
+  String get unknownUser => 'Unknown User';
 
   @override
   String get error => 'Error';
@@ -566,4 +566,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneNumberTooLong => 'The number must contain at most 12 digits';
+
+  @override
+  String get underMaintenance => 'Under Maintenance';
+
+  @override
+  String get maintenance_web =>
+      'Our website is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.';
+
+  @override
+  String get maintenance_mobile =>
+      'Our mobile app is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.';
+
+  @override
+  String get maintenance_service =>
+      'Our service is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.';
+
+  @override
+  String get useBrowser => 'Use the browser';
+
+  @override
+  String get downloadApp => 'Download the app';
 }

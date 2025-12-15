@@ -258,16 +258,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get collapse => 'Ocultar';
 
   @override
-  String get unknownUser => 'Usuario desconocido';
-
-  @override
   String get reload => 'Recargar';
 
   @override
   String get user => 'Usuario';
-
-  @override
-  String get allCategories => 'Todas las categorías';
 
   @override
   String get allTags => 'Todas las etiquetas';
@@ -361,9 +355,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get alreadyFollowed => 'Ya seguido';
-
-  @override
-  String get all => 'todo';
 
   @override
   String get about => 'Acerca de';
@@ -506,7 +497,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get newMessage => 'Nuevo mensaje';
 
   @override
+  String get allCategories => 'Todas las categorías';
+
+  @override
+  String get all => 'Todo';
+
+  @override
   String get noCommentsYet => 'Aún no hay comentarios';
+
+  @override
+  String get unknownUser => 'Usuario desconocido';
 
   @override
   String get error => 'Error';
@@ -572,4 +572,25 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get phoneNumberTooLong =>
       'El número debe contener como máximo 12 dígitos';
+
+  @override
+  String get underMaintenance => 'En mantenimiento';
+
+  @override
+  String get maintenance_web =>
+      'Nuestro sitio web no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.';
+
+  @override
+  String get maintenance_mobile =>
+      'Nuestra aplicación móvil no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.';
+
+  @override
+  String get maintenance_service =>
+      'Nuestro servicio no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.';
+
+  @override
+  String get useBrowser => 'Usar el navegador';
+
+  @override
+  String get downloadApp => 'Descargar la aplicación';
 }

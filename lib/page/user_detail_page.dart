@@ -23,6 +23,7 @@ class UserDetailPage extends ConsumerStatefulWidget {
   final TikTokScaffoldController? tkController;
   final VoidCallback? onBack;
   final Function(double x)? onBackSlide;
+  final String? cover;
 
   const UserDetailPage({
     super.key,
@@ -30,6 +31,7 @@ class UserDetailPage extends ConsumerStatefulWidget {
     this.tkController,
     this.onBack,
     this.onBackSlide,
+    this.cover,
   });
 
   @override
@@ -50,10 +52,15 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
   videoProvider;
   double _dragAccumulatedX = 0.0;
   bool _isBioExpanded = false;
+  late String? _coverUrl;
+  bool _isLoadingCover = true;
 
   @override
   void initState() {
     super.initState();
+
+    _coverUrl = widget.user.cover;
+    _isLoadingCover = _coverUrl == null;
 
     final param = UserDetailProviderParam(
       widget.user.id,
@@ -80,6 +87,11 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
           .loadUserDetail(widget.user.id);
 
       if (detail != null) {
+        if (detail.cover != null && _coverUrl == null) {
+          setState(() {
+            _coverUrl = detail.cover!;
+          });
+        }
         ref
             .read(userFollowProvider(widget.user.id.toString()).notifier)
             .setFromBackend(
@@ -88,6 +100,9 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
               followCount: detail.followCount ?? 0,
             );
       }
+      setState(() {
+        _isLoadingCover = false;
+      });
 
       ref.read(videoProvider.notifier).fetch(refresh: true);
       ref.read(postProvider.notifier).fetch(refresh: true);
@@ -194,26 +209,39 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                 SizedBox(
                                   height: 250,
                                   width: double.infinity,
-                                  child: EncryptedImage(
-                                    url:
-                                        user.cover ??
-                                        "https://i.pravatar.cc/350",
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                    height: 100,
-                                    placeholder: Container(
-                                      color: Colors.grey[300],
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    ),
-                                    errorWidget: Container(
-                                      color: Colors.grey[300],
-                                      child: const Center(
-                                        child: Icon(Icons.broken_image),
-                                      ),
-                                    ),
-                                  ),
+                                  child: _isLoadingCover
+                                      ? Container(
+                                          color: Colors.grey[300],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        )
+                                      : EncryptedImage(
+                                          key: ValueKey<String>(
+                                            _coverUrl ??
+                                                "https://i.pravatar.cc/350",
+                                          ),
+                                          url:
+                                              widget.cover ??
+                                              _coverUrl ??
+                                              "https://i.pravatar.cc/350",
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: 100,
+                                          placeholder: Container(
+                                            color: Colors.grey[300],
+                                            child: const Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                          ),
+                                          errorWidget: Container(
+                                            color: Colors.grey[300],
+                                            child: const Center(
+                                              child: Icon(Icons.broken_image),
+                                            ),
+                                          ),
+                                        ),
                                 ),
                               ],
                             ),

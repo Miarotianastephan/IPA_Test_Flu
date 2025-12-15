@@ -255,16 +255,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get collapse => '收起';
 
   @override
-  String get unknownUser => '未知用户';
-
-  @override
   String get reload => '重新加载';
 
   @override
   String get user => '用户';
-
-  @override
-  String get allCategories => '全部分类';
 
   @override
   String get allTags => '全部标签';
@@ -358,9 +352,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get alreadyFollowed => '已关注';
-
-  @override
-  String get all => '全部';
 
   @override
   String get about => '关于';
@@ -498,7 +489,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get newMessage => '新消息';
 
   @override
+  String get allCategories => '全部分类';
+
+  @override
+  String get all => '全部';
+
+  @override
   String get noCommentsYet => '暂无评论';
+
+  @override
+  String get unknownUser => '未知用户';
 
   @override
   String get error => '错误';
@@ -562,4 +562,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get phoneNumberTooLong => '号码最多可包含 12 位数字';
+
+  @override
+  String get underMaintenance => '维护中';
+
+  @override
+  String get maintenance_web => '我们的网站暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。';
+
+  @override
+  String get maintenance_mobile => '我们的移动应用暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。';
+
+  @override
+  String get maintenance_service => '我们的服务暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。';
+
+  @override
+  String get useBrowser => '使用浏览器';
+
+  @override
+  String get downloadApp => '下载应用';
 }

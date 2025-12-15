@@ -1,11 +1,15 @@
 // splash_page.dart
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:live_app/models/first_open.dart';
+import 'package:live_app/page/maintenance_page.dart';
+import 'package:live_app/provider/app_config_provider.dart';
 import 'package:live_app/widgets/image_sequence_player.dart';
 import 'package:live_app/widgets/loading_dots.dart';
 
@@ -73,8 +77,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         ref.read(currentUserProvider.notifier).setUser(userInfo.data!);
       }
     }
-    // future featuere
-    // await getAppConfig();
+    await getAppConfig();
   }
 
   Future<void> saveUserInfoWithToken(ApiResponse<UserInfo> userInfo) async {
@@ -137,9 +140,9 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   Future<void> _initApp() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final appConfigState = ref.watch(appConfigProvider);
+      final config = appConfigState.data;
       try {
-        final navigator = Navigator.of(context, rootNavigator: true);
-
         await Future.wait([
           Future.delayed(const Duration(seconds: 3)),
           _init(),
@@ -152,20 +155,50 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         await Future.delayed(const Duration(milliseconds: 500));
 
         if (!mounted) return;
-
-        navigator.pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const HomePage(),
-            transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
+        await checkDevice(config);
       } catch (e) {
         debugPrint("初始化失败: $e");
       }
     });
+  }
+
+  Future<void> checkDevice(Map<String, dynamic>? conf) async {
+    final navigator = Navigator.of(context, rootNavigator: true);
+
+    void navigateTo(Widget page) {
+      navigator.pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, _, _) => page,
+          transitionDuration: const Duration(milliseconds: 500),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    }
+
+    String? platformKey;
+    if (kIsWeb) {
+      setState(() {
+        platformKey = 'enable_web';
+      });
+    } else if (Platform.isAndroid) {
+      setState(() {
+        platformKey = 'enable_android';
+      });
+    } else if (Platform.isIOS) {
+      setState(() {
+        platformKey = 'enable_ios';
+      });
+    }
+    if (platformKey != null) {
+      final enabled = conf?[platformKey] == true;
+      if (enabled == false) {
+        navigateTo(MaintenancePage(enabledWeb: conf?['enable_web']));
+      } else {
+        navigateTo(const HomePage());
+      }
+    }
   }
 
   @override
@@ -253,9 +286,17 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset(
-                              "lib/assets/logo.jpg",
+                            Image.network(
+                              ref
+                                      .read(appConfigProvider)
+                                      .data?["favicon_url"] ??
+                                  "",
                               height: screenHeight * 0.04,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Image.asset(
+                                    "lib/assets/logo.jpg",
+                                    height: screenHeight * 0.04,
+                                  ),
                             ),
                             const SizedBox(height: 10),
                             const LoadingDots(),

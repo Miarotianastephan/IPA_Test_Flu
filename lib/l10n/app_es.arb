@@ -162,10 +162,9 @@
   "groupChat":"Chat grupal",
   "searchUsernameOrIdPlaceholder":"Ingresa nombre de usuario o ID para comenzar la búsqueda",
   "newMessage": "Nuevo mensaje",
-  "allCategories":"Todas las categorías",
-  "all":"todo",
+
   "noCommentsYet": "Aún no hay comentarios",
-  "unknownUser": "Usuario desconocido",
+
   "error": "Error",
   "watchEarnLiveMore": "Ver\nGanar\nVivir\nMás",
   "currentVersion": "Versión actual",
@@ -186,5 +185,11 @@
   "version": "Versión",
   "noUpdateAvailable": "No hay actualizaciones disponibles",
   "phoneNumberTooShort": "El número debe contener al menos 8 dígitos",
-  "phoneNumberTooLong": "El número debe contener como máximo 12 dígitos"
+  "phoneNumberTooLong": "El número debe contener como máximo 12 dígitos",
+  "underMaintenance": "En mantenimiento",
+  "maintenance_web": "Nuestro sitio web no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.",
+  "maintenance_mobile": "Nuestra aplicación móvil no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.",
+  "maintenance_service": "Nuestro servicio no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.",
+  "useBrowser": "Usar el navegador",
+  "downloadApp": "Descargar la aplicación"
 }

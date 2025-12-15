@@ -212,10 +212,19 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                   aspectRatio: 1,
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      img.fileUrl,
-                                      fit: BoxFit.cover,
-                                    ),
+                                    child: img.fileUrl.isNotEmpty
+                                        ? Image.network(
+                                            img.fileUrl,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            color: Colors.grey.shade500,
+                                            child: Icon(
+                                              Icons.broken_image,
+                                              size: 48,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ),
@@ -236,12 +245,21 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                       margin: const EdgeInsets.only(right: 8),
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          img.fileUrl,
-                                          fit: BoxFit.cover,
-                                          width: 120,
-                                          height: 120,
-                                        ),
+                                        child: img.fileUrl.isNotEmpty
+                                            ? Image.network(
+                                                img.fileUrl,
+                                                fit: BoxFit.cover,
+                                                width: 120,
+                                                height: 120,
+                                              )
+                                            : Container(
+                                                color: Colors.grey.shade500,
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  size: 48,
+                                                  color: Colors.white70,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                   );

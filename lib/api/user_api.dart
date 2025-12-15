@@ -49,4 +49,6 @@ class UserApi {
   static const String firstOpen = '$base/v1/first_open';
   //互相关注的用户列表
   static const String mutualFollowings = '$base/mutualFollowings';
+
+  static const String emojis = "$base/emojis";
 }

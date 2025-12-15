@@ -69,10 +69,9 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
     final wsState = ref.watch(webSocketProvider);
 
     final conversationsState = convState.conversations;
-    final  conversations = conversationsState
-    .where((c) => c.lastMessageId != 0)
-    .toList();
-
+    final conversations = conversationsState
+        .where((c) => c.lastMessageId != 0)
+        .toList();
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -207,7 +206,7 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
         child: ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(), // 允许下拉
           padding: const EdgeInsets.all(10),
-          itemCount: conversations.isEmpty ? 2 : conversations.length + 1,
+          itemCount: conversations.isEmpty ? 2 : conversations.length + 2,
           itemBuilder: (context, index) {
             if (index == 0) {
               return SystemNotificationTile(
@@ -230,6 +229,10 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
                   message: localisations.noConversationFound,
                 ),
               );
+            }
+
+            if (index == conversations.length + 1) {
+              return const SizedBox(height: kToolbarHeight);
             }
 
             final Conversation c = conversations[index - 1];
@@ -280,36 +283,41 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
             if (!isGroupChat && peer?.user?.avatar != null) {
               avatarUrl = peer!.user!.avatar;
             }
-         
-              return SystemNotificationTile(
-                title: displayTitle,
-                lastMessage: lastMsg,
-                timeStr: timeStr,
-                unreadCount: c.unreadCount,
-                avatarUrl: avatarUrl,
-                isGroupChat: isGroupChat,
-                nickname: c.users
-                    .firstWhere(
-                      (element) => element.userId != selfUserId,
-                      orElse: () => ConversationUser(
-                        userId: 0,
-                        id: 0,
-                        conversationId: 0,
-                        joinedAt: DateTime.now(),
-                      ),
-                    )
-                    .user
-                    ?.nickname,
-                onTap: () {
-                  if (!isGroupChat && peer?.user == null) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatDetailPage(user: peer!.user!),
+            final msgType;
+            final content;
+            Map<String, dynamic> msgTojsn = jsonDecode(lastMsg);
+            msgType = msgTojsn['type'];
+            content = msgTojsn['content'];
+
+            return SystemNotificationTile(
+              title: displayTitle,
+              lastMessage: msgType == "text" ? content : "$msgType",
+              timeStr: timeStr,
+              unreadCount: c.unreadCount,
+              avatarUrl: avatarUrl,
+              isGroupChat: isGroupChat,
+              nickname: c.users
+                  .firstWhere(
+                    (element) => element.userId != selfUserId,
+                    orElse: () => ConversationUser(
+                      userId: 0,
+                      id: 0,
+                      conversationId: 0,
+                      joinedAt: DateTime.now(),
                     ),
-                  );
-                },
-              );
+                  )
+                  .user
+                  ?.nickname,
+              onTap: () {
+                if (!isGroupChat && peer?.user == null) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChatDetailPage(user: peer!.user!),
+                  ),
+                );
+              },
+            );
           },
         ),
       ),

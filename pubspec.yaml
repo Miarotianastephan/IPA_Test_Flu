@@ -37,6 +37,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl:
+  flutter_svg: ^2.0.10+1
   flutter_riverpod: ^2.3.6
   dio: ^5.9.0
   pretty_dio_logger: ^1.4.0

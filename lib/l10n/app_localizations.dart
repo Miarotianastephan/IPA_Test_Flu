@@ -592,12 +592,6 @@ abstract class AppLocalizations {
   /// **'Collapse'**
   String get collapse;
 
-  /// No description provided for @unknownUser.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown User'**
-  String get unknownUser;
-
   /// No description provided for @reload.
   ///
   /// In en, this message translates to:
@@ -609,12 +603,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'User'**
   String get user;
-
-  /// No description provided for @allCategories.
-  ///
-  /// In en, this message translates to:
-  /// **'All categories'**
-  String get allCategories;
 
   /// No description provided for @allTags.
   ///
@@ -801,12 +789,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Already followed'**
   String get alreadyFollowed;
-
-  /// No description provided for @all.
-  ///
-  /// In en, this message translates to:
-  /// **'all'**
-  String get all;
 
   /// No description provided for @about.
   ///
@@ -1078,11 +1060,29 @@ abstract class AppLocalizations {
   /// **'New message'**
   String get newMessage;
 
+  /// No description provided for @allCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get allCategories;
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'all'**
+  String get all;
+
   /// No description provided for @noCommentsYet.
   ///
   /// In en, this message translates to:
   /// **'No comments yet'**
   String get noCommentsYet;
+
+  /// No description provided for @unknownUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown User'**
+  String get unknownUser;
 
   /// No description provided for @error.
   ///
@@ -1209,6 +1209,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The number must contain at most 12 digits'**
   String get phoneNumberTooLong;
+
+  /// No description provided for @underMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Under Maintenance'**
+  String get underMaintenance;
+
+  /// No description provided for @maintenance_web.
+  ///
+  /// In en, this message translates to:
+  /// **'Our website is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.'**
+  String get maintenance_web;
+
+  /// No description provided for @maintenance_mobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Our mobile app is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.'**
+  String get maintenance_mobile;
+
+  /// No description provided for @maintenance_service.
+  ///
+  /// In en, this message translates to:
+  /// **'Our service is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.'**
+  String get maintenance_service;
+
+  /// No description provided for @useBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the browser'**
+  String get useBrowser;
+
+  /// No description provided for @downloadApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the app'**
+  String get downloadApp;
 }
 
 class _AppLocalizationsDelegate

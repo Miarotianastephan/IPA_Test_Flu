@@ -1,8 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/firebase_options.dart';
 import 'package:live_app/page/splash_page.dart';
 import 'package:live_app/provider/message_dispatcher_provider.dart';
 import 'package:live_app/utils/platform_check.dart';
@@ -20,11 +22,17 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else {
+    await Firebase.initializeApp();
+  }
   await dotenv.load(fileName: ".env");
-  await NotificationService.instance.init();
+  if (!kIsWeb) await NotificationService.instance.init();
   await initWindowManager();
-  await PlatformCheck.initMediaKitIfHuawei();
+  if (!kIsWeb) await PlatformCheck.initMediaKitIfHuawei();
   await StorageService.instance.init();
   runApp(const ProviderScope(child: MyApp()));
 }

@@ -47,13 +47,13 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
   bool _showActions = true;
 
   late AnimationController _likeController;
-  late Animation<double> _scaleAnimation, _opacityAnimation;
+  late Animation<double> _scaleAnimation;
   final GlobalKey _followBtnKey = GlobalKey();
   OverlayEntry? _splashEntry;
   int _favoriteCount = 0;
   int _likeCount = 0;
   int _commentCount = 0;
-
+  bool isTapLike = false;
   @override
   void initState() {
     super.initState();
@@ -62,30 +62,13 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
     _commentCount = widget.commentCount;
     _likeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 400),
     );
 
-    _scaleAnimation = Tween(begin: 0.5, end: 1.5).animate(
-      CurvedAnimation(parent: _likeController, curve: Curves.easeOutBack),
-    );
-
-    //透明度先升，再降
-    _opacityAnimation = TweenSequence([
-      TweenSequenceItem(
-        tween: Tween(
-          begin: 0.0,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 50, // 前 50% 的时间淡入
-      ),
-      TweenSequenceItem(
-        tween: Tween(
-          begin: 1.0,
-          end: 0.0,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 50, // 后 50% 的时间淡出
-      ),
-    ]).animate(_likeController);
+    _scaleAnimation = Tween<double>(
+      begin: 0.2,
+      end: 1.2,
+    ).animate(CurvedAnimation(parent: _likeController, curve: Curves.easeOut));
   }
 
   @override
@@ -137,37 +120,33 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
     );
   }
 
-  // 点赞特效
   void _showLikeSplash(Offset position) {
-    final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-
-    entry = OverlayEntry(
-      builder: (context) {
-        return Positioned(
-          left: position.dx - 40,
-          top: position.dy - 40,
-          child: AnimatedBuilder(
-            animation: _likeController,
-            builder: (context, child) {
-              return Opacity(
-                opacity: _opacityAnimation.value,
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: child,
-                ),
-              );
-            },
-            child: const Icon(Icons.favorite, size: 80, color: Colors.red),
-          ),
-        );
-      },
+    _splashEntry?.remove();
+    setState(() {
+      isTapLike = true;
+    });
+    _splashEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        left: position.dx - 40,
+        top: position.dy - 40,
+        child: AnimatedBuilder(
+          animation: _likeController,
+          builder: (context, child) {
+            return Transform.scale(scale: _scaleAnimation.value, child: child);
+          },
+          child: const Icon(Icons.favorite, size: 80, color: Colors.red),
+        ),
+      ),
     );
 
-    overlay.insert(entry);
+    Overlay.of(context).insert(_splashEntry!);
 
     _likeController.forward(from: 0).whenComplete(() {
-      entry.remove();
+      _splashEntry?.remove();
+      _splashEntry = null;
+      setState(() {
+        isTapLike = false;
+      });
     });
   }
 
@@ -309,7 +288,11 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                       Builder(
                         builder: (btnContext) => _buildAction(
                           icon: Icons.favorite,
-                          color: widget.isLike ? Colors.red : Colors.white,
+                          color: widget.isLike
+                              ? Colors.red
+                              : isTapLike == true
+                              ? Colors.transparent
+                              : Colors.white,
                           onTap: () async {
                             var value = !widget.isLike;
                             if (value) {

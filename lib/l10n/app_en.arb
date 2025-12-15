@@ -81,10 +81,8 @@
   "replies": "replies",
   "expand": "Expand",
   "collapse": "Collapse",
-  "unknownUser": "Unknown User",
   "reload": "Reload",
   "user": "User",
-  "allCategories": "All Categories",
   "allTags": "All Tags",
   "comments": "Comments",
   "noMoreComments": "No more comments",
@@ -116,7 +114,6 @@
   "unknownCategory": "Unknown category",
   "anonymousUser": "Anonymous user",
   "alreadyFollowed": "Already followed",
-  "all": "All",
   "about": "About",
   "releaseDate": "Release Date",
   "description": "Description",
@@ -186,5 +183,11 @@
   "version": "Version",
   "noUpdateAvailable": "No update available",
   "phoneNumberTooShort": "The number must contain at least 8 digits",
-  "phoneNumberTooLong": "The number must contain at most 12 digits"
+  "phoneNumberTooLong": "The number must contain at most 12 digits",
+  "underMaintenance": "Under Maintenance",
+  "maintenance_web": "Our website is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.",
+  "maintenance_mobile": "Our mobile app is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.",
+  "maintenance_service": "Our service is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.",
+  "useBrowser": "Use the browser",
+  "downloadApp": "Download the app"
 }

@@ -162,10 +162,7 @@
   "groupChat":"群聊",
   "searchUsernameOrIdPlaceholder":"请输入用户名或ID开始搜索",
   "newMessage": "新消息",
-  "allCategories":"全部分类",
-  "all":"全部",
   "noCommentsYet": "暂无评论",
-  "unknownUser": "未知用户",
   "error": "错误",
   "watchEarnLiveMore": "观看\n赚取\n生活\n更多",
   "currentVersion": "当前版本",
@@ -186,5 +183,11 @@
   "version": "版本",
   "noUpdateAvailable": "无可用更新",
   "phoneNumberTooShort": "号码必须至少包含 8 位数字",
-  "phoneNumberTooLong": "号码最多可包含 12 位数字"
+  "phoneNumberTooLong": "号码最多可包含 12 位数字",
+  "underMaintenance": "维护中",
+  "maintenance_web": "我们的网站暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。",
+  "maintenance_mobile": "我们的移动应用暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。",
+  "maintenance_service": "我们的服务暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。",
+  "useBrowser": "使用浏览器",
+  "downloadApp": "下载应用"
 }

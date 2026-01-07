@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -320,126 +321,116 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                         ),
                                       ),
                                     ),
-                                    Positioned(
-                                      top: 0,
-                                      right: 0,
-                                      child: StreamBuilder<Download?>(
-                                        stream: ref
-                                            .watch(offlineRepoProvider)
-                                            .db
-                                            .watchById(video.id),
-                                        builder: (context, snapshot) {
-                                          final existing = snapshot.data;
-                                          final localPath = existing?.localPath;
-                                          final fileExists = localPath != null
-                                              ? File(localPath).existsSync()
-                                              : false;
+                                    if (!kIsWeb)
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: StreamBuilder<Download?>(
+                                          stream: ref
+                                              .watch(offlineRepoProvider)
+                                              .db
+                                              .watchById(video.id),
+                                          builder: (context, snapshot) {
+                                            final existing = snapshot.data;
+                                            final localPath =
+                                                existing?.localPath;
+                                            final fileExists = localPath != null
+                                                ? File(localPath).existsSync()
+                                                : false;
 
-                                          if (existing == null) {
-                                            return DownloadButton(
-                                              attachment: video,
-                                              forumPost: post,
-                                              filename: "video_${video.id}.mp4",
-                                            );
-                                          }
+                                            if (existing == null) {
+                                              return DownloadButton(
+                                                attachment: video,
+                                                forumPost: post,
+                                                filename:
+                                                    "video_${video.id}.mp4",
+                                              );
+                                            }
 
-                                          switch (existing.status) {
-                                            case "completed":
-                                              if (fileExists) {
-                                                debugPrint(
-                                                  "Vidéo déjà téléchargée: $localPath ✅",
+                                            switch (existing.status) {
+                                              case "completed":
+                                                if (fileExists) {
+                                                  return const Icon(
+                                                    Icons.download_done,
+                                                    color: Colors.white,
+                                                    size: 28.0,
+                                                  );
+                                                } else {
+                                                  return DownloadButton(
+                                                    attachment: video,
+                                                    forumPost: post,
+                                                    filename:
+                                                        "video_${video.id}.mp4",
+                                                  );
+                                                }
+
+                                              case "paused":
+                                                return IconButton(
+                                                  icon: const Icon(
+                                                    Icons.play_arrow,
+                                                    color: Colors.white,
+                                                  ),
+                                                  onPressed: () async {
+                                                    final repo = ref.read(
+                                                      offlineRepoProvider,
+                                                    );
+                                                    final i18nNotifier = ref
+                                                        .read(
+                                                          i18nNotifierProvider
+                                                              .notifier,
+                                                        );
+                                                    await repo.resumeDownload(
+                                                      id: video.id,
+                                                      translate: i18nNotifier
+                                                          .translate,
+                                                    );
+                                                  },
                                                 );
-                                                return const Icon(
-                                                  Icons.download_done,
-                                                  color: Colors.white,
-                                                  size: 28.0,
+
+                                              case "failed":
+                                                return IconButton(
+                                                  icon: const Icon(
+                                                    Icons.refresh,
+                                                    color: Colors.red,
+                                                  ),
+                                                  onPressed: () async {
+                                                    final repo = ref.read(
+                                                      offlineRepoProvider,
+                                                    );
+                                                    final i18nNotifier = ref
+                                                        .read(
+                                                          i18nNotifierProvider
+                                                              .notifier,
+                                                        );
+                                                    await repo.downloadResource(
+                                                      id: video.id,
+                                                      filename:
+                                                          "video_${video.id}.mp4",
+                                                      translate: i18nNotifier
+                                                          .translate,
+                                                    );
+                                                  },
                                                 );
-                                              } else {
+
+                                              case "cancelled":
                                                 return DownloadButton(
                                                   attachment: video,
                                                   forumPost: post,
                                                   filename:
                                                       "video_${video.id}.mp4",
                                                 );
-                                              }
 
-                                            case "paused":
-                                              debugPrint(
-                                                "Téléchargement en pause",
-                                              );
-                                              return IconButton(
-                                                icon: const Icon(
-                                                  Icons.play_arrow,
-                                                  color: Colors.white,
-                                                ),
-                                                onPressed: () async {
-                                                  final repo = ref.read(
-                                                    offlineRepoProvider,
-                                                  );
-                                                  final i18nNotifier = ref.read(
-                                                    i18nNotifierProvider
-                                                        .notifier,
-                                                  );
-                                                  await repo.resumeDownload(
-                                                    id: video.id,
-                                                    translate:
-                                                        i18nNotifier.translate,
-                                                  );
-                                                },
-                                              );
-
-                                            case "failed":
-                                              debugPrint(
-                                                "Téléchargement échoué",
-                                              );
-                                              return IconButton(
-                                                icon: const Icon(
-                                                  Icons.refresh,
-                                                  color: Colors.red,
-                                                ),
-                                                onPressed: () async {
-                                                  final repo = ref.read(
-                                                    offlineRepoProvider,
-                                                  );
-                                                  final i18nNotifier = ref.read(
-                                                    i18nNotifierProvider
-                                                        .notifier,
-                                                  );
-                                                  await repo.downloadResource(
-                                                    id: video.id,
-                                                    filename:
-                                                        "video_${video.id}.mp4",
-                                                    translate:
-                                                        i18nNotifier.translate,
-                                                  );
-                                                },
-                                              );
-
-                                            case "cancelled":
-                                              debugPrint(
-                                                "Téléchargement annulé",
-                                              );
-                                              return DownloadButton(
-                                                attachment: video,
-                                                forumPost: post,
-                                                filename:
-                                                    "video_${video.id}.mp4",
-                                              );
-
-                                            default:
-                                              debugPrint(
-                                                "Vidéo non téléchargée: $localPath",
-                                              );
-                                              return DownloadButton(
-                                                attachment: video,
-                                                forumPost: post,
-                                                filename:
-                                                    "video_${video.id}.mp4",
-                                              );
-                                          }
-                                        },
+                                              default:
+                                                return DownloadButton(
+                                                  attachment: video,
+                                                  forumPost: post,
+                                                  filename:
+                                                      "video_${video.id}.mp4",
+                                                );
+                                            }
+                                          },
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -515,9 +506,6 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                 switch (existing.status) {
                                                   case "completed":
                                                     if (fileExists) {
-                                                      debugPrint(
-                                                        "Vidéo déjà téléchargée: $localPath ✅",
-                                                      );
                                                       return const Icon(
                                                         Icons.download_done,
                                                         color: Colors.white,
@@ -533,9 +521,6 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                     }
 
                                                   case "paused":
-                                                    debugPrint(
-                                                      "Téléchargement en pause",
-                                                    );
                                                     return IconButton(
                                                       icon: const Icon(
                                                         Icons.play_arrow,
@@ -561,9 +546,6 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                     );
 
                                                   case "failed":
-                                                    debugPrint(
-                                                      "Téléchargement échoué",
-                                                    );
                                                     return IconButton(
                                                       icon: const Icon(
                                                         Icons.refresh,
@@ -590,9 +572,6 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                     );
 
                                                   case "cancelled":
-                                                    debugPrint(
-                                                      "Téléchargement annulé",
-                                                    );
                                                     return DownloadButton(
                                                       attachment: video,
                                                       forumPost: post,
@@ -601,9 +580,6 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                     );
 
                                                   default:
-                                                    debugPrint(
-                                                      "Vidéo non téléchargée: $localPath",
-                                                    );
                                                     return DownloadButton(
                                                       attachment: video,
                                                       forumPost: post,

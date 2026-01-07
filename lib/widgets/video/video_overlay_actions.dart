@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/database/download_database.dart';
@@ -358,107 +359,92 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                       ),
                       const SizedBox(height: 15),
 
-                      // Future feature
-                      // _buildAction(
-                      //   icon: Icons.share,
-                      //   color: Colors.white,
-                      //   showText: false,
-                      //   onTap: () {},
-                      //   count: 0,
-                      // ),
-                      // const SizedBox(height: 40),
-                      StreamBuilder<Download?>(
-                        stream: ref
-                            .watch(offlineRepoProvider)
-                            .db
-                            .watchById(widget.video.id),
-                        builder: (context, snapshot) {
-                          final existing = snapshot.data;
-                          final localPath = existing?.localPath;
-                          final fileExists = localPath != null
-                              ? File(localPath).existsSync()
-                              : false;
+                      if (!kIsWeb)
+                        StreamBuilder<Download?>(
+                          stream: ref
+                              .watch(offlineRepoProvider)
+                              .db
+                              .watchById(widget.video.id),
+                          builder: (context, snapshot) {
+                            final existing = snapshot.data;
+                            final localPath = existing?.localPath;
+                            final fileExists = localPath != null
+                                ? File(localPath).existsSync()
+                                : false;
 
-                          if (existing == null) {
-                            return DownloadButton(
-                              videoInfo: widget.video,
-                              filename: "video_${widget.video.id}.mp4",
-                            );
-                          }
+                            if (existing == null) {
+                              return DownloadButton(
+                                videoInfo: widget.video,
+                                filename: "video_${widget.video.id}.mp4",
+                              );
+                            }
 
-                          switch (existing.status) {
-                            case "completed":
-                              if (fileExists) {
-                                debugPrint(
-                                  "Vidéo déjà téléchargée: $localPath ✅",
+                            switch (existing.status) {
+                              case "completed":
+                                if (fileExists) {
+                                  return const Icon(
+                                    Icons.download_done,
+                                    color: Colors.white,
+                                    size: 28.0,
+                                  );
+                                } else {
+                                  return DownloadButton(
+                                    videoInfo: widget.video,
+                                    filename: "video_${widget.video.id}.mp4",
+                                  );
+                                }
+
+                              case "paused":
+                                return IconButton(
+                                  icon: const Icon(
+                                    Icons.play_arrow,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () async {
+                                    final repo = ref.read(offlineRepoProvider);
+                                    final i18nNotifier = ref.read(
+                                      i18nNotifierProvider.notifier,
+                                    );
+                                    await repo.resumeDownload(
+                                      id: widget.video.id,
+                                      translate: i18nNotifier.translate,
+                                    );
+                                  },
                                 );
-                                return const Icon(
-                                  Icons.download_done,
-                                  color: Colors.white,
-                                  size: 28.0,
+
+                              case "failed":
+                                return IconButton(
+                                  icon: const Icon(
+                                    Icons.refresh,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () async {
+                                    final repo = ref.read(offlineRepoProvider);
+                                    final i18nNotifier = ref.read(
+                                      i18nNotifierProvider.notifier,
+                                    );
+                                    await repo.downloadResource(
+                                      id: widget.video.id,
+                                      filename: "video_${widget.video.id}.mp4",
+                                      translate: i18nNotifier.translate,
+                                    );
+                                  },
                                 );
-                              } else {
+
+                              case "cancelled":
                                 return DownloadButton(
                                   videoInfo: widget.video,
                                   filename: "video_${widget.video.id}.mp4",
                                 );
-                              }
 
-                            case "paused":
-                              debugPrint("Téléchargement en pause");
-                              return IconButton(
-                                icon: const Icon(
-                                  Icons.play_arrow,
-                                  color: Colors.white,
-                                ),
-                                onPressed: () async {
-                                  final repo = ref.read(offlineRepoProvider);
-                                  final i18nNotifier = ref.read(
-                                    i18nNotifierProvider.notifier,
-                                  );
-                                  await repo.resumeDownload(
-                                    id: widget.video.id,
-                                    translate: i18nNotifier.translate,
-                                  );
-                                },
-                              );
-
-                            case "failed":
-                              debugPrint("Téléchargement échoué");
-                              return IconButton(
-                                icon: const Icon(
-                                  Icons.refresh,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () async {
-                                  final repo = ref.read(offlineRepoProvider);
-                                  final i18nNotifier = ref.read(
-                                    i18nNotifierProvider.notifier,
-                                  );
-                                  await repo.downloadResource(
-                                    id: widget.video.id,
-                                    filename: "video_${widget.video.id}.mp4",
-                                    translate: i18nNotifier.translate,
-                                  );
-                                },
-                              );
-
-                            case "cancelled":
-                              debugPrint("Téléchargement annulé");
-                              return DownloadButton(
-                                videoInfo: widget.video,
-                                filename: "video_${widget.video.id}.mp4",
-                              );
-
-                            default:
-                              debugPrint("Vidéo non téléchargée: $localPath");
-                              return DownloadButton(
-                                videoInfo: widget.video,
-                                filename: "video_${widget.video.id}.mp4",
-                              );
-                          }
-                        },
-                      ),
+                              default:
+                                return DownloadButton(
+                                  videoInfo: widget.video,
+                                  filename: "video_${widget.video.id}.mp4",
+                                );
+                            }
+                          },
+                        ),
                     ],
 
                     GestureDetector(

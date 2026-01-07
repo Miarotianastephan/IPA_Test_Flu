@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,7 +129,7 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
           ),
           ListTile(
             leading: const Icon(Icons.menu_book_rounded),
-            title:  Text(translate("roman")),
+            title: Text(translate("roman")),
             trailing: const Icon(Icons.chevron_right),
             onTap: () async {
               await getAppConfig();
@@ -141,7 +142,7 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
           ),
           ListTile(
             leading: const Icon(Icons.music_note),
-            title:  Text(translate("audio")),
+            title: Text(translate("audio")),
             trailing: const Icon(Icons.chevron_right),
             onTap: () async {
               await getAppConfig();
@@ -481,12 +482,13 @@ class _ProfileTabPageState extends ConsumerState<ProfileTabPage> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _navigate(context, const SettingsPage()),
             ),
-            ListTile(
-              leading: const Icon(Icons.video_collection),
-              title: Text(translate("downloadedContent")),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _navigate(context, const DownloadsPage()),
-            ),
+            if (!kIsWeb)
+              ListTile(
+                leading: const Icon(Icons.video_collection),
+                title: Text(translate("downloadedContent")),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _navigate(context, const DownloadsPage()),
+              ),
           ],
         ),
       ),

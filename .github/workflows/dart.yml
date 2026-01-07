@@ -23,6 +23,22 @@ jobs:
           architecture: x64
       - run: flutter pub get
       
+      # Clean CocoaPods cache and lockfile
+      - name: Clean CocoaPods cache
+        run: |
+          cd ios
+          rm -rf Podfile.lock Pods
+
+      # Update CocoaPods repos
+      - name: Update CocoaPods repos
+        run: pod repo update
+        working-directory: ios
+
+      # Install CocoaPods dependencies (with repo-update for freshness)
+      - name: Install CocoaPods dependencies
+        run: |
+          cd ios
+          pod install --repo-update
 
       - run: pod repo update
         working-directory: ios

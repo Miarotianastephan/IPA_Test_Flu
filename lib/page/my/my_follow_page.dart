@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/page_response.dart';
 import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/general_user_tab.dart';
 
 import '../../provider/api_provider.dart';
@@ -76,11 +76,12 @@ class _MyFollowPageState extends ConsumerState<MyFollowPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(localisations.myFollows),
+        title: Text(translate("myFollows")),
         backgroundColor: Colors.black,
       ),
       body: GeneralUserTab(

@@ -31,6 +31,7 @@ VideoInfo _$VideoInfoFromJson(Map<String, dynamic> json) => VideoInfo(
   favoriteCount: (json['favorite_count'] as num?)?.toInt() ?? 0,
   viewCount: (json['view_count'] as num?)?.toInt() ?? 0,
   needVip: json['need_vip'] == null ? false : parseBool(json['need_vip']),
+  encryptionKey: json['v_key'] as String? ?? 'fsjkey',
   tags:
       (json['tags'] as List<dynamic>?)
           ?.map((e) => VideoTag.fromJson(e as Map<String, dynamic>))
@@ -65,6 +66,7 @@ Map<String, dynamic> _$VideoInfoToJson(VideoInfo instance) => <String, dynamic>{
   'favorite_count': instance.favoriteCount,
   'view_count': instance.viewCount,
   'need_vip': instance.needVip,
+  'v_key': instance.encryptionKey,
   'tags': instance.tags.map((e) => e.toJson()).toList(),
   'categories': instance.categories.map((e) => e.toJson()).toList(),
   'created_at': instance.createdAt.toIso8601String(),

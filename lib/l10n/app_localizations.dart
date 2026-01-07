@@ -1216,23 +1216,23 @@ abstract class AppLocalizations {
   /// **'Under Maintenance'**
   String get underMaintenance;
 
-  /// No description provided for @maintenance_web.
+  /// No description provided for @maintenanceWeb.
   ///
   /// In en, this message translates to:
   /// **'Our website is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.'**
-  String get maintenance_web;
+  String get maintenanceWeb;
 
-  /// No description provided for @maintenance_mobile.
+  /// No description provided for @maintenanceMobile.
   ///
   /// In en, this message translates to:
   /// **'Our mobile app is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.'**
-  String get maintenance_mobile;
+  String get maintenanceMobile;
 
-  /// No description provided for @maintenance_service.
+  /// No description provided for @maintenanceService.
   ///
   /// In en, this message translates to:
   /// **'Our service is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.'**
-  String get maintenance_service;
+  String get maintenanceService;
 
   /// No description provided for @useBrowser.
   ///
@@ -1245,6 +1245,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Download the app'**
   String get downloadApp;
+
+  /// No description provided for @quitApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Quit the app'**
+  String get quitApp;
+
+  /// No description provided for @noLanguagesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No languages available'**
+  String get noLanguagesAvailable;
+
+  /// No description provided for @availableLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Languages'**
+  String get availableLanguages;
+
+  /// No description provided for @downloadLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded Languages'**
+  String get downloadLanguages;
+
+  /// No description provided for @errorLoadingDownloadedLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading downloaded languages'**
+  String get errorLoadingDownloadedLanguages;
+
+  /// No description provided for @errorLoadingSelectedLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading selected language'**
+  String get errorLoadingSelectedLanguages;
+
+  /// No description provided for @errorLoadingLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading languages'**
+  String get errorLoadingLanguages;
 }
 
 class _AppLocalizationsDelegate

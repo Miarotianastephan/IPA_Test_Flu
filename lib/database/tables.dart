@@ -2,10 +2,14 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../models/audio_cache.dart';
 import '../models/conversation.dart';
 import '../models/conversation_user.dart';
+import '../models/emoji_cache.dart';
+import '../models/image_cache.dart';
 import '../models/message.dart';
 import '../models/userinfo.dart';
+import '../models/video_cache.dart';
 
 ///////////////////////////////////////////////////////////////////////////
 //  CONVERSATIONS TABLE
@@ -43,6 +47,8 @@ class ConversationUsers extends Table {
   IntColumn get conversationId => integer().named('conversation_id')();
 
   IntColumn get userId => integer().named('user_id')();
+
+  TextColumn get role => text().withDefault(const Constant('member'))();
 
   DateTimeColumn get joinedAt => dateTime().named('joined_at')();
 
@@ -106,9 +112,8 @@ class Messages extends Table {
   BoolColumn get isSelf =>
       boolean().named('is_self').withDefault(const Constant(false))();
 
-  BoolColumn get sendFailed => boolean()
-      .named('send_failed')
-      .withDefault(const Constant(false))();
+  BoolColumn get sendFailed =>
+      boolean().named('send_failed').withDefault(const Constant(false))();
 
   DateTimeColumn get revokedAt => dateTime().nullable().named('revoked_at')();
 
@@ -169,4 +174,105 @@ class UserInfos extends Table {
   Set<Column<Object>>? get primaryKey => {id};
 }
 
+///////////////////////////////////////////////////////////////////////////
+//  EMOJIS TABLE - Local cache for emoji/GIF metadata
+///////////////////////////////////////////////////////////////////////////
 
+@UseRowClass(EmojiCache)
+class Emojis extends Table {
+  IntColumn get id => integer()(); // Backend ID
+
+  TextColumn get code => text()(); // Emoji code (e.g., ^*#*emoji_001*#*^)
+
+  TextColumn get url => text()(); // Original URL from API
+
+  IntColumn get type => integer()(); // 1 = emoji, 2 = gif
+
+  IntColumn get status => integer()();
+
+  IntColumn get groupId => integer().named('group_id')();
+
+  TextColumn get groupName => text().named('group_name')();
+
+  TextColumn get groupPrice => text().named('group_price')();
+
+  BoolColumn get groupIsPremium =>
+      boolean().named('group_is_premium').withDefault(const Constant(false))();
+
+  BoolColumn get purchased => boolean().withDefault(const Constant(false))();
+
+  TextColumn get localPath =>
+      text().nullable().named('local_path')(); // Local file path
+
+  DateTimeColumn get downloadedAt => dateTime().nullable().named(
+    'downloaded_at',
+  )(); // When file was downloaded
+
+  DateTimeColumn get updatedAt =>
+      dateTime().named('updated_at')(); // Last API update
+
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {id};
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  EMOJI SYNC METADATA - Track last sync time per type
+///////////////////////////////////////////////////////////////////////////
+
+@UseRowClass(EmojiSyncMeta)
+class EmojiSyncMetadata extends Table {
+  IntColumn get type => integer()(); // 1 = emoji, 2 = gif
+
+  DateTimeColumn get lastSyncAt => dateTime().named('last_sync_at')();
+
+  IntColumn get totalCount =>
+      integer().named('total_count').withDefault(const Constant(0))();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {type};
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  IMAGES TABLE - Local cache for image metadata
+///////////////////////////////////////////////////////////////////////////
+
+@UseRowClass(ImageCache)
+class Images extends Table {
+  TextColumn get url => text()(); // URL as primary key
+
+  TextColumn get localPath => text().nullable().named(
+    'local_path',
+  )(); // Local file path (deprecated, kept for compatibility if needed)
+
+  @override
+  Set<Column<Object>>? get primaryKey => {url};
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  AUDIOS TABLE - Local cache for audio metadata
+///////////////////////////////////////////////////////////////////////////
+
+@UseRowClass(AudioCache)
+class Audios extends Table {
+  TextColumn get url => text()(); // URL as primary key
+
+  TextColumn get localPath =>
+      text().nullable().named('local_path')(); // Local file path
+  @override
+  Set<Column<Object>>? get primaryKey => {url};
+}
+///////////////////////////////////////////////////////////////////////////
+//  VIDEOS TABLE - Local cache for video metadata
+///////////////////////////////////////////////////////////////////////////
+
+@UseRowClass(VideoCache)
+class Videos extends Table {
+  TextColumn get url => text()(); // URL as primary key
+
+  TextColumn get localPath => text().nullable().named('local_path')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {url};
+}

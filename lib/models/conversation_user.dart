@@ -16,16 +16,20 @@ class ConversationUser {
   @JsonKey(name: "user_id", fromJson: parseInt)
   final int userId;
 
+  @JsonKey(defaultValue: "member")
+  final String role;
+
   @JsonKey(name: "joined_at")
   final DateTime joinedAt;
 
   @JsonKey(name: "user")
-  final UserInfo? user; // 可空，因为后端可能没 preload 会话里
+  final UserInfo? user;
 
   ConversationUser({
     required this.id,
     required this.conversationId,
     required this.userId,
+    this.role = "member",
     required this.joinedAt,
     this.user,
   });

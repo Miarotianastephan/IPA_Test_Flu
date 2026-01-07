@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/video_detail_provider.dart';
 
 import '../../provider/my_post_providers.dart';
@@ -53,7 +53,7 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
       listType: UserVideoListType.favorite,
     ));
 
-    ref.invalidate(provider); 
+    ref.invalidate(provider);
     ref.read(provider.notifier).fetch(refresh: true);
   }
 
@@ -99,7 +99,8 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     final videoType = ref.watch(videoTypeProvider);
     final isLongVideo = videoType == 2;
     final videoProvider = userVideoListProvider((
@@ -139,7 +140,7 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
             curve: Curves.easeInOut,
             alignment: _isVideoTab ? Alignment.centerLeft : Alignment.center,
             child: Text(
-              localizations.favorites,
+              translate("favorites"),
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -159,8 +160,8 @@ class _FavoritePageState extends ConsumerState<FavoritePage>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
           tabs: [
-            Tab(text: localizations.video),
-            Tab(text: localizations.post),
+            Tab(text: translate("video")),
+            Tab(text: translate("post")),
           ],
         ),
       ),

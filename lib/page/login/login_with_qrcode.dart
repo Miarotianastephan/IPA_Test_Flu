@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/config/storage_config.dart';
+import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../provider/current_user_provider.dart';
@@ -28,10 +32,11 @@ class _LoginWithQrcodePageState extends ConsumerState<LoginWithQrcodePage> {
   }
 
   Future<void> _loginWithQRCode(String code, BuildContext context) async {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
     if (code.isEmpty) {
-      ToastUtil.warning(localizations.enterCredentialKey);
+      ToastUtil.warning(translate("enterCredentialKey"));
       return;
     }
 
@@ -40,24 +45,44 @@ class _LoginWithQrcodePageState extends ConsumerState<LoginWithQrcodePage> {
     final res = await currentUserNotifier.loginByCredential(code);
 
     if (res?.data != null) {
-      ToastUtil.success(localizations.loginSuccess);
+      ToastUtil.success(translate("loginSuccess"));
+
+      getAppConfig();
+    } else {
+      ToastUtil.warning(translate("loginFailed"));
+    }
+  }
+
+  Future<void> getAppConfig() async {
+    final appService = ref.read(appServiceProvider);
+
+    try {
+      final appConfig = await appService.appConfig();
+
+      await StorageService.instance.setValue(
+        "app_config",
+        jsonEncode(appConfig.data),
+      );
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const HomePage()),
+            MaterialPageRoute(
+              builder: (_) => HomePage(config: appConfig.data),
+            ),
             (route) => false,
           );
         }
       });
-    } else {
-      ToastUtil.warning(localizations.loginFailed);
+    } catch (e, st) {
+      debugPrintStack(stackTrace: st);
     }
   }
 
   Future<void> _uploadQRCode(BuildContext context) async {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     final picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
@@ -71,11 +96,11 @@ class _LoginWithQrcodePageState extends ConsumerState<LoginWithQrcodePage> {
         if (!mounted) return;
       } else {
         if (!mounted) return;
-        ToastUtil.error(localizations.qrcodeNotRecognized);
+        ToastUtil.error(translate("qrcodeNotRecognized"));
       }
     } catch (e) {
       if (!mounted) return;
-      ToastUtil.error(localizations.qrcodeParseFailed);
+      ToastUtil.error(translate("qrcodeParseFailed"));
     }
   }
 
@@ -89,7 +114,8 @@ class _LoginWithQrcodePageState extends ConsumerState<LoginWithQrcodePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     return Scaffold(
       backgroundColor: theme.colorScheme.primary,
       appBar: AppBar(title: const Text(""), centerTitle: true),
@@ -99,7 +125,7 @@ class _LoginWithQrcodePageState extends ConsumerState<LoginWithQrcodePage> {
           Padding(
             padding: EdgeInsets.all(24),
             child: Text(
-              localizations.loginWithQrcode,
+              translate("loginWithQrcode"),
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ),
@@ -174,7 +200,7 @@ class _LoginWithQrcodePageState extends ConsumerState<LoginWithQrcodePage> {
               onPressed: _toggleFlash,
               icon: Icon(isFlashOn ? Icons.flash_on : Icons.flash_off),
               label: Text(
-                isFlashOn ? localizations.flashOff : localizations.flashOn,
+                isFlashOn ? translate("flashOff") : translate("flashOn"),
               ),
             ),
           ),
@@ -195,7 +221,7 @@ class _LoginWithQrcodePageState extends ConsumerState<LoginWithQrcodePage> {
               },
               icon: const Icon(Icons.upload_file),
               label: Text(
-                localizations.uploadQrcode,
+                translate("uploadQrcode"),
                 style: TextStyle(fontSize: 16),
               ),
             ),

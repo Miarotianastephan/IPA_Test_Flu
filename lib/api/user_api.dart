@@ -51,4 +51,7 @@ class UserApi {
   static const String mutualFollowings = '$base/mutualFollowings';
 
   static const String emojis = "$base/emojis";
+
+  // 上传文件
+  static const String upload = "$base/files/upload";
 }

@@ -1,19 +1,29 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
-import 'package:live_app/provider/websocket_provider.dart';
-import 'package:live_app/widgets/message/action_panel.dart';
-import 'package:live_app/widgets/message/emoji_text_input.dart';
-import 'package:live_app/widgets/message/message_item_gif.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/utils/utils.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
+import 'package:video_player/video_player.dart';
 
 import '../models/conversation_user.dart';
 import '../models/userinfo.dart';
+import '../provider/api_provider.dart';
 import '../provider/conversation_provider.dart';
-import '../provider/emoji_provider.dart';
-import '../widgets/message_item.dart';
-import '../widgets/message_popup_menu_route.dart';
+import '../widgets/message/action_panel.dart';
+import '../widgets/message/audio_message_item.dart';
+import '../widgets/message/audio_recorder_widget.dart';
+import '../widgets/message/chat_input_bar.dart';
+import '../widgets/message/chat_menu_button.dart';
+import '../widgets/message/emoji_text_input.dart';
+import '../widgets/message/message_item.dart';
+import '../widgets/message/message_item_gif.dart';
+import '../widgets/message/video_message_item.dart';
 
 class ChatDetailPage extends ConsumerStatefulWidget {
   final UserInfo user;
@@ -33,10 +43,14 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
   bool _initialScrollDone = false;
   final Set<int> _unreadMsgIds = {};
   double pannelHeight = 0.0;
+  double _previousKeyboardHeight = 0.0;
 
   final FocusNode _focusNode = FocusNode();
 
   bool _showActionPanel = false;
+  bool _isMenuExpanded = true;
+  bool _showAudioRecorder = false;
+  final ImagePicker _picker = ImagePicker();
 
   int? _firstUnreadIndex(List messages) {
     for (int i = 0; i < messages.length; i++) {
@@ -55,6 +69,11 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         _focusNode.unfocus();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           setState(() {});
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (_scroll.hasClients) {
+              _scroll.jumpTo(_scroll.position.maxScrollExtent);
+            }
+          });
         });
       } else {
         _focusNode.requestFocus();
@@ -66,19 +85,19 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
   void initState() {
     super.initState();
 
-    Future.microtask(() {
-      if (ref.read(emojiProvider(1)).emojis.isEmpty) {
-        ref.read(emojiProvider(1).notifier).loadEmojis();
-      }
-      if (ref.read(emojiProvider(2)).emojis.isEmpty) {
-        ref.read(emojiProvider(2).notifier).loadEmojis();
-      }
-    });
-
     _focusNode.addListener(() {
-      if (_focusNode.hasFocus && _showActionPanel) {
+      if (_focusNode.hasFocus) {
+        if (_showActionPanel) {
+          setState(() {
+            _showActionPanel = false;
+          });
+        }
         setState(() {
-          _showActionPanel = false;
+          _isMenuExpanded = false;
+        });
+      } else {
+        setState(() {
+          _isMenuExpanded = true;
         });
       }
     });
@@ -102,7 +121,10 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     final chatState = ref.watch(chatControllerProvider(widget.user.id));
     final conversation = chatState.conversation;
     final messages = chatState.messages;
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
+
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
@@ -111,6 +133,15 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
 
       // 判断是否在旧的底部，而不是新的底部（避免新消息扩展列表高度导致判断失败）
       bool wasAtBottom = (_scroll.offset >= _lastMaxScrollExtent - 50);
+
+      if (keyboardHeight > _previousKeyboardHeight && keyboardHeight > 0) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (_scroll.hasClients) {
+            _scroll.jumpTo(_scroll.position.maxScrollExtent);
+          }
+        });
+      }
+      _previousKeyboardHeight = keyboardHeight;
 
       if (currentLen != _lastMessageCount) {
         _lastMessageCount = currentLen;
@@ -162,123 +193,20 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         backgroundColor: Colors.black,
         appBar: AppBar(
           backgroundColor: Colors.black,
-          title: Text(
-            "${widget.user.nickname}",
-            style: const TextStyle(color: Colors.white),
-          ),
-          actions: [
-            Builder(
-              builder: (buttonContext) {
-                return IconButton(
-                  icon: const Icon(Icons.more_horiz, color: Colors.white),
-                  onPressed: () async {
-                    final RenderBox button =
-                        buttonContext.findRenderObject() as RenderBox;
-                    final RenderBox overlay =
-                        Overlay.of(buttonContext).context.findRenderObject()
-                            as RenderBox;
-
-                    final Offset buttonPosition = button.localToGlobal(
-                      Offset.zero,
-                      ancestor: overlay,
-                    );
-
-                    final double rightInset =
-                        overlay.size.width -
-                        (buttonPosition.dx + button.size.width);
-
-                    final result = await Navigator.of(buttonContext).push(
-                      MessagePopupMenuRoute(
-                        duration: const Duration(milliseconds: 150),
-                        position: RelativeRect.fromLTRB(
-                          buttonPosition.dx,
-                          buttonPosition.dy + button.size.height - 10,
-                          rightInset,
-                          0,
-                        ),
-                        child: IntrinsicWidth(
-                          child: Material(
-                            color: Colors.grey[900],
-                            borderRadius: BorderRadius.circular(8),
-                            elevation: 6,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ListTile(
-                                  leading: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  title: Text(
-                                    localisations.clearHistory,
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                  onTap: () async {
-                                    Navigator.pop(buttonContext);
-
-                                    final confirm = await showDialog<bool>(
-                                      context: buttonContext,
-                                      builder: (context) {
-                                        return AlertDialog(
-                                          title: Text(
-                                            localisations
-                                                .confirmClearingHistory,
-                                          ),
-                                          content: Text(
-                                            localisations
-                                                .actionCanNotBeUndoneWhenClearingHistory,
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context, false),
-                                              child: Text(localisations.cancel),
-                                            ),
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context, true),
-                                              child: Text(
-                                                localisations.clearHistory,
-                                                style: TextStyle(
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-
-                                    if (confirm == true) {
-                                      final notifier = ref.read(
-                                        chatControllerProvider(
-                                          widget.user.id,
-                                        ).notifier,
-                                      );
-                                      notifier.clearHistory();
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-
-                    if (!buttonContext.mounted) return;
-
-                    if (result == "clear_history") {
-                      final notifier = ref.read(
-                        chatControllerProvider(widget.user.id).notifier,
-                      );
-                      notifier.clearHistory();
-                    }
-                  },
-                );
-              },
+          title: GestureDetector(
+            onTap: () => toUserDetailPage(
+              context: context,
+              ref: ref,
+              userId: widget.user.id,
+              url: widget.user.avatar,
+              nickname: widget.user.nickname,
             ),
-          ],
+            child: Text(
+              "${widget.user.nickname}",
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+          actions: [ChatMenuButton(user: widget.user)],
         ),
 
         body: Column(
@@ -328,7 +256,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                                   vertical: 8,
                                 ),
                                 child: Text(
-                                  "${localisations.unreadMessage}· ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}",
+                                  "${translate("unreadMessage")}· ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}",
                                   style: const TextStyle(
                                     color: Colors.redAccent,
                                     fontSize: 14,
@@ -409,8 +337,224 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                                       }
                                     });
                                   },
+                                )
+                              else if (msgType == 'audio')
+                                ChatAudioMessageItem(
+                                  messageId: msg.id,
+                                  audioUrl: content,
+                                  isSelf: msg.isSelf,
+                                  avatarUrl: senderUserInfo?.avatar ?? "",
+                                  nickname: nickname,
+                                  userId: senderConvUser?.userId,
+                                  createdAt: msg.createdAt,
+                                  showFailed: msg.sendFailed,
+                                  resending: msg.resending,
+                                  hasRead: msg.isRead,
+                                  onResend: () {
+                                    final notifier = ref.read(
+                                      chatControllerProvider(
+                                        widget.user.id,
+                                      ).notifier,
+                                    );
+                                    notifier.resendMessage(msg);
+                                  },
+                                  onRead: () {
+                                    final notifier = ref.read(
+                                      chatControllerProvider(
+                                        widget.user.id,
+                                      ).notifier,
+                                    );
+                                    notifier.onRead(msg);
+
+                                    setState(() {
+                                      _unreadMsgIds.remove(msg.id);
+                                      _unreadCount = _unreadMsgIds.length;
+                                      if (_unreadCount == 0) {
+                                        _showUnreadIndicator = false;
+                                      }
+                                    });
+                                  },
+                                )
+                              else if (msgType == 'video')
+                                ChatVideoMessageItem(
+                                  messageId: msg.id,
+                                  videoUrl: content,
+                                  isSelf: msg.isSelf,
+                                  avatarUrl: senderUserInfo?.avatar ?? "",
+                                  nickname: nickname,
+                                  userId: senderConvUser?.userId,
+                                  createdAt: msg.createdAt,
+                                  showFailed: msg.sendFailed,
+                                  resending: msg.resending,
+                                  hasRead: msg.isRead,
+                                  onResend: () {
+                                    final notifier = ref.read(
+                                      chatControllerProvider(
+                                        widget.user.id,
+                                      ).notifier,
+                                    );
+                                    notifier.resendMessage(msg);
+                                  },
+                                  onRead: () {
+                                    final notifier = ref.read(
+                                      chatControllerProvider(
+                                        widget.user.id,
+                                      ).notifier,
+                                    );
+                                    notifier.onRead(msg);
+
+                                    setState(() {
+                                      _unreadMsgIds.remove(msg.id);
+                                      _unreadCount = _unreadMsgIds.length;
+                                      if (_unreadCount == 0) {
+                                        _showUnreadIndicator = false;
+                                      }
+                                    });
+                                  },
+                                )
+                              else if (msgType == 'image')
+                                ChatGifMessageItem(
+                                  messageId: msg.id,
+                                  gifUrl: content,
+                                  isSelf: msg.isSelf,
+                                  avatarUrl: senderUserInfo?.avatar ?? "",
+                                  nickname: nickname,
+                                  userId: senderConvUser?.userId,
+                                  createdAt: msg.createdAt,
+                                  showFailed: msg.sendFailed,
+                                  resending: msg.resending,
+                                  hasRead: msg.isRead,
+                                  onResend: () {
+                                    final notifier = ref.read(
+                                      chatControllerProvider(
+                                        widget.user.id,
+                                      ).notifier,
+                                    );
+                                    notifier.resendMessage(msg);
+                                  },
+                                  onRead: () {
+                                    final notifier = ref.read(
+                                      chatControllerProvider(
+                                        widget.user.id,
+                                      ).notifier,
+                                    );
+                                    notifier.onRead(msg);
+
+                                    setState(() {
+                                      _unreadMsgIds.remove(msg.id);
+                                      _unreadCount = _unreadMsgIds.length;
+                                      if (_unreadCount == 0) {
+                                        _showUnreadIndicator = false;
+                                      }
+                                    });
+                                  },
                                 ),
                             ],
+                          );
+                        }
+
+                        if (msgType == 'audio') {
+                          return ChatAudioMessageItem(
+                            messageId: msg.id,
+                            audioUrl: content,
+                            isSelf: msg.isSelf,
+                            avatarUrl: senderUserInfo?.avatar ?? "",
+                            nickname: nickname,
+                            userId: senderConvUser?.userId,
+                            createdAt: msg.createdAt,
+                            showFailed: msg.sendFailed,
+                            resending: msg.resending,
+                            hasRead: msg.isRead,
+                            onResend: () {
+                              final notifier = ref.read(
+                                chatControllerProvider(widget.user.id).notifier,
+                              );
+                              notifier.resendMessage(msg);
+                            },
+                            onRead: () {
+                              final notifier = ref.read(
+                                chatControllerProvider(widget.user.id).notifier,
+                              );
+                              notifier.onRead(msg);
+
+                              setState(() {
+                                _unreadMsgIds.remove(msg.id);
+                                _unreadCount = _unreadMsgIds.length;
+                                if (_unreadCount == 0) {
+                                  _showUnreadIndicator = false;
+                                }
+                              });
+                            },
+                          );
+                        }
+
+                        if (msgType == 'video') {
+                          return ChatVideoMessageItem(
+                            messageId: msg.id,
+                            videoUrl: content,
+                            isSelf: msg.isSelf,
+                            avatarUrl: senderUserInfo?.avatar ?? "",
+                            nickname: nickname,
+                            userId: senderConvUser?.userId,
+                            createdAt: msg.createdAt,
+                            showFailed: msg.sendFailed,
+                            resending: msg.resending,
+                            hasRead: msg.isRead,
+                            onResend: () {
+                              final notifier = ref.read(
+                                chatControllerProvider(widget.user.id).notifier,
+                              );
+                              notifier.resendMessage(msg);
+                            },
+                            onRead: () {
+                              final notifier = ref.read(
+                                chatControllerProvider(widget.user.id).notifier,
+                              );
+                              notifier.onRead(msg);
+
+                              setState(() {
+                                _unreadMsgIds.remove(msg.id);
+                                _unreadCount = _unreadMsgIds.length;
+                                if (_unreadCount == 0) {
+                                  _showUnreadIndicator = false;
+                                }
+                              });
+                            },
+                          );
+                        }
+
+                        if (msgType == 'image') {
+                          return ChatGifMessageItem(
+                            messageId: msg.id,
+                            gifUrl: content,
+                            isSelf: msg.isSelf,
+                            avatarUrl: senderUserInfo?.avatar ?? "",
+                            nickname: nickname,
+                            userId: senderConvUser?.userId,
+                            createdAt: msg.createdAt,
+                            showFailed: msg.sendFailed,
+                            resending: msg.resending,
+                            hasRead: msg.isRead,
+                            onResend: () {
+                              final notifier = ref.read(
+                                chatControllerProvider(widget.user.id).notifier,
+                              );
+                              notifier.resendMessage(msg);
+                            },
+                            onRead: () {
+                              final notifier = ref.read(
+                                chatControllerProvider(widget.user.id).notifier,
+                              );
+                              notifier.onRead(msg);
+
+                              setState(() {
+                                _unreadMsgIds.remove(msg.id);
+                                _unreadCount = _unreadMsgIds.length;
+                                if (_unreadCount == 0) {
+                                  _showUnreadIndicator = false;
+                                }
+                              });
+                            },
                           );
                         }
 
@@ -516,7 +660,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            "${localisations.unread} $_unreadCount ${localisations.item}${_unreadCount > 1 ? 's' : ''}",
+                            "${translate("unread")} $_unreadCount ${translate("item")}${_unreadCount > 1 ? 's' : ''}",
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
@@ -534,70 +678,50 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
   }
 
   Widget _buildInputBar() {
-    final localisations = AppLocalizations.of(context)!;
-
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-        color: const Color(0xFF1A1A1A),
-        child: Row(
-          children: [
-            _buildIconButton(Icons.emoji_emotions, onTap: _toggleActionPanel),
-
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A2A),
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: EmojiTextField(
-                  controller: _controller,
-                  sharedFocusNode: _focusNode,
-                  hintText: localisations.enterMessage,
-                  style: const TextStyle(color: Colors.white, fontSize: 18.0),
-                  hintStyle: const TextStyle(color: Colors.white54),
-                ),
-              ),
-            ),
-
-            _buildIconButton(Icons.send, onTap: _send),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIconButton(
-    IconData icon, {
-    Color color = Colors.white70,
-    VoidCallback? onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(30),
-        onTap: () {
-          if (onTap != null) onTap();
+    if (_showAudioRecorder) {
+      return AudioRecorderWidget(
+        onCancel: () {
+          setState(() {
+            _showAudioRecorder = false;
+          });
         },
-        child: Container(
-          width: 38,
-          height: 38,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.transparent,
-          ),
-          child: Column(children: [Icon(icon, size: 30, color: color)]),
-        ),
-      ),
+        onSend: (path) async {
+          await _sendAudio(path);
+          if (mounted) {
+            setState(() {
+              _showAudioRecorder = false;
+            });
+          }
+        },
+      );
+    }
+
+    return ChatInputBar(
+      controller: _controller,
+      focusNode: _focusNode,
+      isMenuExpanded: _isMenuExpanded,
+      onToggleMenu: () {
+        setState(() {
+          _isMenuExpanded = true;
+        });
+      },
+      onToggleActionPanel: _toggleActionPanel,
+      onGalleryTap: () => _pickImage(ImageSource.gallery),
+      onCameraTap: () => _pickImage(ImageSource.camera),
+      onMicTap: () {
+        setState(() {
+          _showAudioRecorder = true;
+          _showActionPanel = false;
+          _focusNode.unfocus();
+        });
+      },
+      onSend: _send,
     );
   }
 
   Widget _buildKeyboardOrPanelSpace() {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     final panelHeight = keyboardHeight > 0
         ? keyboardHeight.ceilToDouble()
         : 360;
@@ -607,7 +731,9 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       curve: Curves.easeOut,
       height: _showActionPanel
           ? panelHeight.toDouble()
-          : keyboardHeight.ceilToDouble(),
+          : keyboardHeight > 0
+          ? keyboardHeight.ceilToDouble()
+          : bottomPadding,
       child: _showActionPanel
           ? GestureDetector(
               onTap: () {},
@@ -623,12 +749,17 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
 
   void _send({String? message}) {
     String textToSend;
+    bool isGroup = false;
 
     if (message != null) {
-      textToSend = '{"type": "gif", "content": "$message"}';
+      textToSend = '{"type": "gif","isGroup":$isGroup, "content": "$message"}';
     } else {
-      textToSend =
-          '{"type": "text", "content": "${_controller.getMessageText().trim()}"}';
+      final payload = {
+        "type": "text",
+        "isGroup": isGroup,
+        "content": _controller.getMessageText().trim(),
+      };
+      textToSend = jsonEncode(payload);
     }
 
     final notifier = ref.read(chatControllerProvider(widget.user.id).notifier);
@@ -643,15 +774,58 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     });
   }
 
-  void _sendTextMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-    final ws = ref.read(webSocketProvider.notifier);
-    final watch = ref.watch(currentConversationIdProvider);
+  Future<void> _sendAudio(String path) async {
+    try {
+      final userService = ref.read(userServiceProvider);
+      final response = await userService.uploadFile(path);
+      bool isGroup = false;
+      if (response.data != null) {
+        final fileUrl = response.data!.url;
+        final textToSend =
+            '{"type": "audio","isGroup":$isGroup, "content": "$fileUrl"}';
+        final notifier = ref.read(
+          chatControllerProvider(widget.user.id).notifier,
+        );
+        notifier.sendMessage(textToSend);
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      }
+    } catch (e) {
+      debugPrint("Error sending audio: $e");
+    }
 
-    ws.state.manager.sendPrivateMessage(text, widget.user.id, watch!);
-    _scroll.jumpTo(_scroll.position.maxScrollExtent);
-    _controller.clear();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  Future<void> _sendImage(String path) async {
+    try {
+      final userService = ref.read(userServiceProvider);
+      final response = await userService.uploadFile(path);
+      bool isGroup = false;
+
+      if (response.data != null) {
+        final fileUrl = response.data!.url;
+
+        final textToSend =
+            '{"type": "image","isGroup":$isGroup, "content": "$fileUrl"}';
+        final notifier = ref.read(
+          chatControllerProvider(widget.user.id).notifier,
+        );
+        notifier.sendMessage(textToSend);
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      }
+    } catch (e) {
+      debugPrint("Error sending image: $e");
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
   }
 
   void _onEmojiSelected(String emojiKey, String svgUrl) {
@@ -677,5 +851,565 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     );
 
     _send(message: newText);
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final result = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1D1D1D),
+          title: const Text(
+            'Select Media Type',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.image, color: Colors.white70),
+                title: const Text(
+                  'Image',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () => Navigator.pop(context, 'image'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.videocam, color: Colors.white70),
+                title: const Text(
+                  'Video',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () => Navigator.pop(context, 'video'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (result == null || !mounted) return;
+
+      if (result == 'image') {
+        final XFile? image = await _picker.pickImage(
+          source: source,
+          imageQuality: 85,
+        );
+        if (image == null || !mounted) return;
+
+        await showDialog(
+          context: context,
+          barrierColor: Colors.black.withValues(alpha: 0.9),
+          barrierDismissible: false,
+          builder: (context) {
+            return _ImagePreviewDialog(
+              imagePath: image.path,
+              onSend: _sendImage,
+            );
+          },
+        );
+      } else if (result == 'video') {
+        await _pickVideo(source);
+      }
+    } catch (e) {
+      debugPrint("Error picking media: $e");
+    }
+  }
+
+  Future<void> _pickVideo(ImageSource source) async {
+    try {
+      final XFile? video = await _picker.pickVideo(
+        source: source,
+        maxDuration: const Duration(minutes: 5),
+        preferredCameraDevice: CameraDevice.rear,
+      );
+      if (video == null || !mounted) return;
+
+      await showDialog(
+        context: context,
+        barrierColor: Colors.black.withValues(alpha: 0.9),
+        barrierDismissible: false,
+        builder: (context) {
+          return _VideoPreviewDialog(videoPath: video.path, onSend: _sendVideo);
+        },
+      );
+    } catch (e) {
+      debugPrint("Error picking video: $e");
+    }
+  }
+
+  Future<void> _sendVideo(String path) async {
+    try {
+      final file = File(path);
+      if (!file.existsSync()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Video file not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final fileSize = await file.length();
+
+      // Check file size (max 50MB for example)
+      if (fileSize > 50 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Video is too large. Maximum size is 50MB.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+
+      final userService = ref.read(userServiceProvider);
+
+      try {
+        final response = await userService.uploadFile(path);
+
+        bool isGroup = false;
+
+        if (response.data != null && response.data!.url.isNotEmpty) {
+          final fileUrl = response.data!.url;
+
+          final textToSend =
+              '{"type": "video","isGroup":$isGroup, "content": "$fileUrl"}';
+          final notifier = ref.read(
+            chatControllerProvider(widget.user.id).notifier,
+          );
+          notifier.sendMessage(textToSend);
+          _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        }
+      } on Exception catch (e) {
+        final errorMessage = e.toString().replaceAll('Exception: ', '');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Upload failed: $errorMessage'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Error sending video: $e");
+      debugPrint("Stack trace: $stackTrace");
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send video: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+}
+
+class _ImagePreviewDialog extends StatefulWidget {
+  final String imagePath;
+  final Future<void> Function(String) onSend;
+
+  const _ImagePreviewDialog({required this.imagePath, required this.onSend});
+
+  @override
+  State<_ImagePreviewDialog> createState() => _ImagePreviewDialogState();
+}
+
+class _ImagePreviewDialogState extends State<_ImagePreviewDialog> {
+  bool _isUploading = false;
+
+  Future<void> _handleSend() async {
+    setState(() => _isUploading = true);
+
+    try {
+      await widget.onSend(widget.imagePath);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      debugPrint("Error sending image: $e");
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: InteractiveViewer(
+              child: Image.file(File(widget.imagePath), fit: BoxFit.contain),
+            ),
+          ),
+
+          if (_isUploading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.7),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        "Envoi en cours...",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          /// Footer transparent
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.6)],
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withOpacity(0.5),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                        size: 28,
+                      ),
+                      onPressed: _isUploading
+                          ? null
+                          : () => Navigator.pop(context),
+                    ),
+                  ),
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withOpacity(0.5),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                      onPressed: _isUploading ? null : _handleSend,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VideoPreviewDialog extends StatefulWidget {
+  final String videoPath;
+  final Future<void> Function(String) onSend;
+
+  const _VideoPreviewDialog({required this.videoPath, required this.onSend});
+
+  @override
+  State<_VideoPreviewDialog> createState() => _VideoPreviewDialogState();
+}
+
+class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
+  bool _isUploading = false;
+
+  // Video Player (for non-Huawei devices)
+  VideoPlayerController? _videoPlayerController;
+
+  // MediaKit Player (for Huawei devices)
+  Player? _mediaKitPlayer;
+  VideoController? _mediaKitVideoController;
+
+  bool _useMediaKit = false;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  Future<bool> _isHuaweiDevice() async {
+    if (!Platform.isAndroid) return false;
+    final info = await DeviceInfoPlugin().androidInfo;
+    return info.manufacturer.toLowerCase() == 'huawei';
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      _useMediaKit = await _isHuaweiDevice();
+
+      if (_useMediaKit) {
+        await _initializeMediaKit();
+      } else {
+        await _initializeVideoPlayer();
+      }
+    } catch (e) {
+      debugPrint("Error initializing video preview: $e");
+    }
+  }
+
+  Future<void> _initializeMediaKit() async {
+    try {
+      _mediaKitPlayer = Player();
+      _mediaKitVideoController = VideoController(_mediaKitPlayer!);
+
+      await _mediaKitPlayer!.open(Media(widget.videoPath), play: false);
+      await _mediaKitPlayer!.setPlaylistMode(PlaylistMode.single);
+      await _mediaKitPlayer!.play();
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error initializing MediaKit preview: $e");
+    }
+  }
+
+  Future<void> _initializeVideoPlayer() async {
+    try {
+      _videoPlayerController = VideoPlayerController.file(
+        File(widget.videoPath),
+      );
+      await _videoPlayerController!.initialize();
+      await _videoPlayerController!.setLooping(true);
+      await _videoPlayerController!.play();
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error initializing VideoPlayer preview: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController?.dispose();
+    _mediaKitPlayer?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSend() async {
+    setState(() => _isUploading = true);
+
+    try {
+      await widget.onSend(widget.videoPath);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      debugPrint("Error sending video: $e");
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  void _togglePlayPause() {
+    setState(() {
+      if (_useMediaKit) {
+        if (_mediaKitPlayer?.state.playing ?? false) {
+          _mediaKitPlayer?.pause();
+        } else {
+          _mediaKitPlayer?.play();
+        }
+      } else {
+        if (_videoPlayerController?.value.isPlaying ?? false) {
+          _videoPlayerController?.pause();
+        } else {
+          _videoPlayerController?.play();
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isPlaying = _useMediaKit
+        ? (_mediaKitPlayer?.state.playing ?? false)
+        : (_videoPlayerController?.value.isPlaying ?? false);
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: Stack(
+        children: [
+          // Video player
+          Positioned.fill(
+            child: Center(
+              child: _isInitialized
+                  ? (_useMediaKit && _mediaKitVideoController != null
+                        ? Video(
+                            controller: _mediaKitVideoController!,
+                            controls: null,
+                          )
+                        : _videoPlayerController != null
+                        ? AspectRatio(
+                            aspectRatio:
+                                _videoPlayerController!.value.aspectRatio,
+                            child: VideoPlayer(_videoPlayerController!),
+                          )
+                        : const SizedBox.shrink())
+                  : const CircularProgressIndicator(color: Colors.white),
+            ),
+          ),
+
+          // Play/Pause button overlay
+          if (_isInitialized && !_isUploading)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _togglePlayPause,
+                child: Center(
+                  child: AnimatedOpacity(
+                    opacity: isPlaying ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // Uploading overlay
+          if (_isUploading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        "Uploading video...",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Bottom buttons
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.6),
+                  ],
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.5),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                        size: 28,
+                      ),
+                      onPressed: _isUploading
+                          ? null
+                          : () => Navigator.pop(context),
+                    ),
+                  ),
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.5),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                      onPressed: _isUploading ? null : _handleSend,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

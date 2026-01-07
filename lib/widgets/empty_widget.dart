@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
-class EmptyWidget extends StatelessWidget {
+class EmptyWidget extends ConsumerWidget {
   final String? message;
   final IconData icon;
   final Color color;
@@ -14,8 +15,10 @@ class EmptyWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final localMessage = message ?? AppLocalizations.of(context)!.noData;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+
+    final localMessage = message ?? i18n.translate('noData');
 
     return Center(
       child: Column(

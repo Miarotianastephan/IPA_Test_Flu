@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flick_video_player/flick_video_player.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/video/web_video_controls_overlay.dart';
 import 'package:live_app/widgets/video/web_video_interaction_layer.dart';
 import 'package:video_player/video_player.dart';
 
-class WebVideoPlayer extends StatefulWidget {
+class WebVideoPlayer extends ConsumerStatefulWidget {
   final String videoUrl;
 
   const WebVideoPlayer({super.key, required this.videoUrl});
 
   @override
-  State<WebVideoPlayer> createState() => _WebVideoPlayerState();
+  ConsumerState<WebVideoPlayer> createState() => _WebVideoPlayerState();
 }
 
-class _WebVideoPlayerState extends State<WebVideoPlayer> {
+class _WebVideoPlayerState extends ConsumerState<WebVideoPlayer> {
   FlickManager? flickManager;
+  String? _error;
 
   @override
   void initState() {
@@ -32,7 +35,12 @@ class _WebVideoPlayerState extends State<WebVideoPlayer> {
           if (mounted) setState(() {});
         })
         .catchError((e) {
-          debugPrint(e);
+          debugPrint('[WebVideoPlayer] Error initializing controller: $e');
+          if (mounted) {
+            setState(() {
+              _error = e.toString();
+            });
+          }
         });
   }
 
@@ -44,6 +52,34 @@ class _WebVideoPlayerState extends State<WebVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error, color: Colors.red),
+            const SizedBox(height: 8),
+            Text(
+              translate('unableToLoadVideo'),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              translate('checkConnectionAndRetry'),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (flickManager == null ||
         !flickManager!.flickVideoManager!.isVideoInitialized) {
       return const Center(child: CircularProgressIndicator());

@@ -24,10 +24,25 @@ class MessageApi {
   static const String groupJoin = "$base/group/join";
   static const String groupDissolve = "$base/group/dissolve";
   static const String groupTransferOwner = "$base/group/owner/transfer";
+  static const String groupSetAnAdmin = "$base/group/setAsAdmin";
   static const String groupLeave = "$base/group/leave";
   static const String groupKick = "$base/group/kick";
+  static const String groupDelete = "$base/group/delete";
+  static const String groupSearch = "$base/group/search";
+
+  static const String groupInvite = "$base/group/invitation/invite";
+  static const String groupInvitationApprove = "$base/group/invitation/approve";
+  static const String groupInvitationDecline = "$base/group/invitation/decline";
+  static const String groupInvitationAccept = "$base/group/invitation/accept";
+  static const String groupInvitationReject = "$base/group/invitation/reject";
+
+  // System notifications
+  static const String notificationList = "$base/notification/list";
+  static const String notificationMarkAsRead = "$base/notification/markAsRead";
+  static const String notificationMarkAllAsRead =
+      "$base/notification/markAllAsRead";
+  static const String notificationDelete = "$base/notification/remove";
 
   static const String sendMessage = "$base/send";
   static const String conversationByMessageId = "$base/conversation/message_id";
-
 }

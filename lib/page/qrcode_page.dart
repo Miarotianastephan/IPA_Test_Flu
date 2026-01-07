@@ -7,9 +7,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gallery_saver_plus/gallery_saver.dart';
-import 'package:live_app/l10n/app_localizations.dart';
-import 'package:live_app/widgets/auto_scroll_elevated_button.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/utils/toast_util.dart';
+import 'package:live_app/widgets/auto_scroll_elevated_button.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 
@@ -59,6 +59,7 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
 
   /// 保存二维码到相册（使用 gallery_saver_plus）
   Future<void> _saveQRCode() async {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     try {
       setState(() => _showContent = true);
       await Future.delayed(const Duration(milliseconds: 50));
@@ -78,12 +79,12 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
 
       if (success == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.qrCodeSaved)),
+          SnackBar(content: Text(i18n.translate('qrCodeSaved'))),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.qrCodeSaveFailed),
+            content: Text(i18n.translate('qrCodeSaveFailed')),
           ),
         );
       }
@@ -98,20 +99,22 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
   /// 复制二维码内容
   void _copyText() {
     if (_userInfo == null) return;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     Clipboard.setData(ClipboardData(text: _userInfo!.credential.toString()));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.contentCopied)),
+      SnackBar(content: Text(i18n.translate('contentCopied'))),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final qrData = _userInfo?.credential.toString() ?? "";
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(localisations.myCredentials),
+        title: Text(translate("myCredentials")),
         backgroundColor: Colors.black,
       ),
       body: Padding(
@@ -182,13 +185,13 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 AutoScrollButton(
-                  text: localisations.copyLoginCredentials,
+                  text: translate("copyLoginCredentials"),
                   onPressed: _copyText,
                   icon: Icons.copy,
                 ),
                 const SizedBox(width: 20),
                 AutoScrollButton(
-                  text: localisations.saveLoginCredentials,
+                  text: translate("saveLoginCredentials"),
                   onPressed: _saveQRCode,
                   icon: Icons.save,
                 ),

@@ -48,7 +48,10 @@ class _GalleryPageState extends State<GalleryPage> {
                 final item = widget.items[index];
                 if (item.isVideo) {
                   return PhotoViewGalleryPageOptions.customChild(
-                    child: _VideoPlayerView(url: item.url),
+                    child: _VideoPlayerView(
+                      url: item.url,
+                      encryptionKey: item.encryptionKey,
+                    ),
                   );
                 }
 
@@ -108,15 +111,17 @@ class _GalleryPageState extends State<GalleryPage> {
 class GalleryItem {
   final String url;
   final bool isVideo;
+  final String? encryptionKey;
 
-  GalleryItem({required this.url, this.isVideo = false});
+  GalleryItem({required this.url, this.isVideo = false, this.encryptionKey});
 }
 
 /// ---------- 视频播放 UI ----------
 class _VideoPlayerView extends StatefulWidget {
   final String url;
+  final String? encryptionKey;
 
-  const _VideoPlayerView({required this.url});
+  const _VideoPlayerView({required this.url, this.encryptionKey});
 
   @override
   State<_VideoPlayerView> createState() => _VideoPlayerViewState();
@@ -139,6 +144,10 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
 
   @override
   Widget build(BuildContext context) {
-    return VideoScreen(videoUrl: widget.url, controller: null,);
+    return VideoScreen(
+      videoUrl: widget.url,
+      controller: null,
+      encryptionKey: widget.encryptionKey,
+    );
   }
 }

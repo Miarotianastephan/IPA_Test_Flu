@@ -26,6 +26,24 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
       //会话
       await into(conversations).insertOnConflictUpdate(conv.toCompanion());
 
+      // 删除不再存在的成员（同步服务器状态）
+      final currentUserIds = conv.users.map((u) => u.userId).toSet();
+      final existingUsers = await (select(
+        conversationUsers,
+      )..where((tbl) => tbl.conversationId.equals(conv.id))).get();
+
+      for (final existing in existingUsers) {
+        if (!currentUserIds.contains(existing.userId)) {
+          // 该成员在服务器上已被移除，删除本地记录
+          await (delete(conversationUsers)..where(
+                (tbl) =>
+                    tbl.conversationId.equals(conv.id) &
+                    tbl.userId.equals(existing.userId),
+              ))
+              .go();
+        }
+      }
+
       //用户列表
       for (final cu in conv.users) {
         await into(conversationUsers).insertOnConflictUpdate(
@@ -33,6 +51,7 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
             id: Value(cu.id),
             conversationId: Value(cu.conversationId),
             userId: Value(cu.userId),
+            role: Value(cu.role),
             joinedAt: Value(cu.joinedAt),
           ),
         );
@@ -56,6 +75,19 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
   Future<void> updateUnreadCount(int conversationId, int unreadCount) async {
     await (update(conversations)..where((tbl) => tbl.id.equals(conversationId)))
         .write(ConversationsCompanion(unreadCount: Value(unreadCount)));
+  }
+
+  // 删除会话中的特定用户
+  Future<void> removeUserFromConversation(
+    int conversationId,
+    int userId,
+  ) async {
+    await (delete(conversationUsers)..where(
+          (tbl) =>
+              tbl.conversationId.equals(conversationId) &
+              tbl.userId.equals(userId),
+        ))
+        .go();
   }
 
   // 获取完整会话
@@ -82,6 +114,7 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
           id: cu.id,
           conversationId: cu.conversationId,
           userId: cu.userId,
+          role: cu.role,
           joinedAt: cu.joinedAt,
           user: ui,
         );
@@ -103,15 +136,28 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
 
   // 根据 peerUser 找会话
   Future<Conversation?> getFullByPeerUser(int peerId) async {
-    final cu =
-        await (select(conversationUsers)
-              ..where((tbl) => tbl.userId.equals(peerId))
-              ..limit(1))
-            .getSingleOrNull();
+    // Find single (P2P) conversations where the peer user is a member
+    final query =
+        select(conversationUsers).join([
+          innerJoin(
+            conversations,
+            conversations.id.equalsExp(conversationUsers.conversationId),
+          ),
+        ])..where(
+          conversationUsers.userId.equals(peerId) &
+              conversations.type.equals('single'),
+        );
 
-    if (cu == null) return null;
+    final results = await query.get();
 
-    return getFullById(cu.conversationId);
+    if (results.isEmpty) return null;
+
+    // Get the conversation ID from the first matching single conversation
+    final conversationId = results.first
+        .readTable(conversationUsers)
+        .conversationId;
+
+    return getFullById(conversationId);
   }
 
   Future<Conversation?> getFullById(int convId) async {

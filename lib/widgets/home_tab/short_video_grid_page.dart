@@ -30,7 +30,7 @@ class ShortVideoGridPageState extends ConsumerState<ShortVideoGridPage>
 
   Future<void> refresh() async {
     debugPrint("精选刷新中...");
-    final currentTab = getFilterTabs(context)[_tabController.index];
+    final currentTab = getFilterTabs(ref)[_tabController.index];
     final provider = homeVideoListProvider((widget.type, currentTab.type));
     final notifier = ref.read(provider.notifier);
     await notifier.fetch(refresh: true);
@@ -47,7 +47,7 @@ class ShortVideoGridPageState extends ConsumerState<ShortVideoGridPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
-    _filterTabs = getFilterTabs(context);
+    _filterTabs = getFilterTabs(ref);
     _tabController = TabController(length: _filterTabs.length, vsync: this);
   }
 
@@ -68,7 +68,7 @@ class ShortVideoGridPageState extends ConsumerState<ShortVideoGridPage>
         padding: EdgeInsets.only(top: padding.top + 40),
         child: Column(
           children: [
-            getFilterTabBar(_tabController, context),
+            getFilterTabBar(_tabController, context, ref),
             Expanded(
               //用 NotificationListener + GestureDetector 组合控制
               child: NotificationListener<ScrollNotification>(
@@ -118,7 +118,7 @@ class ShortVideoGridPageState extends ConsumerState<ShortVideoGridPage>
                   child: TabBarView(
                     controller: _tabController,
                     physics: const ClampingScrollPhysics(),
-                    children: getFilterTabs(context).map((tab) {
+                    children: getFilterTabs(ref).map((tab) {
                       return VideoGridTabView(
                         videoType: widget.type,
                         filterType: tab.type,

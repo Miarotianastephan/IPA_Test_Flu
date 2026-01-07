@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 class FilterTab {
   final Tab tab;
@@ -8,17 +9,18 @@ class FilterTab {
   const FilterTab(this.tab, this.type);
 }
 
-List<FilterTab> getFilterTabs(BuildContext context) {
+List<FilterTab> getFilterTabs(WidgetRef ref) {
+  final i18n = ref.read(i18nNotifierProvider.notifier);
   return [
-    FilterTab(Tab(text: AppLocalizations.of(context)!.filterWatching), 1),
-    FilterTab(Tab(text: AppLocalizations.of(context)!.filterLatest), 2),
-    FilterTab(Tab(text: AppLocalizations.of(context)!.filterHot), 3),
+    FilterTab(Tab(text: i18n.translate('filterWatching')), 1),
+    FilterTab(Tab(text: i18n.translate('filterLatest')), 2),
+    FilterTab(Tab(text: i18n.translate('filterHot')), 3),
     FilterTab(Tab(text: "VIP"), 4),
-    FilterTab(Tab(text: AppLocalizations.of(context)!.filterRandom), 5),
+    FilterTab(Tab(text: i18n.translate('filterRandom')), 5),
   ];
 }
 
-TabBar getFilterTabBar(TabController? tabController, context) {
+TabBar getFilterTabBar(TabController? tabController, BuildContext context, WidgetRef ref) {
   return TabBar(
     controller: tabController,
     isScrollable: false,
@@ -35,6 +37,6 @@ TabBar getFilterTabBar(TabController? tabController, context) {
           : 16,
       fontWeight: FontWeight.bold,
     ),
-    tabs: getFilterTabs(context).map((e) => e.tab).toList(),
+    tabs: getFilterTabs(ref).map((e) => e.tab).toList(),
   );
 }

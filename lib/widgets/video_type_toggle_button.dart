@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
-class VideoTypeToggleButton extends StatelessWidget {
+class VideoTypeToggleButton extends ConsumerWidget {
   final bool isLongVideo;
   final VoidCallback onToggle;
   final bool withText;
@@ -14,8 +15,8 @@ class VideoTypeToggleButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     return withText
         ? TextButton(
             onPressed: onToggle,
@@ -23,8 +24,8 @@ class VideoTypeToggleButton extends StatelessWidget {
               children: [
                 Text(
                   isLongVideo
-                      ? localizations.longVideo
-                      : localizations.shortVideo,
+                      ? i18n.translate('longVideo')
+                      : i18n.translate('shortVideo'),
 
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),

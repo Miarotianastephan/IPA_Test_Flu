@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:live_app/models/emoji.dart';
+import 'package:live_app/models/file.dart';
 import 'package:live_app/models/first_open.dart';
 import 'package:live_app/models/page_params.dart';
 
@@ -193,15 +194,24 @@ class UserService extends BaseService {
     );
   }
 
-  
-  Future<ApiResponse<PageResponse<Emoji>>> getEmojis(
-    PageParams params,
-  ) {
+  Future<ApiResponse<PageResponse<Emoji>>> getEmojis(PageParams params) {
     return post<PageResponse<Emoji>>(
       UserApi.emojis,
       body: {...params.toJson()},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => Emoji.fromJson(item)),
+    );
+  }
+
+  Future<ApiResponse<File>> uploadFile(String filePath) async {
+    final formData = FormData.fromMap({
+      "file": await MultipartFile.fromFile(filePath),
+    });
+
+    return post<File>(
+      UserApi.upload,
+      body: formData,
+      fromJson: (json) => File.fromJson(json),
     );
   }
 }

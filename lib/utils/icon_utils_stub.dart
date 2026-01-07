@@ -1,0 +1,1 @@
+void setAppIconFromUrl(String? imageUrl) {}

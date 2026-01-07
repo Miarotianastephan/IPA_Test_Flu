@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -19,14 +22,6 @@ class _ActionPanelState extends ConsumerState<ActionPanel> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      if (ref.read(emojiProvider(1)).emojis.isEmpty) {
-        ref.read(emojiProvider(1).notifier).loadEmojis();
-      }
-      if (ref.read(emojiProvider(2)).emojis.isEmpty) {
-        ref.read(emojiProvider(2).notifier).loadEmojis();
-      }
-    });
   }
 
   @override
@@ -49,10 +44,6 @@ class _ActionPanelState extends ConsumerState<ActionPanel> {
                     isActive: selectedTab == 'emoji',
                     onTap: () {
                       setState(() => selectedTab = 'emoji');
-                      final notifier = ref.read(emojiProvider(1).notifier);
-                      if (notifier.state.emojis.isEmpty) {
-                        notifier.loadEmojis(refresh: true);
-                      }
                     },
                   ),
                 ),
@@ -64,10 +55,6 @@ class _ActionPanelState extends ConsumerState<ActionPanel> {
                     isActive: selectedTab == 'gif',
                     onTap: () {
                       setState(() => selectedTab = 'gif');
-                      final notifier = ref.read(emojiProvider(2).notifier);
-                      if (notifier.state.emojis.isEmpty) {
-                        notifier.loadEmojis(refresh: true);
-                      }
                     },
                   ),
                 ),
@@ -82,31 +69,30 @@ class _ActionPanelState extends ConsumerState<ActionPanel> {
               child: Column(
                 children: [
                   Expanded(child: _buildGrid(currentState)),
-                  if (currentState.hasMore)
+                  // Show sync indicator if syncing in background
+                  if (currentState.isSyncing)
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: ElevatedButton(
-                        onPressed: currentState.isLoading
-                            ? null
-                            : () => ref
-                                  .read(
-                                    emojiProvider(currentState.type).notifier,
-                                  )
-                                  .loadMore(),
-                        child: currentState.isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.download,
-                                color: Colors.white,
-                                size: 28,
-                              ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white54,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Syncing...',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -142,18 +128,18 @@ class _ActionPanelState extends ConsumerState<ActionPanel> {
       itemBuilder: (context, index) {
         final emoji = state.emojis[index];
         if (state.type == 1) {
+          // Emoji (SVG)
           return InkWell(
             onTap: () => widget.onEmojiSelected?.call(emoji.code, emoji.url),
-            child: Center(
-              child: SvgPicture.network(emoji.url, width: 32, height: 32),
-            ),
+            child: Center(child: _buildSvgWidget(emoji.url, 32, 32)),
           );
         }
+        // GIF
         return InkWell(
           onTap: () => widget.onGifSelected?.call(emoji.url),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(emoji.url, fit: BoxFit.cover),
+            child: _buildImageWidget(emoji.url),
           ),
         );
       },
@@ -181,5 +167,40 @@ class _ActionPanelState extends ConsumerState<ActionPanel> {
         ),
       ),
     );
+  }
+
+  /// Build SVG widget from local file or network URL
+  Widget _buildSvgWidget(String path, double width, double height) {
+    final isLocalFile =
+        path.startsWith('/') || (path.length > 2 && path[1] == ':');
+
+    if (!kIsWeb && isLocalFile) {
+      final file = File(path);
+      if (file.existsSync()) {
+        return SvgPicture.memory(
+          file.readAsBytesSync(),
+          width: width,
+          height: height,
+        );
+      }
+    }
+
+    if (isLocalFile && kIsWeb) {
+      return SvgPicture.network(path, width: width, height: height);
+    }
+
+    return SvgPicture.network(path, width: width, height: height);
+  }
+
+  /// Build Image widget from local file or network URL
+  Widget _buildImageWidget(String path) {
+    final isLocalFile =
+        path.startsWith('/') || (path.length > 2 && path[1] == ':');
+
+    if (!kIsWeb && isLocalFile && File(path).existsSync()) {
+      return Image.file(File(path), fit: BoxFit.cover);
+    } else {
+      return Image.network(path, fit: BoxFit.cover);
+    }
   }
 }

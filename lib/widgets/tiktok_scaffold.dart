@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/current_audio_provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 const double scrollSpeed = 300;
@@ -229,16 +231,25 @@ class TikTokScaffoldState extends State<TikTokScaffold>
       //     setState(() {});
       //   }
       // },
-      onHorizontalDragEnd: (details) =>
-          onHorizontalDragEnd(details, screenWidth),
+      onHorizontalDragEnd: (details) {
+        if (widget.rightPage != null) onHorizontalDragEnd(details, screenWidth);
+      },
+
       // 水平方向滑动开始
       onHorizontalDragStart: (_) {
         if (!_enableGesture) return;
         animationControllerX?.stop();
         animationControllerY?.stop();
+        animationControllerX?.reset();
+        animationControllerY?.reset();
       },
-      onHorizontalDragUpdate: (details) =>
-          onHorizontalDragUpdate(details, screenWidth),
+
+      onHorizontalDragUpdate: (details) {
+        if (widget.rightPage != null) {
+          onHorizontalDragUpdate(details, screenWidth);
+        }
+      },
+
       child: body,
     );
     body = PopScope(
@@ -279,55 +290,36 @@ class TikTokScaffoldState extends State<TikTokScaffold>
     if (!_enableGesture) return;
 
     double delta = details.delta.dx;
-
-    // 只允许向左滑动（负方向）
-    if (delta < 0) {
+    if (widget.rightPage != null) {
       setState(() {
-        offsetX += delta;
-        // clamp 到 [-screenWidth, 0]
-        offsetX = offsetX.clamp(-screenWidth, 0);
-      });
-    }
-    // 可选：如果希望允许右滑回中间
-    else if (delta > 0 && offsetX < 0) {
-      setState(() {
-        offsetX += delta;
-        offsetX = offsetX.clamp(-screenWidth, 0);
+        if (delta < 0) {
+          offsetX += delta;
+        } else {
+          double resistance = 0.1 + (0.1 / (1 + offsetX / screenWidth));
+          offsetX += delta * resistance;
+        }
+        offsetX = offsetX.clamp(-screenWidth, screenWidth * 0.3);
       });
     }
   }
 
   // 水平方向滑动结束
-  Future<dynamic>? onHorizontalDragEnd(DragEndDetails details, double screenWidth) {
+  Future<dynamic>? onHorizontalDragEnd(
+    DragEndDetails details,
+    double screenWidth,
+  ) {
     if (!_enableGesture) return null;
-    var vOffset = details.velocity.pixelsPerSecond.dx;
 
-    // 速度很快时
-    if (vOffset > scrollSpeed && inMiddle == 0) {
-      // 去右边页面
-      // return animateToPage(TikTokPagePositon.left);
-      return null;
-    } else if (vOffset < -scrollSpeed && inMiddle == 0) {
-      // 去左边页面
-      // return animateToPage(TikTokPagePositon.right);
-      return null;
-    } else if (inMiddle > 0 && vOffset < -scrollSpeed) {
-      return animateToPage(TikTokPagePositon.middle, 0);
-    } else if (inMiddle < 0 && vOffset > scrollSpeed) {
-      return animateToPage(TikTokPagePositon.middle, 0);
+    double vOffset = details.velocity.pixelsPerSecond.dx;
+    const double velocityThreshold = 200;
+    const double distanceThreshold = 40;
+    /*if (vOffset > velocityThreshold || offsetX > distanceThreshold) {
+      return animateTo(screenWidth);
+    }*/
+    if (vOffset < -velocityThreshold || offsetX < -distanceThreshold) {
+      return animateTo(-screenWidth);
     }
-    // 当滑动停止的时候 根据 offsetX 的偏移量进行动画
-    if (offsetX.abs() < screenWidth * 0.5) {
-      // 中间页面
-      return animateToPage(TikTokPagePositon.middle, 0);
-    } else if (offsetX > 0) {
-      // 去左边页面
-      // return animateToPage(TikTokPagePositon.left);
-      return null;
-    } else {
-      // 去右边页面
-      return animateToPage(TikTokPagePositon.right, 0);
-    }
+    return animateTo(0.0);
   }
 
   //
@@ -364,7 +356,15 @@ class TikTokScaffoldState extends State<TikTokScaffold>
   }
 
   Future animateTo([double end = 0.0]) {
-    final curve = curvedAnimation();
+    animationControllerX = AnimationController(
+      duration: Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    final curve = CurvedAnimation(
+      parent: animationControllerX!,
+      curve: Curves.easeOutCubic,
+    );
 
     animationX = Tween(begin: offsetX, end: end).animate(curve)
       ..addListener(() {
@@ -372,8 +372,8 @@ class TikTokScaffoldState extends State<TikTokScaffold>
           offsetX = animationX.value;
         });
       });
-    inMiddle = end;
-    return animationControllerX!.animateTo(1);
+
+    return animationControllerX!.forward();
   }
 
   bool absorbing = false;
@@ -417,7 +417,7 @@ class TikTokScaffoldState extends State<TikTokScaffold>
   }
 }
 
-class _MiddlePage extends StatelessWidget {
+class _MiddlePage extends ConsumerWidget {
   final bool? absorbing;
   final bool isStack;
   final Widget? page;
@@ -441,7 +441,8 @@ class _MiddlePage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentAudio = ref.watch(currentAudioProvider);
     Widget tabBarContainer =
         tabBar ?? SizedBox(height: 44, child: Placeholder(color: Colors.red));
     Widget mainVideoList = Container(
@@ -482,11 +483,59 @@ class _MiddlePage extends StatelessWidget {
     // }
 
     Widget middle = Transform.translate(
-      offset: Offset(offsetX! > 0 ? offsetX! : offsetX! / 5, 0),
+      offset: Offset(offsetX! > 0 ? offsetX! / 3 : offsetX!, 0),
       child: Scaffold(
         extendBody: true,
         bottomNavigationBar: tabBarContainer,
-        body: Stack(children: <Widget>[mainVideoList]),
+        body: Stack(
+          children: [
+            mainVideoList,
+            if (currentAudio != null)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  margin: EdgeInsets.only(
+                    bottom: 44 + MediaQuery.of(context).padding.bottom,
+                  ),
+                  color: Colors.black87,
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          currentAudio.cover,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.headphones, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          currentAudio.title,
+                          style: const TextStyle(color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.play_arrow, color: Colors.white),
+                        onPressed: () {},
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () {
+                          ref.read(currentAudioProvider.notifier).state = null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
     if (page is! PageView) {
@@ -523,7 +572,6 @@ class _MiddlePage extends StatelessWidget {
 class _RightPageTransform extends StatelessWidget {
   final double? offsetX;
   final double? offsetY;
-
   final Widget? content;
 
   const _RightPageTransform({this.offsetX, this.offsetY, this.content});
@@ -532,6 +580,7 @@ class _RightPageTransform extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+
     return Transform.translate(
       offset: Offset(max(0, offsetX! + screenWidth), 0),
       child: Container(

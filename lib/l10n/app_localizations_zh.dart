@@ -567,17 +567,38 @@ class AppLocalizationsZh extends AppLocalizations {
   String get underMaintenance => '维护中';
 
   @override
-  String get maintenance_web => '我们的网站暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。';
+  String get maintenanceWeb => '我们的网站暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。';
 
   @override
-  String get maintenance_mobile => '我们的移动应用暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。';
+  String get maintenanceMobile => '我们的移动应用暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。';
 
   @override
-  String get maintenance_service => '我们的服务暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。';
+  String get maintenanceService => '我们的服务暂时不可用。\n我们正在努力改善您的体验。\n感谢您的耐心等待。';
 
   @override
   String get useBrowser => '使用浏览器';
 
   @override
   String get downloadApp => '下载应用';
+
+  @override
+  String get quitApp => '退出应用程序';
+
+  @override
+  String get noLanguagesAvailable => '暂无可用语言';
+
+  @override
+  String get availableLanguages => '可用语言';
+
+  @override
+  String get downloadLanguages => '已下载语言';
+
+  @override
+  String get errorLoadingDownloadedLanguages => '加载已下载语言时出错';
+
+  @override
+  String get errorLoadingSelectedLanguages => '加载已选语言时出错';
+
+  @override
+  String get errorLoadingLanguages => '加载语言时出错';
 }

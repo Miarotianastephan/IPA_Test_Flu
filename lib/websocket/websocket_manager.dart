@@ -28,6 +28,7 @@ class WebSocketManager {
     Function(SocketEnvelope)? onMessageReceived,
     Function(List<dynamic>)? onLiveBatch,
     Function(Message)? onMessageSent,
+    Function(Map<String, dynamic>)? onSystemNotificationReceived,
   }) {
     final inst = instance;
     inst.userId = userId;
@@ -37,6 +38,7 @@ class WebSocketManager {
     inst.onMessageReceived = onMessageReceived;
     inst.onLiveBatch = onLiveBatch;
     inst.onMessageSent = onMessageSent;
+    inst.onSystemNotificationReceived = onSystemNotificationReceived;
     return inst;
   }
 
@@ -50,6 +52,7 @@ class WebSocketManager {
   Function(SocketEnvelope)? onMessageReceived;
   Function(List<dynamic>)? onLiveBatch;
   Function(Message)? onMessageSent;
+  Function(Map<String, dynamic>)? onSystemNotificationReceived;
 
   Function()? onConnectCallback;
   Function()? onDisconnectCallback;
@@ -115,31 +118,41 @@ class WebSocketManager {
         final userJson = jsonEncode(message.sender?.toJson());
         final encoded = Uri.encodeComponent(userJson);
 
-        final msgType;
-        final content;
-
         final pattern = RegExp(r'\^\*#\*[\w]+\*#\*\^');
-        Map<String, dynamic> msgTojsn = jsonDecode(message.content);
+        final Map<String, dynamic> msgToJson = jsonDecode(message.content);
 
-        msgType = msgTojsn['type'];
-        content = msgTojsn['content'];
+        final String msgType = msgToJson['type'];
+        final String content = msgToJson['content'];
+        final bool isGroup = msgToJson['isGroup'];
+        final String notifRoute = isGroup
+            ? "route:/GroupChatDetailPage?conversationId=${message.conversationId}"
+            : "route:/ChatDetailPage?conversationId=${message.conversationId}&user=$encoded";
 
-        String displayMessage = msgType == "text"
-            ? content.replaceAll(pattern, ' ')
-            : msgType;
+        final bool containsEmojiPattern = pattern.hasMatch(content);
+
+        String displayMessage;
+
+        if (msgType == "text") {
+          final cleanedMessage = content.replaceAll(pattern, ' ');
+
+          displayMessage = containsEmojiPattern
+              ? "$cleanedMessage\nThis message contains an emoji"
+              : cleanedMessage;
+        } else {
+          displayMessage = msgType;
+        }
 
         NotificationService.instance.showOrUpdateChatNotification(
           conversationId: message.conversationId,
           title: message.sender?.nickname ?? "Message",
           message: displayMessage,
-          payload:
-              "route:/ChatDetailPage?conversationId=${message.conversationId}&user=$encoded",
+          payload: notifRoute,
           imageUrl: message.sender?.avatar,
         );
 
         onMessageSent?.call(message);
       } catch (e) {
-        log(":x: Erreur parsing messageSent: $e");
+        log("Erreur parsing messageSent: $e");
       }
     });
 
@@ -167,6 +180,18 @@ class WebSocketManager {
     _socket!.on("live_batch", (data) {
       log(":fire: Live batch: $data");
       onLiveBatch?.call(data);
+    });
+
+    _socket!.on("systemNotification", (data) {
+      try {
+        log(":bell: System notification received: $data");
+
+        if (onSystemNotificationReceived != null) {
+          onSystemNotificationReceived!(data);
+        }
+      } catch (e) {
+        log("Error parsing systemNotification: $e");
+      }
     });
 
     _socket!.on("reconnect_attempt", (_) {
@@ -235,6 +260,7 @@ class WebSocketManager {
 
     final env = SocketEnvelope()
       ..meta = (MessageMeta()
+        ..fromUser = Int64(userId)
         ..messageId = "hb_${DateTime.now().millisecondsSinceEpoch}"
         ..timestamp = Int64(DateTime.now().millisecondsSinceEpoch)
         ..category = MessageCategory.CATEGORY_CONTROL)

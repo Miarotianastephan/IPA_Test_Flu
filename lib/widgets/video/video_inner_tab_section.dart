@@ -99,10 +99,10 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
 
     return DefaultTabController(
       key: ValueKey(Localizations.localeOf(context).languageCode),
-      length: getSortTabs(context).length,
+      length: getSortTabs(ref).length,
       initialIndex:
-          getSortTabs(context).indexWhere((t) => t.type == currentSort) >= 0
-          ? getSortTabs(context).indexWhere((t) => t.type == currentSort)
+          getSortTabs(ref).indexWhere((t) => t.type == currentSort) >= 0
+          ? getSortTabs(ref).indexWhere((t) => t.type == currentSort)
           : 0,
       child: Builder(
         builder: (context) {
@@ -111,7 +111,7 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
           Future<void> onRefresh() async {
             final params = _getParams(
               categoryId,
-              getSortTabs(context)[tabController.index].type,
+              getSortTabs(ref)[tabController.index].type,
               widget.videoType,
             );
             await ref
@@ -121,7 +121,7 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
 
           tabController.addListener(() {
             if (!tabController.indexIsChanging) {
-              final newType = getSortTabs(context)[tabController.index].type;
+              final newType = getSortTabs(ref)[tabController.index].type;
               if (newType == widget.sortTypeByCategory[categoryId]) return;
               setState(() {
                 widget.sortTypeByCategory[categoryId] = newType;
@@ -174,7 +174,7 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
                       child: Container(
                         color: Colors.black,
                         height: 48,
-                        child: getSortTabBar(context, tabController),
+                        child: getSortTabBar(tabController, ref),
                       ),
                     ),
                   ),
@@ -183,7 +183,7 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
             },
             body: TabBarView(
               controller: tabController,
-              children: getSortTabs(context).map((sortTab) {
+              children: getSortTabs(ref).map((sortTab) {
                 final params = _getParams(
                   categoryId,
                   sortTab.type,

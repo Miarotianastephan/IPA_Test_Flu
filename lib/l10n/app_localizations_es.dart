@@ -577,15 +577,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get underMaintenance => 'En mantenimiento';
 
   @override
-  String get maintenance_web =>
+  String get maintenanceWeb =>
       'Nuestro sitio web no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.';
 
   @override
-  String get maintenance_mobile =>
+  String get maintenanceMobile =>
       'Nuestra aplicación móvil no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.';
 
   @override
-  String get maintenance_service =>
+  String get maintenanceService =>
       'Nuestro servicio no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.';
 
   @override
@@ -593,4 +593,27 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get downloadApp => 'Descargar la aplicación';
+
+  @override
+  String get quitApp => 'Salir de la aplicación';
+
+  @override
+  String get noLanguagesAvailable => 'No hay idiomas disponibles';
+
+  @override
+  String get availableLanguages => 'Idiomas disponibles';
+
+  @override
+  String get downloadLanguages => 'Idiomas descargados';
+
+  @override
+  String get errorLoadingDownloadedLanguages =>
+      'Error al cargar idiomas descargados';
+
+  @override
+  String get errorLoadingSelectedLanguages =>
+      'Error al cargar el idioma seleccionado';
+
+  @override
+  String get errorLoadingLanguages => 'Error al cargar idiomas';
 }

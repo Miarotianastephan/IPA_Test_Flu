@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 class SortTab {
   final Tab tab;
@@ -8,19 +9,20 @@ class SortTab {
   const SortTab(this.tab, this.type);
 }
 
-List<SortTab> getSortTabs(BuildContext context) {
+List<SortTab> getSortTabs(WidgetRef ref) {
+  final i18n = ref.read(i18nNotifierProvider.notifier);
   return [
-    SortTab(Tab(text: AppLocalizations.of(context)!.sortLatest), "latest"),
-    SortTab(Tab(text: AppLocalizations.of(context)!.sortHot), "hot"),
-    SortTab(Tab(text: AppLocalizations.of(context)!.sortLike), "like"),
-    SortTab(Tab(text: AppLocalizations.of(context)!.sortFavorite), "favorite"),
-    SortTab(Tab(text: AppLocalizations.of(context)!.sortComment), "comment"),
-    SortTab(Tab(text: AppLocalizations.of(context)!.sortDuration), "duration"),
+    SortTab(Tab(text: i18n.translate('sortLatest')), "latest"),
+    SortTab(Tab(text: i18n.translate('sortHot')), "hot"),
+    SortTab(Tab(text: i18n.translate('sortLike')), "like"),
+    SortTab(Tab(text: i18n.translate('sortFavorite')), "favorite"),
+    SortTab(Tab(text: i18n.translate('sortComment')), "comment"),
+    SortTab(Tab(text: i18n.translate('sortDuration')), "duration"),
   ];
 }
 
-Widget getSortTabBar(BuildContext context, TabController? tabController) {
-  final tabs = getSortTabs(context);
+Widget getSortTabBar(TabController? tabController, WidgetRef ref) {
+  final tabs = getSortTabs(ref);
   return TabBar(
     controller: tabController,
     isScrollable: false,

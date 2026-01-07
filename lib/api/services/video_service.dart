@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:live_app/config/storage_config.dart';
+import 'package:live_app/models/hls_playback_info.dart';
 import 'package:live_app/models/search_video_request.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/models/video_comment.dart';
@@ -254,5 +255,17 @@ class VideoService extends BaseService {
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => VideoInfo.fromJson(item)),
     );
+  }
+
+  Future<HlsPlaybackInfo> playVideo({
+    required String videoUrl,
+    required String key,
+  }) async {
+    final m3u8Content = await client.postRaw(
+      VideoApi.playVideo,
+      data: {"url": videoUrl, "key": key},
+    );
+
+    return HlsPlaybackInfo(m3u8Content: m3u8Content);
   }
 }

@@ -41,6 +41,7 @@ class _VideoCardState extends ConsumerState<VideoCard> {
     // 默认行为：使用 userId 打开用户详情页，强制从 API 加载最新数据
     toUserDetailPage(
       context: context,
+      ref: ref,
       userId: widget.video.user.id,
       url: widget.video.user.avatar,
       nickname: widget.video.user.nickname,

@@ -7,12 +7,12 @@ part 'version_response.g.dart';
 class VersionResponse {
   final int code;
   final String msg;
-  final Version data;
+  final Version? data;
 
   VersionResponse({
     required this.code,
     required this.msg,
-    required this.data,
+    this.data,
   });
 
   factory VersionResponse.fromJson(Map<String, dynamic> json) =>

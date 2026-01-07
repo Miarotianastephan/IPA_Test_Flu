@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:live_app/config/storage_config.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../models/video_comment.dart';
 import '../provider/api_provider.dart';
@@ -109,7 +109,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     final user = widget.comment.commentUser;
     final toUser = widget.comment.commentToUser;
 
@@ -146,7 +147,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                         Row(
                           children: [
                             Text(
-                              user?.nickname ?? localizations.unknownUser,
+                              user?.nickname ?? translate("unknownUser"),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: textColor,
@@ -249,7 +250,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                           TextButton(
                             onPressed: widget.onToggleExpand,
                             child: Text(
-                              "${widget.expanded ? localizations.collapse : localizations.expand} ${widget.comment.childCount} ${localizations.replies}",
+                              "${widget.expanded ? translate("collapse") : translate("expand")} ${widget.comment.childCount} ${translate("replies")}",
                               style: TextStyle(color: replyColor, fontSize: 13),
                             ),
                           ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/empty_widget.dart';
 
 import '../../models/forum_comment.dart';
@@ -17,7 +17,8 @@ class ForumCommentsList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(forumCommentsProvider(postId));
     final comments = state.comments;
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
     /// 首次加载
     if (!state.firstLoaded && state.loading) {
@@ -32,7 +33,7 @@ class ForumCommentsList extends ConsumerWidget {
       return Padding(
         padding: EdgeInsets.all(40),
         child: EmptyWidget(
-          message: localisations.noCommentsYet,
+          message: translate("noCommentsYet"),
           icon: Icons.message_outlined,
           color: Colors.white70,
         ),
@@ -71,7 +72,7 @@ class ForumCommentsList extends ConsumerWidget {
             padding: EdgeInsets.all(16),
             child: Center(
               child: Text(
-                localisations.reachedEnd,
+                translate("reachedEnd"),
                 style: TextStyle(color: Colors.white54),
               ),
             ),

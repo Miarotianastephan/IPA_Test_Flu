@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/empty_widget.dart';
 
 import '../../models/video_comment.dart';
@@ -58,44 +58,50 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
       },
       childComments: expanded
           ? Padding(
-        padding: const EdgeInsets.only(left: 56.0, bottom: 8.0),
-        child: Column(
-          children: [
-            ...repliesState.list.map(
-                  (c) => Padding(
-                key: ValueKey(c.id),
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: CommentItemReplies(comment: c, darkStyle: false),
+              padding: const EdgeInsets.only(left: 56.0, bottom: 8.0),
+              child: Column(
+                children: [
+                  ...repliesState.list.map(
+                    (c) => Padding(
+                      key: ValueKey(c.id),
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: CommentItemReplies(comment: c, darkStyle: false),
+                    ),
+                  ),
+                  if (repliesState.loading)
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  if (!repliesState.finished && !repliesState.loading)
+                    TextButton(
+                      onPressed: () => ref
+                          .read(commentsProvider(widget.videoId).notifier)
+                          .fetchReplies(comment.id),
+                      child: Text(
+                        ref
+                            .read(i18nNotifierProvider.notifier)
+                            .translate("loadMoreReplies"),
+                        style: const TextStyle(color: Colors.blue),
+                      ),
+                    ),
+                ],
               ),
-            ),
-            if (repliesState.loading)
-              const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            if (!repliesState.finished && !repliesState.loading)
-              TextButton(
-                onPressed: () => ref
-                    .read(commentsProvider(widget.videoId).notifier)
-                    .fetchReplies(comment.id),
-                child: Text(
-                  AppLocalizations.of(context)!.loadMoreReplies,
-                  style: const TextStyle(color: Colors.blue),
-                ),
-              ),
-          ],
-        ),
-      )
+            )
           : null,
       childCount: comment.childCount,
     );
 
     if (isHighlighted) {
       item = TweenAnimationBuilder<Color?>(
-        tween: ColorTween(begin: Colors.yellow.withOpacity(0.5), end: Colors.transparent),
+        tween: ColorTween(
+          begin: Colors.yellow.withOpacity(0.5),
+          end: Colors.transparent,
+        ),
         duration: const Duration(seconds: 1),
         onEnd: () => setState(() => _highlightedComments.remove(comment.id)),
-        builder: (context, color, child) => Container(color: color, child: child),
+        builder: (context, color, child) =>
+            Container(color: color, child: child),
         child: item,
       );
     }
@@ -107,63 +113,71 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
   void initState() {
     super.initState();
     // Charger les commentaires initiaux
-    Future.microtask(() =>
-        ref.read(commentsProvider(widget.videoId).notifier).fetch(refresh: true));
+    Future.microtask(
+      () => ref
+          .read(commentsProvider(widget.videoId).notifier)
+          .fetch(refresh: true),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(commentsProvider(widget.videoId));
     final comments = state.comments;
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
     return Column(
       children: [
         Expanded(
           child: RefreshIndicator(
-            onRefresh: () =>
-                ref.read(commentsProvider(widget.videoId).notifier).fetch(refresh: true),
+            onRefresh: () => ref
+                .read(commentsProvider(widget.videoId).notifier)
+                .fetch(refresh: true),
             child: state.loading && !state.loadedOnce
                 ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
                 : comments.isEmpty
                 ? Center(
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: EmptyWidget(
-                  icon: Icons.message_outlined,
-                  message: localisations.noCommentsYet,
-                ),
-              ),
-            )
-                : ListView.builder(
-              padding: const EdgeInsets.only(bottom: 60, top: 10),
-              itemCount: comments.length + 1,
-              itemBuilder: (context, index) {
-                if (index < comments.length) {
-                  return _buildCommentItem(comments[index]);
-                }
-                if (state.finished) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Center(
-                      child: Text(
-                        localisations.noMoreComments,
-                        style: const TextStyle(color: Colors.white),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: EmptyWidget(
+                        icon: Icons.message_outlined,
+                        message: translate("noCommentsYet"),
                       ),
                     ),
-                  );
-                }
-                if (state.loading) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 60, top: 10),
+                    itemCount: comments.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index < comments.length) {
+                        return _buildCommentItem(comments[index]);
+                      }
+                      if (state.finished) {
+                        return Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Center(
+                            child: Text(
+                              translate("noMoreComments"),
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        );
+                      }
+                      if (state.loading) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
           ),
         ),
         SafeArea(

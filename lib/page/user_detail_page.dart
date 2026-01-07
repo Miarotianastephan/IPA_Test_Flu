@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/page/gallery_page.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/user_follow_provider.dart';
 import 'package:live_app/widgets/follow_button.dart';
 import 'package:live_app/widgets/tiktok_scaffold.dart';
@@ -117,10 +118,18 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
   @override
   Widget build(BuildContext context) {
     final videoState = ref.watch(videoProvider);
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final user = widget.user;
     final postState = ref.watch(postProvider);
     final follow = ref.watch(userFollowProvider(user.id.toString()));
+
+    bool hasAvatar() {
+      return !(user.avatar == null || user.avatar!.isEmpty);
+    }
+
+    bool hasCover() {
+      return !(_coverUrl == null || _coverUrl!.isEmpty);
+    }
 
     return VisibilityDetector(
       key: Key("user_detail_${widget.user.id}"),
@@ -209,36 +218,57 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                 SizedBox(
                                   height: 250,
                                   width: double.infinity,
-                                  child: _isLoadingCover
+                                  child: (_isLoadingCover)
                                       ? Container(
                                           color: Colors.grey[300],
                                           child: const Center(
                                             child: CircularProgressIndicator(),
                                           ),
                                         )
-                                      : EncryptedImage(
-                                          key: ValueKey<String>(
-                                            _coverUrl ??
-                                                "https://i.pravatar.cc/350",
-                                          ),
-                                          url:
-                                              widget.cover ??
-                                              _coverUrl ??
-                                              "https://i.pravatar.cc/350",
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: 100,
-                                          placeholder: Container(
-                                            color: Colors.grey[300],
-                                            child: const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
+                                      : (!hasCover())
+                                      ? Container(
+                                          color: Colors.grey[800],
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.white54,
+                                              size: 60,
                                             ),
                                           ),
-                                          errorWidget: Container(
-                                            color: Colors.grey[300],
-                                            child: const Center(
-                                              child: Icon(Icons.broken_image),
+                                        )
+                                      : GestureDetector(
+                                          onTap: () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => GalleryPage(
+                                                items: [
+                                                  GalleryItem(
+                                                    url: _coverUrl!,
+                                                    isVideo: false,
+                                                  ),
+                                                ],
+                                                initialIndex: 0,
+                                              ),
+                                            ),
+                                          ),
+                                          child: EncryptedImage(
+                                            key: ValueKey<String>(_coverUrl!),
+                                            url: _coverUrl!,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: 100,
+                                            placeholder: Container(
+                                              color: Colors.grey[300],
+                                              child: const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
+                                            ),
+                                            errorWidget: Container(
+                                              color: Colors.grey[300],
+                                              child: const Center(
+                                                child: Icon(Icons.broken_image),
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -257,6 +287,22 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                       url: user.avatar,
                                       nickname: user.nickname,
                                       size: 100,
+                                      onTap: () => (!hasAvatar())
+                                          ? null
+                                          : Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => GalleryPage(
+                                                  items: [
+                                                    GalleryItem(
+                                                      url: user.avatar!,
+                                                      isVideo: false,
+                                                    ),
+                                                  ],
+                                                  initialIndex: 0,
+                                                ),
+                                              ),
+                                            ),
                                     ),
                                   ),
                                   Expanded(
@@ -271,12 +317,17 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                         children: [
                                           Row(
                                             children: [
-                                              Text(
-                                                user.nickname ?? "",
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 24,
-                                                  fontWeight: FontWeight.bold,
+                                              Expanded(
+                                                flex: 8,
+                                                child: Text(
+                                                  user.nickname ?? "",
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 18.0,
+                                                    fontWeight: FontWeight.bold,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
                                                 ),
                                               ),
                                               const Spacer(),
@@ -311,7 +362,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: _buildBioText(
-                                  user.bio ?? localizations.mysteriousUser,
+                                  user.bio ?? i18n.translate('mysteriousUser'),
                                 ),
                               ),
                             ),
@@ -329,16 +380,16 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   _buildCountItem(
-                                    localizations.followCount,
+                                    i18n.translate('followCount'),
                                     follow
                                         .followCount, // plus besoin de fallback vers user.followCount
                                   ),
                                   _buildCountItem(
-                                    localizations.fansCount,
+                                    i18n.translate('fansCount'),
                                     follow.fansCount, // idem
                                   ),
                                   _buildCountItem(
-                                    localizations.likeCount,
+                                    i18n.translate('likeCount'),
                                     user.likeCount ??
                                         0, // likeCount toujours depuis user
                                   ),
@@ -370,7 +421,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(localizations.video),
+                                Text(i18n.translate('video')),
                                 const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -397,7 +448,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(localizations.post),
+                                Text(i18n.translate('post')),
                                 const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -494,7 +545,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
   }
 
   Widget _buildBioText(String bioText) {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -569,8 +620,8 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     _isBioExpanded
-                        ? localizations.showLess
-                        : "...${localizations.seeMore}",
+                        ? i18n.translate('showLess')
+                        : "...${i18n.translate('seeMore')}",
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,

@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:live_app/config/storage_config.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../models/video_comment.dart';
 import '../provider/api_provider.dart';
@@ -90,9 +90,7 @@ class _CommentItemRepliesState extends ConsumerState<CommentItemReplies> {
             .read(videoServiceProvider)
             .cancelCommentLike(widget.comment.id);
       } else {
-        await ref
-            .read(videoServiceProvider)
-            .likeComment(widget.comment.id);
+        await ref.read(videoServiceProvider).likeComment(widget.comment.id);
       }
     } catch (e) {
       debugPrint("toggleLike error: $e");
@@ -101,7 +99,8 @@ class _CommentItemRepliesState extends ConsumerState<CommentItemReplies> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     final user = widget.comment.commentUser;
     final toUser = widget.comment.commentToUser;
 
@@ -112,7 +111,9 @@ class _CommentItemRepliesState extends ConsumerState<CommentItemReplies> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: widget.onClick != null ? () => widget.onClick!(widget.comment) : null,
+        onTap: widget.onClick != null
+            ? () => widget.onClick!(widget.comment)
+            : null,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
@@ -134,7 +135,7 @@ class _CommentItemRepliesState extends ConsumerState<CommentItemReplies> {
                         Text(
                           toUser?.nickname ??
                               user?.nickname ??
-                              localizations.unknownUser,
+                              translate("unknownUser"),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: textColor,

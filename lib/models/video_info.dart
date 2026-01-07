@@ -23,7 +23,7 @@ class VideoInfo {
   final String province;
   final String city;
   final UserInfo user;
-  @JsonKey(defaultValue : 0,fromJson:  parseInt)
+  @JsonKey(defaultValue: 0, fromJson: parseInt)
   final int commentCount;
   @JsonKey(defaultValue: false, fromJson: parseBool)
   final bool isFollow;
@@ -39,6 +39,8 @@ class VideoInfo {
   final int viewCount;
   @JsonKey(defaultValue: false, fromJson: parseBool)
   final bool needVip;
+  @JsonKey(name: 'v_key', defaultValue: 'fsjkey')
+  final String? encryptionKey;
   @JsonKey(defaultValue: [])
   final List<VideoTag> tags;
   @JsonKey(defaultValue: [])
@@ -66,6 +68,7 @@ class VideoInfo {
     this.favoriteCount = 0,
     this.viewCount = 0,
     this.needVip = false,
+    this.encryptionKey,
     this.tags = const [],
     this.categories = const [],
     required this.createdAt,
@@ -85,6 +88,7 @@ class VideoInfo {
     int? commentCount,
     int? viewCount,
     bool? needVip,
+    String? encryptionKey,
     List<VideoTag>? tags,
     List<VideoCategory>? categories,
     DateTime? createdAt,
@@ -111,6 +115,7 @@ class VideoInfo {
       favoriteCount: favoriteCount ?? this.favoriteCount,
       viewCount: viewCount ?? this.viewCount,
       needVip: needVip ?? this.needVip,
+      encryptionKey: encryptionKey ?? this.encryptionKey,
       tags: tags ?? this.tags,
       categories: categories ?? this.categories,
       createdAt: createdAt ?? this.createdAt,

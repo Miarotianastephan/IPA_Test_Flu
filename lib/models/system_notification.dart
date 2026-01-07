@@ -2,6 +2,21 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'system_notification.g.dart';
 
+/// Notification types constants
+class NotificationTypes {
+  static const String groupInvitation = 'group_invitation';
+  static const String joinGroup = 'join_group';
+  static const String invitationAccepted = 'invitation_accepted';
+  static const String invitationApproved = 'invitation_approved';
+  static const String invitationDeclined = 'invitation_declined';
+  static const String invitationPending = 'invitation_pending';
+  static const String invitationToJoinRejected = 'invitation_to_join_rejected';
+  static const String info = 'info';
+  static const String warning = 'warning';
+  static const String announcement = 'announcement';
+  static const String groupInvitationApproval = 'group_invitation_approval';
+}
+
 /// Modèle pour représenter une notification système
 /// Peut être utilisé pour afficher les notifications système dans la liste des conversations
 @JsonSerializable(explicitToJson: true)

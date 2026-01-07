@@ -55,7 +55,7 @@ class ForumPost {
   @JsonKey(name: 'user')
   final SimpleUser? user;
 
-  @JsonKey(name: 'postTags')
+  @JsonKey(name: 'post_tags')
   final List<ForumTag>? tags;
 
   ForumPost({

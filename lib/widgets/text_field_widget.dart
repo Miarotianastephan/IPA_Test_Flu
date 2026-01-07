@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/utils/phone_number_formatter.dart';
 
-class TextFieldWidget extends StatelessWidget {
+class TextFieldWidget extends ConsumerWidget {
   final String label;
   final IconData icon;
   final String value;
@@ -26,9 +27,9 @@ class TextFieldWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
 
     List<TextInputFormatter>? _getInputFormatters() {
       if (inputFormatters != null) {
@@ -63,10 +64,10 @@ class TextFieldWidget extends StatelessWidget {
                 if (val != null && val.isNotEmpty) {
                   final digitsOnly = val.replaceAll(RegExp(r'[^0-9]'), '');
                   if (digitsOnly.length < 7) {
-                    return localizations.phoneNumberTooShort;
+                    return i18n.translate('phoneNumberTooShort');
                   }
                   if (digitsOnly.length > 15) {
-                    return localizations.phoneNumberTooLong;
+                    return i18n.translate('phoneNumberTooLong');
                   }
                 }
                 return null;
@@ -79,7 +80,7 @@ class TextFieldWidget extends StatelessWidget {
         leading: Icon(icon),
         title: Text(label),
         subtitle: Text(
-          value.isNotEmpty ? value : AppLocalizations.of(context)!.notProvided,
+          value.isNotEmpty ? value : i18n.translate('notProvided'),
         ),
       );
     }

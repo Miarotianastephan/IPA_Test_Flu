@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/video_comment.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/comment_item_replies.dart';
 import 'package:live_app/widgets/empty_widget.dart';
 
@@ -40,7 +40,7 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
   @override
   void initState() {
     super.initState();
-    // Charger les commentaires initiaux
+
     Future.microtask(
       () => ref
           .read(commentsProvider(widget.videoId).notifier)
@@ -63,7 +63,8 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(commentsProvider(widget.videoId));
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     final comments = state.comments;
 
     return Container(
@@ -104,7 +105,7 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        localisations.comments,
+                        translate("comments"),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -150,7 +151,7 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           child: EmptyWidget(
                             icon: Icons.message_outlined,
-                            message: localisations.noCommentsYet,
+                            message: translate("noCommentsYet"),
                           ),
                         ),
                       )
@@ -164,7 +165,7 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
                                 padding: const EdgeInsets.all(16.0),
                                 child: Center(
                                   child: Text(
-                                    localisations.noMoreComments,
+                                    translate("noMoreComments"),
                                     style: const TextStyle(color: Colors.grey),
                                   ),
                                 ),
@@ -254,7 +255,7 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
                                                   .fetchReplies(comment.id);
                                             },
                                             child: Text(
-                                              localisations.loadMoreReplies,
+                                              translate("loadMoreReplies"),
                                               style: const TextStyle(
                                                 color: Colors.blue,
                                               ),

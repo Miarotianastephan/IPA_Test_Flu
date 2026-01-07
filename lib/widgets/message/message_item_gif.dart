@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/repository/image_repository.dart';
 import 'package:live_app/utils/text_util.dart';
 import 'package:live_app/widgets/encrypted_image.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-class ChatGifMessageItem extends StatefulWidget {
+class ChatGifMessageItem extends ConsumerStatefulWidget {
   final int messageId;
   final String gifUrl;
   final bool isSelf;
@@ -35,10 +39,51 @@ class ChatGifMessageItem extends StatefulWidget {
   });
 
   @override
-  State<ChatGifMessageItem> createState() => _ChatGifMessageItemState();
+  ConsumerState<ChatGifMessageItem> createState() => _ChatGifMessageItemState();
 }
 
-class _ChatGifMessageItemState extends State<ChatGifMessageItem> {
+class _ChatGifMessageItemState extends ConsumerState<ChatGifMessageItem> {
+  String? _cachedImagePath;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedImage();
+  }
+
+  @override
+  void didUpdateWidget(ChatGifMessageItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.gifUrl != widget.gifUrl) {
+      _loadCachedImage();
+    }
+  }
+
+  Future<void> _loadCachedImage() async {
+    final imageRepo = ref.read(imageRepositoryProvider);
+
+    final isUrl = widget.gifUrl.startsWith('http');
+
+    if (isUrl) {
+      final cache = await imageRepo.getImageCache(widget.gifUrl);
+
+      if (cache?.localPath != null) {
+        final file = File(cache!.localPath!);
+        final exists = await file.exists();
+
+        if (exists && mounted) {
+          setState(() {
+            _cachedImagePath = cache.localPath;
+          });
+        } else {
+          imageRepo.enqueueDownload(widget.gifUrl);
+        }
+      } else {
+        imageRepo.enqueueDownload(widget.gifUrl);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bubbleColor = const Color.fromARGB(255, 32, 32, 32);
@@ -150,14 +195,33 @@ class _ChatGifMessageItemState extends State<ChatGifMessageItem> {
                                     ? CrossAxisAlignment.end
                                     : CrossAxisAlignment.start,
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      widget.gifUrl,
-                                      width: 150,
-                                      height: 150,
-                                      fit: BoxFit.cover,
-                                    ),
+                                  Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: _buildGifImage(widget.gifUrl),
+                                      ),
+                                      if (widget.resending)
+                                        Container(
+                                          width: 150,
+                                          height: 150,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(
+                                              0.5,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 3,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -201,6 +265,62 @@ class _ChatGifMessageItemState extends State<ChatGifMessageItem> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGifImage(String path) {
+    String imagePath = path;
+
+    if (_cachedImagePath != null) {
+      imagePath = _cachedImagePath!;
+    }
+
+    final isLocalFile =
+        !imagePath.startsWith('http') &&
+        (imagePath.startsWith('/') ||
+            (imagePath.length > 2 && imagePath[1] == ':'));
+
+    if (isLocalFile) {
+      final file = File(imagePath);
+      final exists = file.existsSync();
+
+      if (exists) {
+        return Image.file(file, width: 150, height: 150, fit: BoxFit.cover);
+      } else {
+        return const SizedBox(
+          width: 150,
+          height: 150,
+          child: Center(
+            child: Icon(
+              Icons.image_not_supported,
+              color: Colors.grey,
+              size: 48,
+            ),
+          ),
+        );
+      }
+    }
+
+    return Image.network(
+      imagePath,
+      width: 150,
+      height: 150,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return const SizedBox(
+          width: 150,
+          height: 150,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return const SizedBox(
+          width: 150,
+          height: 150,
+          child: Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+        );
+      },
     );
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/user_follow_provider.dart';
 import 'package:live_app/utils/utils.dart';
 import 'package:live_app/widgets/follow_button.dart';
@@ -48,7 +48,7 @@ class _UserInfoRowState extends ConsumerState<UserInfoRow> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final followState = ref.watch(userFollowProvider(widget.userId.toString()));
 
     return Row(
@@ -70,6 +70,7 @@ class _UserInfoRowState extends ConsumerState<UserInfoRow> {
                 onTap: () {
                   toUserDetailPage(
                     context: context,
+                    ref: ref,
                     userId: widget.userId,
                     url: widget.avatarUrl,
                     nickname: widget.nickname,
@@ -85,7 +86,7 @@ class _UserInfoRowState extends ConsumerState<UserInfoRow> {
               ),
               const SizedBox(height: 2),
               Text(
-                '${followState.fansCount} ${localizations.fans}',
+                '${followState.fansCount} ${i18n.translate('fans')}',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],

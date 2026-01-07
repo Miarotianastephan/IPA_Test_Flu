@@ -1,7 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/database/download_database.dart';
+import 'package:live_app/provider/download_video_provider.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/user_follow_provider.dart';
 import 'package:live_app/utils/utils.dart';
+import 'package:live_app/widgets/download_button.dart';
 
 import '../../models/video_info.dart';
 import '../Animation/follow_splash_animation.dart';
@@ -19,7 +25,7 @@ class VideoOverlayActions extends ConsumerStatefulWidget {
   final Future<void> Function(bool) onFavoriteChanged; // 新增收藏回调
   final void Function(VideoInfo) onUserTap;
   final void Function(bool) onHidden;
-  final VoidCallback? onCommentAdded; // Nouveau callback
+  final VoidCallback? onCommentAdded;
 
   const VideoOverlayActions({
     super.key,
@@ -204,10 +210,7 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    widget.video.description,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                  ),
+                  ExpandableText(widget.video.description),
                 ],
               ),
             ),
@@ -239,6 +242,7 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                               onTap: () {
                                 toUserDetailPage(
                                   context: context,
+                                  ref: ref,
                                   userId: widget.video.userId,
                                   url: widget.video.user.avatar,
                                   nickname: widget.video.user.nickname,
@@ -363,6 +367,98 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                       //   count: 0,
                       // ),
                       // const SizedBox(height: 40),
+                      StreamBuilder<Download?>(
+                        stream: ref
+                            .watch(offlineRepoProvider)
+                            .db
+                            .watchById(widget.video.id),
+                        builder: (context, snapshot) {
+                          final existing = snapshot.data;
+                          final localPath = existing?.localPath;
+                          final fileExists = localPath != null
+                              ? File(localPath).existsSync()
+                              : false;
+
+                          if (existing == null) {
+                            return DownloadButton(
+                              videoInfo: widget.video,
+                              filename: "video_${widget.video.id}.mp4",
+                            );
+                          }
+
+                          switch (existing.status) {
+                            case "completed":
+                              if (fileExists) {
+                                debugPrint(
+                                  "Vidéo déjà téléchargée: $localPath ✅",
+                                );
+                                return const Icon(
+                                  Icons.download_done,
+                                  color: Colors.white,
+                                  size: 28.0,
+                                );
+                              } else {
+                                return DownloadButton(
+                                  videoInfo: widget.video,
+                                  filename: "video_${widget.video.id}.mp4",
+                                );
+                              }
+
+                            case "paused":
+                              debugPrint("Téléchargement en pause");
+                              return IconButton(
+                                icon: const Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () async {
+                                  final repo = ref.read(offlineRepoProvider);
+                                  final i18nNotifier = ref.read(
+                                    i18nNotifierProvider.notifier,
+                                  );
+                                  await repo.resumeDownload(
+                                    id: widget.video.id,
+                                    translate: i18nNotifier.translate,
+                                  );
+                                },
+                              );
+
+                            case "failed":
+                              debugPrint("Téléchargement échoué");
+                              return IconButton(
+                                icon: const Icon(
+                                  Icons.refresh,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () async {
+                                  final repo = ref.read(offlineRepoProvider);
+                                  final i18nNotifier = ref.read(
+                                    i18nNotifierProvider.notifier,
+                                  );
+                                  await repo.downloadResource(
+                                    id: widget.video.id,
+                                    filename: "video_${widget.video.id}.mp4",
+                                    translate: i18nNotifier.translate,
+                                  );
+                                },
+                              );
+
+                            case "cancelled":
+                              debugPrint("Téléchargement annulé");
+                              return DownloadButton(
+                                videoInfo: widget.video,
+                                filename: "video_${widget.video.id}.mp4",
+                              );
+
+                            default:
+                              debugPrint("Vidéo non téléchargée: $localPath");
+                              return DownloadButton(
+                                videoInfo: widget.video,
+                                filename: "video_${widget.video.id}.mp4",
+                              );
+                          }
+                        },
+                      ),
                     ],
 
                     GestureDetector(
@@ -385,6 +481,37 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
           ),
         ),
       ],
+    );
+  }
+}
+
+class ExpandableText extends StatefulWidget {
+  final String text;
+  const ExpandableText(this.text, {super.key});
+
+  @override
+  State<ExpandableText> createState() => _ExpandableTextState();
+}
+
+class _ExpandableTextState extends State<ExpandableText>
+    with SingleTickerProviderStateMixin {
+  bool expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => setState(() => expanded = !expanded),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 300),
+
+        curve: Curves.fastLinearToSlowEaseIn,
+        child: Text(
+          widget.text,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+          maxLines: expanded ? null : 2,
+          overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+        ),
+      ),
     );
   }
 }

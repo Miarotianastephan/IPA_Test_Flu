@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/config/storage_config.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/api_response.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/page/login/login_with_cert.dart';
 import 'package:live_app/page/login/login_with_qrcode.dart';
+import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../../provider/current_user_provider.dart';
 import '../../utils/toast_util.dart';
@@ -31,17 +32,18 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
   bool _isLoading = false;
 
   Future<void> _login(BuildContext context) async {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
     if (username.isEmpty || password.isEmpty) {
-      ToastUtil.warning(localizations.enterUsernameAndPassword);
+      ToastUtil.warning(translate("enterUsernameAndPassword"));
       return;
     }
 
     if (password.length < 6) {
-      ToastUtil.warning(localizations.passwordTooShort);
+      ToastUtil.warning(translate("passwordTooShort"));
       return;
     }
 
@@ -49,21 +51,17 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
       _isLoading = true;
     });
     final currentUserNotifier = ref.read(currentUserProvider.notifier);
-    final navigator = Navigator.of(context);
 
     try {
       final res = await currentUserNotifier.login(username, password);
 
       if (res?.data != null) {
-        ToastUtil.success(localizations.loginSuccess);
+        ToastUtil.success(translate("loginSuccess"));
+        getAppConfig();
 
         if (!mounted) return;
-        navigator.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const HomePage()),
-          (route) => false,
-        );
       } else {
-        ToastUtil.warning(localizations.loginFailed);
+        ToastUtil.warning(translate("loginFailed"));
       }
     } catch (err, stack) {
       debugPrint("登录失败: $err");
@@ -80,6 +78,26 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
     }
   }
 
+  Future<void> getAppConfig() async {
+    final appService = ref.read(appServiceProvider);
+    final navigator = Navigator.of(context);
+    try {
+      final appConfig = await appService.appConfig();
+
+      await StorageService.instance.setValue(
+        "app_config",
+        jsonEncode(appConfig.data),
+      );
+
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => HomePage(config: appConfig.data)),
+        (route) => false,
+      );
+    } catch (e, st) {
+      debugPrintStack(stackTrace: st);
+    }
+  }
+
   Future<void> saveUserInfoWithToken(ApiResponse<UserInfo> userInfo) async {
     await StorageService.instance.clearUserData();
     await StorageService.instance.setValue("token", userInfo.data?.token);
@@ -92,7 +110,8 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -110,7 +129,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        localizations.welcomeLogin,
+                        translate("welcomeLogin"),
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -129,7 +148,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                           floatingLabelStyle: TextStyle(
                             color: theme.colorScheme.onSurface,
                           ),
-                          labelText: localizations.usernameOrEmail,
+                          labelText: translate("usernameOrEmail"),
                           prefixIcon: const Icon(Icons.person),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -144,7 +163,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                         obscureText: _obscurePassword,
                         cursorColor: theme.colorScheme.onSurface,
                         decoration: InputDecoration(
-                          labelText: localizations.password,
+                          labelText: translate("password"),
                           prefixIcon: const Icon(Icons.lock),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -186,7 +205,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                                 ),
                               )
                             : Text(
-                                localizations.login,
+                                translate("login"),
                                 style: const TextStyle(fontSize: 18),
                               ),
                       ),
@@ -196,7 +215,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                       Center(
                         child: Column(
                           children: [
-                            Text(localizations.otherLoginMethods),
+                            Text(translate("otherLoginMethods")),
                             const SizedBox(height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -217,7 +236,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        localizations.loginWithQrcode,
+                                        translate("loginWithQrcode"),
                                         style: const TextStyle(fontSize: 12),
                                       ),
                                     ],
@@ -240,7 +259,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        localizations.loginWithCredential,
+                                        translate("loginWithCredential"),
                                         style: const TextStyle(fontSize: 12),
                                       ),
                                     ],
@@ -260,15 +279,15 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                 child: Center(
                   child: Text.rich(
                     TextSpan(
-                      text: localizations.agreeTo,
+                      text: translate("agreeTo"),
                       children: [
                         TextSpan(
-                          text: localizations.userAgreement,
+                          text: translate("userAgreement"),
                           style: TextStyle(color: theme.colorScheme.onPrimary),
                         ),
-                        TextSpan(text: localizations.and),
+                        TextSpan(text: translate("and")),
                         TextSpan(
-                          text: localizations.privacyPolicy,
+                          text: translate("privacyPolicy"),
                           style: TextStyle(color: theme.colorScheme.onPrimary),
                         ),
                       ],

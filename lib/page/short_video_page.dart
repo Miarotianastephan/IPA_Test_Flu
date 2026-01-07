@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/comment/comment_input_bar.dart';
 
 import '../provider/api_provider.dart';
@@ -55,6 +55,8 @@ class _VideoPageState extends ConsumerState<ShortVideoPage>
     final state = ref.watch(videoDetailProvider(widget.videoId));
     final notifier = ref.read(videoDetailProvider(widget.videoId).notifier);
     final videoService = ref.read(videoServiceProvider);
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
     if (state.loading) {
       return const Scaffold(
@@ -66,9 +68,7 @@ class _VideoPageState extends ConsumerState<ShortVideoPage>
     if (state.error != null) {
       return Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: Text("${AppLocalizations.of(context)!.error}: ${state.error}"),
-        ),
+        body: Center(child: Text("${translate("error")}: ${state.error}")),
       );
     }
 
@@ -76,7 +76,7 @@ class _VideoPageState extends ConsumerState<ShortVideoPage>
     if (video == null) {
       return Scaffold(
         backgroundColor: Colors.black,
-        body: Center(child: Text(AppLocalizations.of(context)!.noVideoContent)),
+        body: Center(child: Text(translate("noVideoContent"))),
       );
     }
 

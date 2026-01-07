@@ -113,6 +113,24 @@ class ApiClient {
 
     return result;
   }
+
+  Future<String> postRaw(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    String? baseUrl,
+  }) async {
+    final fullUrl = (baseUrl ?? _baseUrl) + path;
+
+    final response = await _dio.post(
+      fullUrl,
+      data: data,
+      queryParameters: queryParameters,
+      options: Options(responseType: ResponseType.plain),
+    );
+
+    return response.data.toString();
+  }
 }
 
 extension ApiClientDownload on ApiClient {

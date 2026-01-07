@@ -119,6 +119,7 @@ class _VideoDescriptionSectionState
               widget.onFavorite?.call(value);
             },
             onShare: widget.onShare ?? () {},
+            videoInfo: videoInfo,
           ),
 
           const SizedBox(height: 24),

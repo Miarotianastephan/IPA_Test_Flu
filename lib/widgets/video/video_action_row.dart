@@ -1,6 +1,14 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 
-class VideoActionRow extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/database/download_database.dart';
+import 'package:live_app/models/video_info.dart';
+import 'package:live_app/provider/download_video_provider.dart';
+import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/download_button.dart';
+
+class VideoActionRow extends ConsumerWidget {
   final int likes;
   final int favorites;
   final int shares;
@@ -9,6 +17,7 @@ class VideoActionRow extends StatelessWidget {
   final Future<void> Function(bool) onLike;
   final Future<void> Function(bool) onFavorite;
   final VoidCallback onShare;
+  final VideoInfo videoInfo;
 
   const VideoActionRow({
     super.key,
@@ -20,10 +29,11 @@ class VideoActionRow extends StatelessWidget {
     required this.onShare,
     this.isLiked = false,
     this.isFavorited = false,
+    required this.videoInfo,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final defaultColor = isDark ? Colors.white : Colors.black;
 
@@ -57,6 +67,88 @@ class VideoActionRow extends StatelessWidget {
           onTap: onShare,
           showLabel: false,
           color: defaultColor,
+        ),
+
+        StreamBuilder<Download?>(
+          stream: ref.watch(offlineRepoProvider).db.watchById(videoInfo.id),
+          builder: (context, snapshot) {
+            final existing = snapshot.data;
+            final localPath = existing?.localPath;
+            final fileExists = localPath != null
+                ? File(localPath).existsSync()
+                : false;
+
+            if (existing == null) {
+              return DownloadButton(
+                videoInfo: videoInfo,
+                filename: "video_${videoInfo.id}.mp4",
+              );
+            }
+
+            switch (existing.status) {
+              case "completed":
+                if (fileExists) {
+                  debugPrint("Vidéo déjà téléchargée: $localPath ✅");
+                  return const Icon(
+                    Icons.download_done,
+                    color: Colors.white,
+                    size: 28.0,
+                  );
+                } else {
+                  return DownloadButton(
+                    videoInfo: videoInfo,
+                    filename: "video_${videoInfo.id}.mp4",
+                  );
+                }
+
+              case "paused":
+                debugPrint("Téléchargement en pause");
+                return IconButton(
+                  icon: const Icon(Icons.play_arrow, color: Colors.white),
+                  onPressed: () async {
+                    final repo = ref.read(offlineRepoProvider);
+                    final i18nNotifier = ref.read(
+                      i18nNotifierProvider.notifier,
+                    );
+                    await repo.resumeDownload(
+                      id: videoInfo.id,
+                      translate: i18nNotifier.translate,
+                    );
+                  },
+                );
+
+              case "failed":
+                debugPrint("Téléchargement échoué");
+                return IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.red),
+                  onPressed: () async {
+                    final repo = ref.read(offlineRepoProvider);
+                    final i18nNotifier = ref.read(
+                      i18nNotifierProvider.notifier,
+                    );
+                    await repo.downloadResource(
+                      id: videoInfo.id,
+                      filename: "video_${videoInfo.id}.mp4",
+                      translate: i18nNotifier.translate,
+                    );
+                  },
+                );
+
+              case "cancelled":
+                debugPrint("Téléchargement annulé");
+                return DownloadButton(
+                  videoInfo: videoInfo,
+                  filename: "video_${videoInfo.id}.mp4",
+                );
+
+              default:
+                debugPrint("Vidéo non téléchargée: $localPath");
+                return DownloadButton(
+                  videoInfo: videoInfo,
+                  filename: "video_${videoInfo.id}.mp4",
+                );
+            }
+          },
         ),
       ],
     );

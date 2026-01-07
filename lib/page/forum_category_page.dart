@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
-import '../../models/forum_category.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
+import '../../models/forum_category.dart';
 import '../provider/api_provider.dart';
 import 'forum_tag_category_page.dart';
 
-class ForumCategoryPage extends StatefulWidget {
+class ForumCategoryPage extends ConsumerStatefulWidget {
   const ForumCategoryPage({super.key});
 
   @override
-  State<ForumCategoryPage> createState() => _ForumCategoryPageState();
+  ConsumerState<ForumCategoryPage> createState() => _ForumCategoryPageState();
 }
 
-class _ForumCategoryPageState extends State<ForumCategoryPage> {
+class _ForumCategoryPageState extends ConsumerState<ForumCategoryPage> {
   List<ForumCategory> _categories = [];
   bool _loading = true;
 
@@ -24,9 +24,9 @@ class _ForumCategoryPageState extends State<ForumCategoryPage> {
   }
 
   Future<void> _fetchCategories() async {
-    final container = ProviderScope.containerOf(context, listen: false);
-    final forumService = container.read(forumServiceProvider);
+    final forumService = ref.read(forumServiceProvider);
     final cats = await forumService.categories();
+
     if (mounted) {
       setState(() {
         _categories = cats.data ?? [];
@@ -62,17 +62,16 @@ class _ForumCategoryPageState extends State<ForumCategoryPage> {
         final hasChildren = node.children != null && node.children!.isNotEmpty;
 
         if (isRoot) {
+          sections.add({
+            'parent': node,
+            'children': hasChildren ? flatten(node) : <ForumCategory>[],
+          });
           if (hasChildren) {
-            sections.add({'parent': node, 'children': flatten(node)});
-            traverse(node.children!, isRoot: false);
-          } else {
-            sections.add({'parent': node, 'children': <ForumCategory>[]});
-          }
-        } else {
-          if (hasChildren) {
-            sections.add({'parent': node, 'children': flatten(node)});
             traverse(node.children!, isRoot: false);
           }
+        } else if (hasChildren) {
+          sections.add({'parent': node, 'children': flatten(node)});
+          traverse(node.children!, isRoot: false);
         }
       }
     }
@@ -83,11 +82,12 @@ class _ForumCategoryPageState extends State<ForumCategoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final sections = _buildAllSections(_categories);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(localisations.allCategories),
+        title: Text(i18n.translate('allCategories')),
         backgroundColor: Colors.black,
       ),
       backgroundColor: Colors.black,
@@ -100,6 +100,7 @@ class _ForumCategoryPageState extends State<ForumCategoryPage> {
                 final section = sections[index];
                 final parentCategory = section['parent'] as ForumCategory;
                 final children = section['children'] as List<ForumCategory>;
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 24.0),
                   child: Column(
@@ -133,11 +134,11 @@ class _ForumCategoryPageState extends State<ForumCategoryPage> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  localisations.all,
-                                  style: TextStyle(color: Colors.white),
+                                  i18n.translate('all'),
+                                  style: const TextStyle(color: Colors.white),
                                 ),
-                                SizedBox(width: 4),
-                                Icon(
+                                const SizedBox(width: 4),
+                                const Icon(
                                   Icons.chevron_right,
                                   color: Colors.white,
                                   size: 22,

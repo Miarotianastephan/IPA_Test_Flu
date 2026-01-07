@@ -10,12 +10,14 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:video_player/video_player.dart';
 
 class MobileVideoPlayer extends StatefulWidget {
-  final String videoUrl;
+  final String? videoUrl;
+  final String? localPath;
   final VideoScreenController? controller;
   const MobileVideoPlayer({
     super.key,
-    required this.videoUrl,
-    required this.controller,
+    this.videoUrl,
+    this.localPath,
+    this.controller,
   });
 
   @override
@@ -36,6 +38,7 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
   ChewieController? _chewieController;
   bool showControls = true;
   Timer? _hideTimer;
+  VoidCallback? _videoListener;
   @override
   void initState() {
     super.initState();
@@ -97,12 +100,17 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
     player = Player();
     mediaKitController = VideoController(player!);
     player?.stream.playing.listen((isPlaying) {
+      if (!mounted) return;
       if (!isPlaying && !showControls) {
         setState(() => showControls = true);
       }
     });
+    final source =
+        widget.localPath != null && File(widget.localPath!).existsSync()
+        ? Media(widget.localPath!)
+        : Media(widget.videoUrl!);
     try {
-      await player!.open(Media(widget.videoUrl), play: false);
+      await player!.open(source, play: false);
       await player!.play();
 
       setState(() {
@@ -114,18 +122,20 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
   }
 
   Future<void> _initializeChewie() async {
-    _videoPlayerController = VideoPlayerController.networkUrl(
-      Uri.parse(widget.videoUrl),
-    );
-
+    _videoPlayerController =
+        widget.localPath != null && File(widget.localPath!).existsSync()
+        ? VideoPlayerController.file(File(widget.localPath!))
+        : VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl!));
     try {
       await _videoPlayerController!.initialize();
-      _videoPlayerController?.addListener(() {
+      _videoListener = () {
         final isPaused = !_videoPlayerController!.value.isPlaying;
         if (isPaused && !showControls) {
+          if (!mounted) return;
           setState(() => showControls = true);
         }
-      });
+      };
+      _videoPlayerController?.addListener(_videoListener!);
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController!,
         autoPlay: true,
@@ -141,12 +151,20 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _hideTimer?.cancel();
+    _hideTimer = null;
     player?.pause();
     player?.dispose();
     player = null;
     mediaKitController = null;
+    if (_videoListener != null) {
+      _videoPlayerController?.removeListener(_videoListener!);
+      _videoListener = null;
+    }
     _videoPlayerController?.dispose();
+    _videoPlayerController = null;
     _chewieController?.dispose();
+    _chewieController = null;
     super.dispose();
   }
 

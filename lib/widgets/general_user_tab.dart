@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../models/userinfo.dart';
 import 'empty_retry.dart';
 import 'user_list_item.dart';
 
-class GeneralUserTab extends StatelessWidget {
+class GeneralUserTab extends ConsumerWidget {
   final bool loading;
   final List<UserInfo> results;
   final bool isLoaded;
@@ -28,7 +29,7 @@ class GeneralUserTab extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return RefreshIndicator(
       color: Colors.white,
       onRefresh: () async => onRefresh(),
@@ -38,7 +39,7 @@ class GeneralUserTab extends StatelessWidget {
           ? _buildFirstLoading()
           : NotificationListener<ScrollNotification>(
               onNotification: _handleScroll,
-              child: results.isEmpty ? _buildEmpty() : _buildList(context),
+              child: results.isEmpty ? _buildEmpty() : _buildList(context, ref),
             ),
     );
   }
@@ -51,7 +52,8 @@ class GeneralUserTab extends StatelessWidget {
     return Center(child: EmptyWithRetry(onRetry: onRefresh));
   }
 
-  Widget _buildList(BuildContext context) {
+  Widget _buildList(BuildContext context, WidgetRef ref) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     return ListView.separated(
       itemCount: results.length + (loading ? 1 : 0) + (finished ? 1 : 0),
       separatorBuilder: (_, __) => const Divider(color: Colors.white12),
@@ -65,7 +67,7 @@ class GeneralUserTab extends StatelessWidget {
             padding: EdgeInsets.all(16),
             child: Center(
               child: Text(
-                AppLocalizations.of(context)!.noMore,
+                i18n.translate('noMore'),
                 style: TextStyle(color: Colors.white),
               ),
             ),

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../config/storage_config.dart';
+import '../../config/i18n_cache_manager.dart';
 
 class LanguageInterceptor extends Interceptor {
   @override
@@ -7,9 +7,12 @@ class LanguageInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final savedLang = await StorageService.instance.getValue<String>('lang');
-    final lang = savedLang ?? 'en';
-    options.headers['x-app-language'] = lang;
+    final cacheManager = I18nCacheManager();
+    final selectedLang = await cacheManager.loadSelectedLanguage();
+    final lang = selectedLang?['language'] ?? 'en';
+    final country = selectedLang?['country'] ?? 'US';
+    final fullLangCode = '${lang}_$country';
+    options.headers['x-app-language'] = fullLangCode;
     super.onRequest(options, handler);
   }
 }

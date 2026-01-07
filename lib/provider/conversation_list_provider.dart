@@ -93,7 +93,6 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     final hasLocal = await _loadFromDbOnly();
     //如果会本地有记录 就只加载未读数据
     if (hasLocal) {
-      print('hasLocal: $hasLocal');
       await loadUnReadHistory();
     } else {
       // 如果会没有记录 就加载所有的 会话 和 所有的聊天记录

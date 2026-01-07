@@ -4,13 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/config/storage_config.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/models/i18n_language.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/locale_provider.dart';
 
 class MaintenancePage extends ConsumerStatefulWidget {
-  const MaintenancePage({super.key, required this.enabledWeb});
-  final bool enabledWeb;
+  const MaintenancePage({super.key, required this.isChatPage});
+  final bool isChatPage;
+
   @override
   ConsumerState<MaintenancePage> createState() => _MaintenancePageState();
 }
@@ -19,26 +20,20 @@ class _MaintenancePageState extends ConsumerState<MaintenancePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final i18nNotifier = ref.read(i18nNotifierProvider.notifier);
+    final availableLanguagesAsync = ref.watch(availableLanguagesProvider);
+    final downloadedLanguagesAsync = ref.watch(downloadedLanguagesProvider);
+    final currentLocale = ref.watch(localeProvider);
+
+    String translate(String key) => i18nNotifier.translate(key);
+
     String message;
     if (kIsWeb) {
-      message = AppLocalizations.of(context)!.maintenance_web;
+      message = translate('maintenanceWeb');
     } else if (Platform.isAndroid || Platform.isIOS) {
-      message = AppLocalizations.of(context)!.maintenance_mobile;
+      message = translate('maintenanceMobile');
     } else {
-      message = AppLocalizations.of(context)!.maintenance_service;
-    }
-
-    String localeName(Locale locale) {
-      switch (locale.languageCode) {
-        case 'en':
-          return 'English';
-        case 'es':
-          return 'Español';
-        case 'zh':
-          return '中文';
-        default:
-          return locale.languageCode;
-      }
+      message = translate('maintenanceService');
     }
 
     return Scaffold(
@@ -48,33 +43,80 @@ class _MaintenancePageState extends ConsumerState<MaintenancePage> {
         backgroundColor: Colors.transparent,
         elevation: 0.0,
         actions: [
-          PopupMenuButton<Locale>(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                children: [
-                  const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                  const SizedBox(width: 6),
-                  Text(
-                    localeName(ref.watch(localeProvider)),
-                    style: const TextStyle(color: Colors.white70),
+          if (!widget.isChatPage)
+            availableLanguagesAsync.when(
+              data: (languages) {
+                return downloadedLanguagesAsync.when(
+                  data: (downloadedLanguageCodes) {
+                    final downloadedLanguages = languages.where((lang) {
+                      return downloadedLanguageCodes.contains(
+                        lang.languageCode,
+                      );
+                    }).toList();
+
+                    if (downloadedLanguages.isEmpty) {
+                      return const SizedBox();
+                    }
+
+                    final currentLang = downloadedLanguages.firstWhere((lang) {
+                      final parts = lang.languageCode.split('_');
+                      final langCode = parts.isNotEmpty
+                          ? parts[0]
+                          : lang.languageCode;
+                      return langCode == currentLocale.languageCode;
+                    }, orElse: () => downloadedLanguages.first);
+
+                    return PopupMenuButton<I18nLanguage>(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.white70,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              currentLang.displayName,
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                          ],
+                        ),
+                      ),
+                      onSelected: (language) async {
+                        await ref
+                            .read(i18nNotifierProvider.notifier)
+                            .changeLanguage(language);
+                      },
+                      itemBuilder: (context) => downloadedLanguages
+                          .map(
+                            (lang) => PopupMenuItem(
+                              value: lang,
+                              child: Text(lang.displayName),
+                            ),
+                          )
+                          .toList(),
+                    );
+                  },
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.0),
+                    child: CircularProgressIndicator(
+                      color: Colors.white70,
+                      strokeWidth: 2,
+                    ),
                   ),
-                ],
+                  error: (error, _) => const SizedBox(),
+                );
+              },
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.0),
+                child: CircularProgressIndicator(
+                  color: Colors.white70,
+                  strokeWidth: 2,
+                ),
               ),
+              error: (error, _) => const SizedBox(),
             ),
-            onSelected: (locale) async {
-              ref.read(localeProvider.notifier).state = locale;
-              await StorageService.instance.setValue(
-                'lang',
-                locale.languageCode,
-              );
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: Locale('en'), child: Text('English')),
-              const PopupMenuItem(value: Locale('es'), child: Text('Español')),
-              const PopupMenuItem(value: Locale('zh'), child: Text('中文')),
-            ],
-          ),
         ],
       ),
       body: Center(
@@ -84,10 +126,10 @@ class _MaintenancePageState extends ConsumerState<MaintenancePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 30),
-              Icon(Icons.construction, size: 80, color: Colors.white),
+              const Icon(Icons.construction, size: 80, color: Colors.white),
               const SizedBox(height: 30),
               Text(
-                AppLocalizations.of(context)!.underMaintenance,
+                translate('underMaintenance'),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: Colors.white70,
                   fontWeight: FontWeight.bold,
@@ -97,32 +139,32 @@ class _MaintenancePageState extends ConsumerState<MaintenancePage> {
               const SizedBox(height: 20),
               Text(
                 message,
-                style: TextStyle(fontSize: 16, color: Colors.white70),
+                style: const TextStyle(fontSize: 16, color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.onSecondary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              if (!kIsWeb && !widget.isChatPage) ...[
+                const SizedBox(height: 40),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.onSecondary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(56),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () {
+                      SystemNavigator.pop();
+                    },
+                    child: Text(
+                      translate('quitApp'),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
-                  onPressed: () {
-                    //Launch URL to download app or open browser
-                  },
-                  child: Text(
-                    widget.enabledWeb == true
-                        ? AppLocalizations.of(context)!.downloadApp
-                        : AppLocalizations.of(context)!.useBrowser,
-                    style: TextStyle(color: Colors.white),
-                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

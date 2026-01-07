@@ -1,13 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:live_app/l10n/app_localizations.dart';
-import 'package:live_app/provider/locale_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/api/services/version_component.dart';
-import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/models/version.dart';
+import 'package:live_app/page/my/language_selection_page.dart';
+import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/repository/image_repository.dart';
+import 'package:live_app/utils/toast_util.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
@@ -21,11 +22,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   String _currentVersion = '';
   Version? _latestVersion;
   bool _isCheckingUpdate = false;
+  String _cacheSize = '...';
 
   @override
   void initState() {
     super.initState();
     _loadVersionInfo();
+    _loadCacheSize();
   }
 
   Future<void> _loadVersionInfo() async {
@@ -39,7 +42,38 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  Future<void> _loadCacheSize() async {
+    try {
+      final imageRepo = ref.read(imageRepositoryProvider);
+      final stats = await imageRepo.getCacheStats();
+      if (mounted) {
+        setState(() {
+          _cacheSize = stats['formattedSize'] ?? '0 B';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading cache size: $e');
+    }
+  }
+
+  Future<void> _clearCache() async {
+    try {
+      final imageRepo = ref.read(imageRepositoryProvider);
+      await imageRepo.clearCache();
+
+      if (mounted) {
+        final i18n = ref.read(i18nNotifierProvider.notifier);
+        ToastUtil.success(i18n.translate('cacheCleared'));
+        await _loadCacheSize();
+      }
+    } catch (e) {
+      debugPrint('Error clearing cache: $e');
+    }
+  }
+
   Future<void> _checkForUpdates() async {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+
     setState(() {
       _isCheckingUpdate = true;
     });
@@ -48,7 +82,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       final latestVersion = await VersionComponent.fetchVersion();
       final currentVersion = await VersionComponent.getCurrentVersion();
 
-      if (latestVersion != null && mounted) {
+      setState(() {
+        _isCheckingUpdate = false;
+      });
+
+      if (latestVersion == null) {
+        ToastUtil.info('No version available at the moment.');
+        return;
+      }
+
+      if (mounted) {
         final updateAvailable = VersionComponent.isUpdateAvailable(
           latestVersion.versionNumber,
           currentVersion,
@@ -57,19 +100,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         setState(() {
           _latestVersion = latestVersion;
           _currentVersion = currentVersion;
-          _isCheckingUpdate = false;
         });
 
         if (updateAvailable) {
           _showUpdateDialog();
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppLocalizations.of(context)!.appUpToDate),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          ToastUtil.success(i18n.translate('appUpToDate'));
         }
       }
     } catch (e) {
@@ -77,46 +113,41 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         setState(() {
           _isCheckingUpdate = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${AppLocalizations.of(context)!.error}: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        ToastUtil.error('${i18n.translate('error')}: $e');
       }
     }
   }
 
   void _showUpdateDialog() {
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          localisations.newVersionAvailable,
+          translate('newVersionAvailable'),
           textAlign: TextAlign.center,
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${localisations.currentVersion} :\n$_currentVersion'),
+            Text('${translate('currentVersion')} :\n$_currentVersion'),
             const SizedBox(height: 8),
             Text(
-              '${localisations.latestVersion} : \n${_latestVersion?.versionNumber}',
+              '${translate('latestVersion')} : \n${_latestVersion?.versionNumber}',
             ),
             if (_latestVersion?.description != null) ...[
               const SizedBox(height: 12),
-              Text(localisations.description),
+              Text(translate('description')),
               const SizedBox(height: 4),
               Text(_latestVersion!.description!),
             ],
             if (_latestVersion?.dateRelease != null) ...[
               const SizedBox(height: 8),
               Text(
-                '${localisations.releaseDate}:\n${_latestVersion!.dateRelease}',
+                '${translate('releaseDate')}:\n${_latestVersion!.dateRelease}',
               ),
             ],
           ],
@@ -143,7 +174,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     : Platform.isAndroid
                     ? Icon(Icons.android, color: Colors.green)
                     : null,
-                label: Text(localisations.download),
+                label: Text(translate('download')),
               ),
             ),
           ElevatedButton(
@@ -159,7 +190,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               Navigator.pop(context);
             },
 
-            child: Text(localisations.cancel),
+            child: Text(translate('cancel')),
           ),
         ],
       ),
@@ -193,9 +224,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
+          final i18n = ref.read(i18nNotifierProvider.notifier);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(AppLocalizations.of(context)!.error),
+              content: Text(i18n.translate('error')),
               backgroundColor: Colors.red,
             ),
           );
@@ -206,86 +238,162 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentLocale = ref.watch(localeProvider);
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(localisations.settings),
+    return SafeArea(
+      child: Scaffold(
         backgroundColor: Colors.black,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              children: [
-                ListTile(
-                  title: Text(localisations.language),
-                  trailing: DropdownButton<Locale>(
-                    value: currentLocale,
-                    items: const [
-                      DropdownMenuItem(
-                        value: Locale('en'),
-                        child: Text('English'),
-                      ),
-                      DropdownMenuItem(
-                        value: Locale('es'),
-                        child: Text('Español'),
-                      ),
-                      DropdownMenuItem(value: Locale('zh'), child: Text('中文')),
-                    ],
-                    onChanged: (locale) {
-                      if (locale != null) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) async {
-                          ref.read(localeProvider.notifier).state = locale;
-
-                          await StorageService.instance.setValue(
-                            'lang',
-                            locale.languageCode,
+        appBar: AppBar(
+          title: Text(translate('settings')),
+          backgroundColor: Colors.black,
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                children: [
+                  ListTile(
+                    title: Text(translate('language')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LanguageSelectionPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    title: Text(translate('clearCache')),
+                    subtitle: Text(_cacheSize),
+                    trailing: const Icon(Icons.delete_outline),
+                    onTap: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            backgroundColor: const Color(0xFF1A1A1A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            title: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.delete_sweep_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    translate('clearCache'),
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            content: Text(
+                              translate('confirmClearCache'),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white.withOpacity(0.7),
+                                height: 1.5,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.fromLTRB(
+                              24,
+                              16,
+                              24,
+                              24,
+                            ),
+                            actionsPadding: const EdgeInsets.fromLTRB(
+                              24,
+                              0,
+                              24,
+                              24,
+                            ),
+                            actions: [
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.error,
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size.fromHeight(40),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  translate('confirm'),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           );
-                        });
+                        },
+                      );
+
+                      if (confirm == true) {
+                        await _clearCache();
                       }
                     },
                   ),
-                ),
-                ListTile(
-                  title: Text(localisations.checkForUpdates),
-                  trailing: _isCheckingUpdate
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Icon(Icons.refresh),
-                  onTap: _isCheckingUpdate ? null : _checkForUpdates,
-                ),
-              ],
+                  ListTile(
+                    title: Text(translate('checkForUpdates')),
+                    trailing: _isCheckingUpdate
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(Icons.refresh),
+                    onTap: _isCheckingUpdate ? null : _checkForUpdates,
+                  ),
+                ],
+              ),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Text(
-                  localisations.version,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _currentVersion.isNotEmpty ? _currentVersion : '...',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-              ],
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Text(
+                    translate('version'),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _currentVersion.isNotEmpty ? _currentVersion : '...',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

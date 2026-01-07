@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/video_info.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/video/mobile_video_player.dart';
 import 'package:live_app/widgets/video_screen.dart';
 
@@ -72,6 +72,8 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
     final videoNotifier = ref.read(
       videoDetailProvider(widget.video.id).notifier,
     );
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     final video = videoState.video;
 
     return PopScope(
@@ -106,6 +108,9 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
                               aspectRatio: ratio,
                               child: Center(
                                 child: VideoScreen(
+                                  encryptionKey:
+                                      video?.encryptionKey ??
+                                      widget.video.encryptionKey,
                                   videoUrl: widget.video.url,
                                   controller: _videoController,
                                 ),
@@ -143,16 +148,8 @@ class _LongVideoDetailPageState extends ConsumerState<LongVideoDetailPage>
                                           unselectedLabelColor: Colors.grey,
                                           indicatorColor: Colors.white,
                                           tabs: [
-                                            Tab(
-                                              text: AppLocalizations.of(
-                                                context,
-                                              )!.intro,
-                                            ),
-                                            Tab(
-                                              text: AppLocalizations.of(
-                                                context,
-                                              )!.comment,
-                                            ),
+                                            Tab(text: translate("intro")),
+                                            Tab(text: translate("comment")),
                                           ],
                                         ),
                                       ),

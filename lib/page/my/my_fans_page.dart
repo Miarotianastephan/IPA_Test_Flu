@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../../models/page_response.dart';
 import '../../models/userinfo.dart';
@@ -73,10 +73,11 @@ class _MyFansPageState extends ConsumerState<MyFansPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(title: Text(localisations.myFans)),
+      appBar: AppBar(title: Text(translate("myFans"))),
       body: GeneralUserTab(
         loading: _loading,
         results: _results,

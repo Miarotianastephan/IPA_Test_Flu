@@ -7,7 +7,7 @@ part 'forum_attachment.g.dart';
 class ForumAttachment {
   @JsonKey(fromJson: parseInt)
   final int id;
-  @JsonKey(name: 'post_id',fromJson: parseInt)
+  @JsonKey(name: 'post_id', fromJson: parseInt)
   final int postId;
   @JsonKey(name: 'file_url')
   final String fileUrl;
@@ -15,6 +15,8 @@ class ForumAttachment {
   final String fileType;
   @JsonKey(name: 'thumbnail_url')
   final String? thumbnailUrl;
+  @JsonKey(name: 'v_key', defaultValue: 'fsjkey')
+  final String? encryptionKey;
   @JsonKey(name: 'created_at')
   final String createdAt;
 
@@ -24,6 +26,7 @@ class ForumAttachment {
     required this.fileUrl,
     required this.fileType,
     this.thumbnailUrl,
+    this.encryptionKey,
     required this.createdAt,
   });
 

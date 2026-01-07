@@ -12,7 +12,7 @@ import '../../main.dart';
 import 'version_component.dart';
 
 class NotificationService {
-  NotificationService._(); 
+  NotificationService._();
 
   static final NotificationService instance = NotificationService._();
 
@@ -25,7 +25,7 @@ class NotificationService {
   bool _usingFCM = false;
   String? _token;
 
-  final Map<int, int> _notifIds = {}; 
+  final Map<int, int> _notifIds = {};
   final Map<int, String> _notifBodies = {};
 
   // ----------------------------
@@ -166,89 +166,92 @@ class NotificationService {
       "",
     );
   }
-  
-Future<fln.FilePathAndroidBitmap?> loadAvatarFromUrl(String url) async {
-  try {
-    final bytes = (await NetworkAssetBundle(Uri.parse(url)).load(url))
-        .buffer
-        .asUint8List();
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/avatar_${DateTime.now().microsecondsSinceEpoch}.png');
-    await file.writeAsBytes(bytes);
-    return fln.FilePathAndroidBitmap(file.path);
-  } catch (e) {
-    debugPrint("Failed to load avatar from URL: $e");
-    return null;
+
+  Future<fln.FilePathAndroidBitmap?> loadAvatarFromUrl(String url) async {
+    try {
+      final bytes = (await NetworkAssetBundle(
+        Uri.parse(url),
+      ).load(url)).buffer.asUint8List();
+      final dir = await getTemporaryDirectory();
+      final file = File(
+        '${dir.path}/avatar_${DateTime.now().microsecondsSinceEpoch}.png',
+      );
+      await file.writeAsBytes(bytes);
+      return fln.FilePathAndroidBitmap(file.path);
+    } catch (e) {
+      debugPrint("Failed to load avatar from URL: $e");
+      return null;
+    }
   }
-}
 
   // ----------------------------
   // SHOW / UPDATE CHAT NOTIFICATION
   // ----------------------------
-Future<void> showOrUpdateChatNotification({
-  required int conversationId,
-  required String title,
-  required String message,
-  required String payload,
-  String? imageUrl,
-}) async {
-  final service = NotificationService.instance;
+  Future<void> showOrUpdateChatNotification({
+    required int conversationId,
+    required String title,
+    required String message,
+    required String payload,
+    String? imageUrl,
+  }) async {
+    final service = NotificationService.instance;
 
-  final notifId =
-      service._notifIds[conversationId] ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final notifId =
+        service._notifIds[conversationId] ??
+        DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-  final oldBody = service._notifBodies[conversationId];
-  final newBody = oldBody == null ? message : "$oldBody\n$message";
+    final oldBody = service._notifBodies[conversationId];
+    final newBody = oldBody == null ? message : "$oldBody\n$message";
 
-  service._notifBodies[conversationId] = newBody;
-  service._notifIds[conversationId] = notifId;
+    service._notifBodies[conversationId] = newBody;
+    service._notifIds[conversationId] = notifId;
 
-  fln.FilePathAndroidBitmap? avatar;
-  if (imageUrl != null && imageUrl.isNotEmpty) {
-    avatar = await loadAvatarFromUrl(imageUrl);
+    fln.FilePathAndroidBitmap? avatar;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      avatar = await loadAvatarFromUrl(imageUrl);
+    }
+
+    final person = fln.Person(name: title, key: 'user_$conversationId');
+
+    final messages = newBody
+        .split('\n')
+        .map((text) => fln.Message(text, DateTime.now(), person))
+        .toList();
+
+    final android = fln.AndroidNotificationDetails(
+      'chat_channel',
+      'Chat Messages',
+      importance: fln.Importance.high,
+      priority: fln.Priority.high,
+      autoCancel: true,
+      enableVibration: true,
+      playSound: true,
+      category: fln.AndroidNotificationCategory.message,
+      largeIcon: avatar,
+      styleInformation: fln.MessagingStyleInformation(
+        person,
+        groupConversation: false,
+        conversationTitle: title,
+        messages: messages,
+      ),
+    );
+
+    const ios = fln.DarwinNotificationDetails(
+      presentAlert: true,
+      presentSound: true,
+      presentBadge: true,
+    );
+
+    final details = fln.NotificationDetails(android: android, iOS: ios);
+
+    await localNotifications.show(
+      notifId,
+      title,
+      message,
+      details,
+      payload: payload,
+    );
   }
-
-  final person = fln.Person(name: title, key: 'user_$conversationId');
-
-  final messages = newBody
-      .split('\n')
-      .map((text) => fln.Message(text, DateTime.now(), person))
-      .toList();
-
-  final android = fln.AndroidNotificationDetails(
-    'chat_channel',
-    'Chat Messages',
-    importance: fln.Importance.high,
-    priority: fln.Priority.high,
-    autoCancel: true,
-    enableVibration: true,
-    playSound: true,
-    category: fln.AndroidNotificationCategory.message,
-    largeIcon: avatar,
-    styleInformation: fln.MessagingStyleInformation(
-      person,
-      groupConversation: false,
-      conversationTitle: title,
-      messages: messages,
-    ),
-  );
-
-  const ios = fln.DarwinNotificationDetails(
-    presentAlert: true,
-    presentSound: true,
-    presentBadge: true,
-  );
-
-  final details = fln.NotificationDetails(android: android, iOS: ios);
-
-  await localNotifications.show(
-    notifId,
-    title,
-    message,
-    details,
-    payload: payload,
-  );
-}
 
   // ----------------------------
   // SHOW SIMPLE NOTIFICATION
@@ -282,7 +285,72 @@ Future<void> showOrUpdateChatNotification({
     );
   }
 
+  // ----------------------------
+  // SHOW PROGRESS NOTIFICATION
+  // ----------------------------
+  static Future<void> showDownloadProgressNotification({
+    required int notifId,
+    required String title,
+    required String body,
+    required String payload,
+  }) async {
+    final safeId = notifId % 2147483647;
+
+    final android = fln.AndroidNotificationDetails(
+      'download_channel',
+      'Téléchargements',
+      channelDescription: 'Progression des téléchargements',
+      importance: fln.Importance.high,
+      priority: fln.Priority.high,
+      onlyAlertOnce: true,
+      ongoing: true,
+      autoCancel: false,
+    );
+
+    final details = fln.NotificationDetails(android: android);
+
+    await localNotifications.show(
+      safeId,
+      title,
+      body,
+      details,
+      payload: payload,
+    );
+  }
+
   String get provider => _usingFCM ? "FCM" : "HMS";
+
+  // ----------------------------
+  // GROUP INVITATION NOTIFICATIONS
+  // ----------------------------
+
+  /// Show notification for group invitation (direct invitation from owner/admin)
+  static Future<void> showGroupInvitationNotification({
+    required String inviterName,
+    required String groupName,
+    required int conversationId,
+  }) async {
+    await showCustomLocalNotification(
+      "Group Invitation",
+      "$inviterName invites you to join \"$groupName\"",
+      "group_invitation:$conversationId",
+    );
+  }
+
+  /// Show notification for invitation approval request (from regular member)
+  static Future<void> showInvitationApprovalNotification({
+    required String inviterName,
+    required String inviteeName,
+    required String groupName,
+    required int conversationId,
+    required int inviteeId,
+  }) async {
+    await showCustomLocalNotification(
+      "Invitation Approval",
+      "$inviterName wants to invite $inviteeName to \"$groupName\"",
+      "invitation_approval:$conversationId:$inviteeId",
+    );
+  }
 }
 
 // ----------------------------

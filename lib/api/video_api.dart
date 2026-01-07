@@ -19,10 +19,11 @@ class VideoApi {
 
   static const String detail = '$base/detail';
   static const String seen = '$base/seen';
-  static const String relevanceRecommend =  '$base/relevanceRecommend';
+  static const String relevanceRecommend = '$base/relevanceRecommend';
 
+  static const String favoriteList = '$base/favoriteList';
+  static const String historyList = '$base/historyList';
+  static const String likeList = '$base/likeList';
 
-  static const String favoriteList =  '$base/favoriteList';
-  static const String historyList =  '$base/historyList';
-  static const String likeList =  '$base/likeList';
+  static const String playVideo = '$base/playVideo';
 }

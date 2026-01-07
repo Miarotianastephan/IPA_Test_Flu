@@ -10,6 +10,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:live_app/models/first_open.dart';
 import 'package:live_app/page/maintenance_page.dart';
 import 'package:live_app/provider/app_config_provider.dart';
+import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/utils/icon_utils.dart';
+import 'package:live_app/widgets/encrypted_image.dart';
 import 'package:live_app/widgets/image_sequence_player.dart';
 import 'package:live_app/widgets/loading_dots.dart';
 
@@ -31,6 +34,7 @@ class SplashPage extends ConsumerStatefulWidget {
 
 class _SplashPageState extends ConsumerState<SplashPage> {
   double _opacity = 1.0;
+  String? _i18nStatus;
 
   @override
   void initState() {
@@ -78,6 +82,21 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       }
     }
     await getAppConfig();
+
+    try {
+      setState(() {
+        _i18nStatus = 'Downloading translations...';
+      });
+      await ref.read(i18nNotifierProvider.notifier).initialize();
+      setState(() {
+        _i18nStatus = 'Translations loaded';
+      });
+    } catch (e, st) {
+      debugPrintStack(stackTrace: st);
+      setState(() {
+        _i18nStatus = 'Error loading translations';
+      });
+    }
   }
 
   Future<void> saveUserInfoWithToken(ApiResponse<UserInfo> userInfo) async {
@@ -89,7 +108,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     );
     final jsonString = StorageService.instance.getValue("user_info");
     if (jsonString == null || jsonString.isEmpty) {
-      throw Exception("Utilisateur non connecté");
+      throw Exception("");
     }
   }
 
@@ -112,13 +131,47 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
     try {
       final appConfig = await appService.appConfig();
+      if (kIsWeb) setAppIconFromUrl(appConfig.data?['favicon_url']);
 
       await StorageService.instance.setValue(
         "app_config",
         jsonEncode(appConfig.data),
       );
+
+      if (!mounted) return;
+
+      final navigator = Navigator.of(context, rootNavigator: true);
+
+      void navigateTo(Widget page) {
+        navigator.pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, _, _) => page,
+            transitionDuration: const Duration(milliseconds: 500),
+            transitionsBuilder: (_, animation, _, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+        );
+      }
+
+      String? platformKey;
+      if (kIsWeb) {
+        platformKey = 'enable_web';
+      } else if (Platform.isAndroid) {
+        platformKey = 'enable_android';
+      } else if (Platform.isIOS) {
+        platformKey = 'enable_ios';
+      }
+
+      if (platformKey != null) {
+        final enabled = (appConfig.data?[platformKey] as bool?) ?? false;
+        if (!enabled) {
+          navigateTo(MaintenancePage(isChatPage: false));
+        } else {
+          navigateTo(HomePage(config: appConfig.data));
+        }
+      }
     } catch (e, st) {
-      debugPrint("获取 App 配置失败: $e");
       debugPrintStack(stackTrace: st);
     }
   }
@@ -140,11 +193,9 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   Future<void> _initApp() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final appConfigState = ref.watch(appConfigProvider);
-      final config = appConfigState.data;
       try {
         await Future.wait([
-          Future.delayed(const Duration(seconds: 3)),
+          Future.delayed(const Duration(seconds: 1)),
           _init(),
         ]);
 
@@ -153,52 +204,10 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         setState(() => _opacity = 0);
 
         await Future.delayed(const Duration(milliseconds: 500));
-
-        if (!mounted) return;
-        await checkDevice(config);
       } catch (e) {
         debugPrint("初始化失败: $e");
       }
     });
-  }
-
-  Future<void> checkDevice(Map<String, dynamic>? conf) async {
-    final navigator = Navigator.of(context, rootNavigator: true);
-
-    void navigateTo(Widget page) {
-      navigator.pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, _, _) => page,
-          transitionDuration: const Duration(milliseconds: 500),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      );
-    }
-
-    String? platformKey;
-    if (kIsWeb) {
-      setState(() {
-        platformKey = 'enable_web';
-      });
-    } else if (Platform.isAndroid) {
-      setState(() {
-        platformKey = 'enable_android';
-      });
-    } else if (Platform.isIOS) {
-      setState(() {
-        platformKey = 'enable_ios';
-      });
-    }
-    if (platformKey != null) {
-      final enabled = conf?[platformKey] == true;
-      if (enabled == false) {
-        navigateTo(MaintenancePage(enabledWeb: conf?['enable_web']));
-      } else {
-        navigateTo(const HomePage());
-      }
-    }
   }
 
   @override
@@ -286,20 +295,28 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.network(
-                              ref
+                            EncryptedImage(
+                              url:
+                                  ref
                                       .read(appConfigProvider)
                                       .data?["favicon_url"] ??
                                   "",
                               height: screenHeight * 0.04,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Image.asset(
-                                    "lib/assets/logo.jpg",
-                                    height: screenHeight * 0.04,
-                                  ),
+                              errorWidget: Image.asset(
+                                "lib/assets/logo.jpg",
+                                height: screenHeight * 0.04,
+                              ),
                             ),
-                            const SizedBox(height: 10),
                             const LoadingDots(),
+                            if (_i18nStatus != null) ...[
+                              Text(
+                                _i18nStatus!,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

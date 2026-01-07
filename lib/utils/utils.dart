@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../l10n/app_localizations.dart';
+import '../provider/i18n_provider.dart';
 import '../models/agent.dart';
 import '../models/userinfo.dart';
 import '../page/user_detail_page.dart';
 
 void toUserDetailPage({
   required BuildContext context,
+  required WidgetRef ref,
   int? userId,
   String? url,
   String? nickname,
@@ -17,6 +19,7 @@ void toUserDetailPage({
     return;
   }
 
+  final i18n = ref.read(i18nNotifierProvider.notifier);
   final basicUserInfo = UserInfo(
     id: userId,
     displayId: userId,
@@ -39,7 +42,7 @@ void toUserDetailPage({
     nextExp: 0,
     levelName: '',
     avatar: url,
-    nickname: nickname ?? AppLocalizations.of(context)!.user,
+    nickname: nickname ?? i18n.translate('user'),
   );
 
   Navigator.push(

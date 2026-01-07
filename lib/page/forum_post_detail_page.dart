@@ -1,12 +1,17 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:live_app/config/storage_config.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/database/download_database.dart';
 import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/provider/download_video_provider.dart';
+import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/download_button.dart';
 import 'package:live_app/widgets/empty_widget.dart';
+
 import '../models/forum_attachment.dart';
 import '../models/forum_comment.dart';
 import '../models/forum_post.dart';
@@ -105,7 +110,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
     );
   }
 
-  Widget _buildContent(AppLocalizations localisations, ForumPost? post) {
+  Widget _buildContent(ForumPost? post) {
     if (post == null) {
       return Center(child: CircularProgressIndicator());
     }
@@ -213,8 +218,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: img.fileUrl.isNotEmpty
-                                        ? Image.network(
-                                            img.fileUrl,
+                                        ? EncryptedImage(
+                                            url: img.fileUrl,
                                             fit: BoxFit.cover,
                                           )
                                         : Container(
@@ -246,8 +251,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
                                         child: img.fileUrl.isNotEmpty
-                                            ? Image.network(
-                                                img.fileUrl,
+                                            ? EncryptedImage(
+                                                url: img.fileUrl,
                                                 fit: BoxFit.cover,
                                                 width: 120,
                                                 height: 120,
@@ -295,17 +300,15 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                   children: [
                                     AspectRatio(
                                       aspectRatio: 16 / 9,
-                                      child: Image.network(
-                                        (video.thumbnailUrl ?? '').isEmpty
+                                      child: EncryptedImage(
+                                        url: (video.thumbnailUrl ?? '').isEmpty
                                             ? 'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg'
                                             : video.thumbnailUrl!,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Image.network(
-                                            'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg',
-                                            fit: BoxFit.cover,
-                                          );
-                                        },
+                                        errorWidget: Image.network(
+                                          'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg',
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
                                     ),
                                     const Positioned.fill(
@@ -315,6 +318,126 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                           color: Colors.white70,
                                           size: 50,
                                         ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: StreamBuilder<Download?>(
+                                        stream: ref
+                                            .watch(offlineRepoProvider)
+                                            .db
+                                            .watchById(video.id),
+                                        builder: (context, snapshot) {
+                                          final existing = snapshot.data;
+                                          final localPath = existing?.localPath;
+                                          final fileExists = localPath != null
+                                              ? File(localPath).existsSync()
+                                              : false;
+
+                                          if (existing == null) {
+                                            return DownloadButton(
+                                              attachment: video,
+                                              forumPost: post,
+                                              filename: "video_${video.id}.mp4",
+                                            );
+                                          }
+
+                                          switch (existing.status) {
+                                            case "completed":
+                                              if (fileExists) {
+                                                debugPrint(
+                                                  "Vidéo déjà téléchargée: $localPath ✅",
+                                                );
+                                                return const Icon(
+                                                  Icons.download_done,
+                                                  color: Colors.white,
+                                                  size: 28.0,
+                                                );
+                                              } else {
+                                                return DownloadButton(
+                                                  attachment: video,
+                                                  forumPost: post,
+                                                  filename:
+                                                      "video_${video.id}.mp4",
+                                                );
+                                              }
+
+                                            case "paused":
+                                              debugPrint(
+                                                "Téléchargement en pause",
+                                              );
+                                              return IconButton(
+                                                icon: const Icon(
+                                                  Icons.play_arrow,
+                                                  color: Colors.white,
+                                                ),
+                                                onPressed: () async {
+                                                  final repo = ref.read(
+                                                    offlineRepoProvider,
+                                                  );
+                                                  final i18nNotifier = ref.read(
+                                                    i18nNotifierProvider
+                                                        .notifier,
+                                                  );
+                                                  await repo.resumeDownload(
+                                                    id: video.id,
+                                                    translate:
+                                                        i18nNotifier.translate,
+                                                  );
+                                                },
+                                              );
+
+                                            case "failed":
+                                              debugPrint(
+                                                "Téléchargement échoué",
+                                              );
+                                              return IconButton(
+                                                icon: const Icon(
+                                                  Icons.refresh,
+                                                  color: Colors.red,
+                                                ),
+                                                onPressed: () async {
+                                                  final repo = ref.read(
+                                                    offlineRepoProvider,
+                                                  );
+                                                  final i18nNotifier = ref.read(
+                                                    i18nNotifierProvider
+                                                        .notifier,
+                                                  );
+                                                  await repo.downloadResource(
+                                                    id: video.id,
+                                                    filename:
+                                                        "video_${video.id}.mp4",
+                                                    translate:
+                                                        i18nNotifier.translate,
+                                                  );
+                                                },
+                                              );
+
+                                            case "cancelled":
+                                              debugPrint(
+                                                "Téléchargement annulé",
+                                              );
+                                              return DownloadButton(
+                                                attachment: video,
+                                                forumPost: post,
+                                                filename:
+                                                    "video_${video.id}.mp4",
+                                              );
+
+                                            default:
+                                              debugPrint(
+                                                "Vidéo non téléchargée: $localPath",
+                                              );
+                                              return DownloadButton(
+                                                attachment: video,
+                                                forumPost: post,
+                                                filename:
+                                                    "video_${video.id}.mp4",
+                                              );
+                                          }
+                                        },
                                       ),
                                     ),
                                   ],
@@ -341,8 +464,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
-                                            child: Image.network(
-                                              video.thumbnailUrl == null ||
+                                            child: EncryptedImage(
+                                              url:
+                                                  video.thumbnailUrl == null ||
                                                       video.thumbnailUrl == ""
                                                   ? "https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg"
                                                   : video.thumbnailUrl!,
@@ -358,6 +482,136 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                 color: Colors.white70,
                                                 size: 40,
                                               ),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: 0,
+                                            right: 0,
+                                            child: StreamBuilder<Download?>(
+                                              stream: ref
+                                                  .watch(offlineRepoProvider)
+                                                  .db
+                                                  .watchById(video.id),
+                                              builder: (context, snapshot) {
+                                                final existing = snapshot.data;
+                                                final localPath =
+                                                    existing?.localPath;
+                                                final fileExists =
+                                                    localPath != null
+                                                    ? File(
+                                                        localPath,
+                                                      ).existsSync()
+                                                    : false;
+
+                                                if (existing == null) {
+                                                  return DownloadButton(
+                                                    attachment: video,
+                                                    forumPost: post,
+                                                    filename:
+                                                        "video_${video.id}.mp4",
+                                                  );
+                                                }
+
+                                                switch (existing.status) {
+                                                  case "completed":
+                                                    if (fileExists) {
+                                                      debugPrint(
+                                                        "Vidéo déjà téléchargée: $localPath ✅",
+                                                      );
+                                                      return const Icon(
+                                                        Icons.download_done,
+                                                        color: Colors.white,
+                                                        size: 28.0,
+                                                      );
+                                                    } else {
+                                                      return DownloadButton(
+                                                        attachment: video,
+                                                        forumPost: post,
+                                                        filename:
+                                                            "video_${video.id}.mp4",
+                                                      );
+                                                    }
+
+                                                  case "paused":
+                                                    debugPrint(
+                                                      "Téléchargement en pause",
+                                                    );
+                                                    return IconButton(
+                                                      icon: const Icon(
+                                                        Icons.play_arrow,
+                                                        color: Colors.white,
+                                                      ),
+                                                      onPressed: () async {
+                                                        final repo = ref.read(
+                                                          offlineRepoProvider,
+                                                        );
+                                                        final i18nNotifier = ref
+                                                            .read(
+                                                              i18nNotifierProvider
+                                                                  .notifier,
+                                                            );
+                                                        await repo
+                                                            .resumeDownload(
+                                                              id: video.id,
+                                                              translate:
+                                                                  i18nNotifier
+                                                                      .translate,
+                                                            );
+                                                      },
+                                                    );
+
+                                                  case "failed":
+                                                    debugPrint(
+                                                      "Téléchargement échoué",
+                                                    );
+                                                    return IconButton(
+                                                      icon: const Icon(
+                                                        Icons.refresh,
+                                                        color: Colors.red,
+                                                      ),
+                                                      onPressed: () async {
+                                                        final repo = ref.read(
+                                                          offlineRepoProvider,
+                                                        );
+                                                        final i18nNotifier = ref
+                                                            .read(
+                                                              i18nNotifierProvider
+                                                                  .notifier,
+                                                            );
+                                                        await repo.downloadResource(
+                                                          id: video.id,
+                                                          filename:
+                                                              "video_${video.id}.mp4",
+                                                          translate:
+                                                              i18nNotifier
+                                                                  .translate,
+                                                        );
+                                                      },
+                                                    );
+
+                                                  case "cancelled":
+                                                    debugPrint(
+                                                      "Téléchargement annulé",
+                                                    );
+                                                    return DownloadButton(
+                                                      attachment: video,
+                                                      forumPost: post,
+                                                      filename:
+                                                          "video_${video.id}.mp4",
+                                                    );
+
+                                                  default:
+                                                    debugPrint(
+                                                      "Vidéo non téléchargée: $localPath",
+                                                    );
+                                                    return DownloadButton(
+                                                      attachment: video,
+                                                      forumPost: post,
+                                                      filename:
+                                                          "video_${video.id}.mp4",
+                                                    );
+                                                }
+                                              },
                                             ),
                                           ),
                                         ],
@@ -462,7 +716,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
           Row(
             children: [
               Text(
-                AppLocalizations.of(context)!.comment,
+                ref.read(i18nNotifierProvider.notifier).translate('comment'),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -480,7 +734,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
           (post.commentCount < 1)
               ? EmptyWidget(
                   icon: Icons.message_outlined,
-                  message: localisations.noCommentsYet,
+                  message: ref
+                      .read(i18nNotifierProvider.notifier)
+                      .translate("noCommentsYet"),
                 )
               : ForumCommentsList(postId: post.id, onReply: _handleReply),
         ],
@@ -515,7 +771,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(postDetailProvider(widget.postId));
     final post = state.post;
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
     return SafeArea(
       child: Scaffold(
@@ -526,7 +783,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
             children: [
               UserAvatar(
                 userId: post?.user?.id,
-                url: post?.user?.avatar ?? "https://picsum.photos/40",
+                url: post?.user?.avatar,
                 nickname: post?.user?.nickname,
                 size: 28,
               ),
@@ -538,6 +795,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                     if (post?.user != null) {
                       toUserDetailPage(
                         context: context,
+                        ref: ref,
                         userId: post?.user?.id,
                         url: post?.user?.avatar,
                         nickname: post?.user?.nickname,
@@ -550,7 +808,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                     children: [
                       Text(
                         post?.user?.nickname ??
-                            AppLocalizations.of(context)!.anonymousUser,
+                            ref
+                                .read(i18nNotifierProvider.notifier)
+                                .translate('anonymousUser'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,
@@ -593,13 +853,13 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   if (state.error != null) {
                     return Center(
                       child: Text(
-                        "${localisations.error}：${state.error}",
+                        "${translate("error")}：${state.error}",
                         style: const TextStyle(color: Colors.red),
                       ),
                     );
                   }
 
-                  return _buildContent(localisations, post);
+                  return _buildContent(post);
                 },
               ),
             ),

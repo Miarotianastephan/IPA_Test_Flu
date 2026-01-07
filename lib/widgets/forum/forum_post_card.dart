@@ -1,19 +1,21 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../../models/forum_post.dart';
 import '../../page/forum_post_detail_page.dart';
 import '../../page/forum_tag_category_page.dart';
 import '../encrypted_image.dart';
 
-class ForumPostCard extends StatelessWidget {
+class ForumPostCard extends ConsumerWidget {
   final ForumPost post;
 
   const ForumPostCard({super.key, required this.post});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     void goToForumTagCategory({
       required String title,
       required String type,
@@ -50,7 +52,7 @@ class ForumPostCard extends StatelessWidget {
     Widget buildContentText(String content) {
       const int maxLines = 4;
       const TextStyle baseStyle = TextStyle(color: Colors.grey, fontSize: 14);
-      final String linkText = ' ${AppLocalizations.of(context)!.seeMore}';
+      final String linkText = ' ${i18n.translate('seeMore')}';
       const TextStyle linkStyle = TextStyle(color: Colors.lightBlueAccent);
 
       return LayoutBuilder(
@@ -197,25 +199,19 @@ class ForumPostCard extends StatelessWidget {
                                               Stack(
                                                 fit: StackFit.expand,
                                                 children: [
-                                                  Image.network(
-                                                    (attachment.thumbnailUrl ??
+                                                  EncryptedImage(
+                                                    url:
+                                                        (attachment.thumbnailUrl ??
                                                                 '')
                                                             .isEmpty
                                                         ? 'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg'
                                                         : attachment
                                                               .thumbnailUrl!,
                                                     fit: BoxFit.cover,
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stackTrace,
-                                                        ) {
-                                                          return Image.network(
-                                                            'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg',
-                                                            fit: BoxFit.cover,
-                                                          );
-                                                        },
+                                                    errorWidget: Image.network(
+                                                      'https://image2url.com/images/1763732916680-117f5b5d-bac4-4362-8158-9549624f8fa4.jpg',
+                                                      fit: BoxFit.cover,
+                                                    ),
                                                   ),
                                                   Container(
                                                     color: Colors.black26,
@@ -232,8 +228,8 @@ class ForumPostCard extends StatelessWidget {
                                             else if (attachment
                                                 .fileUrl
                                                 .isNotEmpty)
-                                              Image.network(
-                                                attachment.fileUrl,
+                                              EncryptedImage(
+                                                url: attachment.fileUrl,
                                                 fit: BoxFit.cover,
                                               )
                                             else
@@ -289,7 +285,7 @@ class ForumPostCard extends StatelessWidget {
                                     3)
                               buildTag(
                                 Icons.image,
-                                AppLocalizations.of(context)!.moreMedia,
+                                i18n.translate('moreMedia'),
                               ),
                             if (post.attachments != null &&
                                 post.attachments!.any(
@@ -297,7 +293,7 @@ class ForumPostCard extends StatelessWidget {
                                 ))
                               buildTag(
                                 Icons.audiotrack,
-                                AppLocalizations.of(context)!.hasAudio,
+                                i18n.translate('hasAudio'),
                               ),
                             if (post.attachments != null &&
                                 post.attachments!.any(
@@ -305,7 +301,7 @@ class ForumPostCard extends StatelessWidget {
                                 ))
                               buildTag(
                                 Icons.insert_drive_file,
-                                AppLocalizations.of(context)!.hasFile,
+                                i18n.translate('hasFile'),
                               ),
                           ],
                         ),
@@ -330,7 +326,7 @@ class ForumPostCard extends StatelessWidget {
                             ),
                             child: Text(
                               post.category?.name ??
-                                  AppLocalizations.of(context)!.unknownCategory,
+                                  i18n.translate('unknownCategory'),
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: Colors.black,
@@ -452,8 +448,7 @@ class ForumPostCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        post.user?.nickname ??
-                            AppLocalizations.of(context)!.anonymousUser,
+                        post.user?.nickname ?? i18n.translate('anonymousUser'),
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade700,
@@ -484,7 +479,7 @@ class ForumPostCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                AppLocalizations.of(context)!.alreadyFollowed,
+                                i18n.translate('alreadyFollowed'),
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,

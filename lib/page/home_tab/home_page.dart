@@ -32,6 +32,13 @@ class HomeTabPageState extends ConsumerState<HomeTabPage>
   bool _headerHidden = false;
   List<bool> hasUserInfos = [false, false, false, false];
 
+  final List<PageController> _videoControllers = [
+    PageController(),
+    PageController(),
+    PageController(),
+  ];
+  final List<int> _currentVideoIndices = [0, 0, 0];
+
   @override
   void initState() {
     super.initState();
@@ -136,8 +143,8 @@ class HomeTabPageState extends ConsumerState<HomeTabPage>
     int type,
     int tabIndex,
   ) {
-    final controller = PageController();
-    int currentVideoIndex = 0;
+    final controller = _videoControllers[tabIndex];
+    final currentVideoIndex = _currentVideoIndices[tabIndex];
 
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollNotification) {
@@ -173,7 +180,7 @@ class HomeTabPageState extends ConsumerState<HomeTabPage>
         currentIndex: currentVideoIndex,
         onPageChanged: (index) {
           setState(() {
-            currentVideoIndex = index;
+            _currentVideoIndices[tabIndex] = index;
           });
         },
         onUserTap: (info) {

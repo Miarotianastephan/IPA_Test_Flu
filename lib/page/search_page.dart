@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/page/search_detail_page.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../config/storage_config.dart';
 import '../widgets/empty_widget.dart';
@@ -110,7 +110,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             textInputAction: TextInputAction.search,
             onSubmitted: _onSearch,
             decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.searchPlaceholder,
+              hintText: ref
+                  .read(i18nNotifierProvider.notifier)
+                  .translate("searchPlaceholder"),
               filled: true,
               fillColor: Colors.white12,
               contentPadding: const EdgeInsets.symmetric(
@@ -136,11 +138,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   /// 搜索历史 UI
   Widget _buildHistoryList(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-
     if (_history.isEmpty) {
       return EmptyWidget(
-        message: localizations.noSearchHistory,
+        message: ref
+            .read(i18nNotifierProvider.notifier)
+            .translate("noSearchHistory"),
         icon: Icons.history,
         color: Colors.white54,
       );
@@ -154,7 +156,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              localizations.historyTitle,
+              ref.read(i18nNotifierProvider.notifier).translate("historyTitle"),
               style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
 
@@ -164,7 +166,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    localizations.clear,
+                    ref.read(i18nNotifierProvider.notifier).translate("clear"),
                     style: const TextStyle(color: Colors.red),
                   ),
                   const SizedBox(width: 6),

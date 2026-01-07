@@ -13,6 +13,7 @@ ForumAttachment _$ForumAttachmentFromJson(Map<String, dynamic> json) =>
       fileUrl: json['file_url'] as String,
       fileType: json['file_type'] as String,
       thumbnailUrl: json['thumbnail_url'] as String?,
+      encryptionKey: json['v_key'] as String? ?? 'fsjkey',
       createdAt: json['created_at'] as String,
     );
 
@@ -23,5 +24,6 @@ Map<String, dynamic> _$ForumAttachmentToJson(ForumAttachment instance) =>
       'file_url': instance.fileUrl,
       'file_type': instance.fileType,
       'thumbnail_url': instance.thumbnailUrl,
+      'v_key': instance.encryptionKey,
       'created_at': instance.createdAt,
     };

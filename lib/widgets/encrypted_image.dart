@@ -1,13 +1,13 @@
-import 'dart:io' as io;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/api/api_client.dart';
+import 'package:live_app/config/cache_manager.dart';
 
-import '../api/api_client.dart';
-import '../config/cache_manager.dart';
+import '../repository/image_repository.dart';
 import '../utils/utils.dart';
 
-class EncryptedImage extends StatefulWidget {
+class EncryptedImage extends ConsumerStatefulWidget {
   final String url;
   final BoxFit fit;
   final double? width;
@@ -26,10 +26,10 @@ class EncryptedImage extends StatefulWidget {
   });
 
   @override
-  State<EncryptedImage> createState() => _EncryptedImageState();
+  ConsumerState<EncryptedImage> createState() => _EncryptedImageState();
 }
 
-class _EncryptedImageState extends State<EncryptedImage> {
+class _EncryptedImageState extends ConsumerState<EncryptedImage> {
   Uint8List? _imageData;
   bool _loading = true;
   bool _error = false;
@@ -51,57 +51,37 @@ class _EncryptedImageState extends State<EncryptedImage> {
 
   Future<void> _loadImage() async {
     try {
-      Uint8List bytes;
+      final imageRepo = ref.read(imageRepositoryProvider);
 
-      // === 尝试读取缓存 ===
-      io.File? cachedFile = await _cacheManager.getFile(
-        widget.url,
-        manager: _cacheManager.customCacheManager(key: "images_cache"),
-      );
+      final bytes = await imageRepo.getImageBytes(widget.url);
 
-      if (!mounted) return;
-
-      if (cachedFile != null) {
-        bytes = await cachedFile.readAsBytes();
-      } else {
-        // === 下载 ===
-        final downloaded = await _apiClient.downloadFile(
-          widget.url,
-          save: false,
-        );
-
+      if (bytes != null) {
         if (!mounted) return;
-
-        if (kIsWeb) {
-          bytes = downloaded as Uint8List;
-        } else {
-          final file = downloaded as io.File;
-          bytes = await file.readAsBytes();
-        }
-
-        // === PDF 解密 ===
-        if (widget.url.toLowerCase().endsWith(".pdf")) {
-          bytes = await _decrypt(bytes);
-          if (!mounted) return;
-        }
-
-        // === 写入缓存 ===
-        final tempFile = await _cacheManager.getFile(
-          widget.url,
-          manager: _cacheManager.customCacheManager(key: "images_cache"),
-        );
-
-        if (tempFile != null) {
-          await tempFile.writeAsBytes(bytes);
-        }
+        setState(() {
+          _imageData = bytes;
+          _loading = false;
+        });
+        return;
       }
 
-      if (!mounted) return;
+      final isEncrypted = widget.url.toLowerCase().endsWith('.pdf');
 
-      setState(() {
-        _imageData = bytes;
-        _loading = false;
-      });
+      if (!isEncrypted) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+        });
+        imageRepo.enqueueDownload(widget.url);
+      } else {
+        await imageRepo.downloadAndCacheImage(widget.url);
+        final freshBytes = await imageRepo.getImageBytes(widget.url);
+
+        if (!mounted) return;
+        setState(() {
+          _imageData = freshBytes;
+          _loading = false;
+        });
+      }
     } catch (e, st) {
       debugPrint("加载图片失败: $e");
       debugPrintStack(stackTrace: st);
@@ -118,13 +98,33 @@ class _EncryptedImageState extends State<EncryptedImage> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return widget.placeholder ??
+      final child =
+          widget.placeholder ??
           const Center(child: CircularProgressIndicator());
+
+      if (widget.width != null || widget.height != null) {
+        return SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: child,
+        );
+      }
+      return child;
     }
 
     if (_error) {
-      return widget.errorWidget ??
-          const Center(child: Icon(Icons.broken_image, color: Colors.grey));
+      final errorWidget =
+          widget.errorWidget ??
+          const Icon(Icons.broken_image, color: Colors.grey);
+
+      if (widget.width != null || widget.height != null) {
+        return SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: Center(child: errorWidget),
+        );
+      }
+      return errorWidget;
     }
 
     if (_imageData != null) {
@@ -136,12 +136,33 @@ class _EncryptedImageState extends State<EncryptedImage> {
       );
     }
 
-    return widget.errorWidget ??
-        const Center(child: Icon(Icons.broken_image, color: Colors.grey));
+    return Image.network(
+      widget.url,
+      fit: widget.fit,
+      width: widget.width,
+      height: widget.height,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        final loader =
+            widget.placeholder ??
+            const Center(child: CircularProgressIndicator(strokeWidth: 2));
+        return (widget.width != null || widget.height != null)
+            ? SizedBox(
+                width: widget.width,
+                height: widget.height,
+                child: loader,
+              )
+            : loader;
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return widget.errorWidget ??
+            const Icon(Icons.broken_image, color: Colors.grey);
+      },
+    );
   }
 }
 
-class UserAvatar extends StatelessWidget {
+class UserAvatar extends ConsumerWidget {
   final String? url;
   final String? nickname;
   final int? userId;
@@ -158,7 +179,7 @@ class UserAvatar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasAvatar = url != null && url!.isNotEmpty;
     final displayChar = (nickname != null && nickname!.isNotEmpty)
         ? nickname![0]
@@ -169,6 +190,7 @@ class UserAvatar extends StatelessWidget {
           onTap ??
           () => toUserDetailPage(
             context: context,
+            ref: ref,
             userId: userId,
             url: url,
             nickname: nickname,

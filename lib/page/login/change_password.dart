@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../../provider/api_provider.dart';
 import '../../utils/toast_util.dart';
@@ -21,36 +21,37 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
   bool _obscurePassword = true;
 
   Future<void> _bind(BuildContext context) async {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
     final oldPassword = _oldPasswordController.text;
     final newPassword = _newPasswordController.text;
     final checkPassword = _checkPasswordController.text;
 
     if (oldPassword.isEmpty) {
-      ToastUtil.warning(localizations.enterOldPassword);
+      ToastUtil.warning(translate("enterOldPassword"));
       return;
     }
 
     if (newPassword.isEmpty) {
-      ToastUtil.warning(localizations.enterNewPassword);
+      ToastUtil.warning(translate("enterNewPassword"));
       return;
     }
 
     if (checkPassword.isEmpty) {
-      ToastUtil.warning(localizations.enterConfirmPassword);
+      ToastUtil.warning(translate("enterConfirmPassword"));
       return;
     }
 
     if (oldPassword.length < 6 ||
         newPassword.length < 6 ||
         checkPassword.length < 6) {
-      ToastUtil.warning(localizations.passwordTooShort);
+      ToastUtil.warning(translate("passwordTooShort"));
       return;
     }
 
     if (checkPassword != newPassword) {
-      ToastUtil.warning(localizations.passwordMismatch);
+      ToastUtil.warning(translate("passwordMismatch"));
       return;
     }
 
@@ -59,7 +60,7 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
 
     try {
       await userService.updatePassword(newPassword, oldPassword);
-      ToastUtil.success(localizations.passwordUpdateSuccess);
+      ToastUtil.success(translate("passwordUpdateSuccess"));
       if (!mounted) return;
       navigator.pop();
     } catch (err, stack) {
@@ -71,7 +72,8 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text(""), centerTitle: true),
@@ -82,7 +84,7 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                localizations.changePassword,
+                translate("changePassword"),
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 32),
@@ -93,7 +95,7 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,
                 decoration: InputDecoration(
-                  labelText: localizations.oldPassword,
+                  labelText: translate("oldPassword"),
                   labelStyle: TextStyle(
                     color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
                   ),
@@ -135,7 +137,7 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,
                 decoration: InputDecoration(
-                  labelText: localizations.newPassword,
+                  labelText: translate("newPassword"),
                   labelStyle: TextStyle(
                     color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
                   ),
@@ -177,7 +179,7 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,
                 decoration: InputDecoration(
-                  labelText: localizations.confirmPassword,
+                  labelText: translate("confirmPassword"),
                   labelStyle: TextStyle(
                     color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
                   ),
@@ -228,7 +230,7 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                 onPressed: () {
                   _bind(context);
                 },
-                child: Text(localizations.bind, style: TextStyle(fontSize: 18)),
+                child: Text(translate("bind"), style: TextStyle(fontSize: 18)),
               ),
             ],
           ),

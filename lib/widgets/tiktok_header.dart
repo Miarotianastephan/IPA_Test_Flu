@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../page/search_page.dart';
 
-class TikTokHeader extends StatelessWidget {
+class TikTokHeader extends ConsumerWidget {
   final VoidCallback? onVideoCallPressed;
   final VoidCallback? onSearchPressed;
   final TabController controller;
@@ -16,45 +17,35 @@ class TikTokHeader extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+
     return Container(
       height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 8), // 两边留点空
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Row(
         children: [
-          // 中间 TabBar，Expanded 保证占满剩余空间
+          // Center TabBar
           Expanded(
             child: TabBar(
               controller: controller,
-              indicator: const BoxDecoration(),
-              // 隐藏下划线
+              indicator: const BoxDecoration(), // hide underline
               labelColor: Colors.white,
-              labelStyle: TextStyle(
-                fontSize:
-                    Localizations.localeOf(context).languageCode == 'en' ||
-                        Localizations.localeOf(context).languageCode == 'es'
-                    ? 10
-                    : 16,
-                fontWeight: FontWeight.bold,
-              ),
+              labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               unselectedLabelStyle: TextStyle(
-                fontSize:
-                    Localizations.localeOf(context).languageCode == 'en' ||
-                        Localizations.localeOf(context).languageCode == 'es'
-                    ? 10
-                    : 16,
-                color: Color.fromRGBO(255, 255, 255, 0.8),
+                fontSize: 14,
+                color: const Color.fromRGBO(255, 255, 255, 0.8),
               ),
               tabs: [
-                Tab(text: AppLocalizations.of(context)!.follow),
-                Tab(text: AppLocalizations.of(context)!.recommend),
-                Tab(text: AppLocalizations.of(context)!.verify),
-                Tab(text: AppLocalizations.of(context)!.featured),
+                Tab(text: i18n.translate('follow')),
+                Tab(text: i18n.translate('recommend')),
+                Tab(text: i18n.translate('verify')),
+                Tab(text: i18n.translate('featured')),
               ],
             ),
           ),
 
-          // 右边按钮：搜索
+          // Right action: search
           IconButton(
             onPressed:
                 onSearchPressed ??
@@ -64,7 +55,7 @@ class TikTokHeader extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const SearchPage()),
                   );
                 },
-            icon: Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search, color: Colors.white),
           ),
         ],
       ),

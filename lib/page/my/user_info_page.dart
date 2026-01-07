@@ -10,10 +10,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:live_app/api/api_client.dart';
 import 'package:live_app/api/services/user_service.dart';
 import 'package:live_app/config/storage_config.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/page/home.dart';
 import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/utils/toast_util.dart';
 import 'package:live_app/utils/username_formatter.dart';
 import 'package:live_app/widgets/cover_image_picker.dart';
@@ -53,21 +53,22 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
   }
 
   Future<void> _pickAvatarImage(BuildContext context) async {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final source = await showDialog<ImageSource>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.chooseSource),
+        title: Text(i18n.translate('chooseSource')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: Text(AppLocalizations.of(context)!.gallery),
+              title: Text(i18n.translate('gallery')),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: Text(AppLocalizations.of(context)!.camera),
+              title: Text(i18n.translate('camera')),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
           ],
@@ -86,21 +87,22 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
   }
 
   Future<void> _pickCoverImage(BuildContext context) async {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final source = await showDialog<ImageSource>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.chooseSource),
+        title: Text(i18n.translate('chooseSource')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: Text(AppLocalizations.of(context)!.gallery),
+              title: Text(i18n.translate('gallery')),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: Text(AppLocalizations.of(context)!.camera),
+              title: Text(i18n.translate('camera')),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
           ],
@@ -130,14 +132,40 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
     }
   }
 
+  Future<void> getAppConfig(BuildContext context) async {
+    final appService = ref.read(appServiceProvider);
+
+    try {
+      final appConfig = await appService.appConfig();
+
+      await StorageService.instance.setValue(
+        "app_config",
+        jsonEncode(appConfig.data),
+      );
+
+      Navigator.of(context, rootNavigator: true).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, _, _) => HomePage(config: appConfig.data),
+          transitionDuration: const Duration(milliseconds: 500),
+          transitionsBuilder: (_, animation, _, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    } catch (e, st) {
+      debugPrintStack(stackTrace: st);
+    }
+  }
+
   Future<void> _saveProfileApi(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
     _formKey.currentState!.save();
 
     final user = widget.user;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     if (user == null) {
-      ToastUtil.warning(AppLocalizations.of(context)!.userNotFound);
+      ToastUtil.warning(i18n.translate('userNotFound'));
       Navigator.pop(context, true);
       return;
     }
@@ -173,19 +201,11 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
 
       if (response.code == 1) {
         await getUserInfo();
-        Navigator.of(context, rootNavigator: true).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const HomePage(),
-            transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
+        getAppConfig(context);
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            content: Text(AppLocalizations.of(context)!.profileUpdated),
+            content: Text(i18n.translate('profileUpdated')),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
@@ -205,7 +225,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
           showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
-              content: Text(AppLocalizations.of(context)!.serverError),
+              content: Text(i18n.translate('serverError')),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
@@ -225,7 +245,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            content: Text(AppLocalizations.of(context)!.networkError),
+            content: Text(i18n.translate('networkError')),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
@@ -248,14 +268,14 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     return Scaffold(
       appBar: AppBar(
-        title: Text(localizations.userInfo),
+        title: Text(i18n.translate('userInfo')),
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.visibility : Icons.edit),
-            tooltip: _isEditing ? localizations.show : localizations.edit,
+            tooltip: _isEditing ? i18n.translate('show') : i18n.translate('edit'),
             onPressed: () {
               setState(() => _isEditing = !_isEditing);
             },
@@ -265,7 +285,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
       body: Stack(
         children: [
           widget.user == null
-              ? Center(child: Text(localizations.userInfoPageContent))
+              ? Center(child: Text(i18n.translate('userInfoPageContent')))
               : SingleChildScrollView(
                   padding: EdgeInsets.all(16),
                   child: Form(
@@ -332,7 +352,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
                         ),
                         const SizedBox(height: 80),
                         TextFieldWidget(
-                          label: localizations.username,
+                          label: i18n.translate('username'),
                           icon: Icons.person_outline,
                           value: _username,
                           isEditing: _isEditing,
@@ -341,7 +361,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
                         ),
                         const SizedBox(height: 16),
                         TextFieldWidget(
-                          label: localizations.nickname,
+                          label: i18n.translate('nickname'),
                           icon: Icons.tag,
                           value: _nickname,
                           isEditing: _isEditing,
@@ -349,7 +369,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
                         ),
                         const SizedBox(height: 16),
                         TextFieldWidget(
-                          label: localizations.bio,
+                          label: i18n.translate('bio'),
                           icon: Icons.description,
                           value: _bio,
                           isEditing: _isEditing,
@@ -357,7 +377,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
                         ),
                         const SizedBox(height: 16),
                         TextFieldWidget(
-                          label: localizations.phone,
+                          label: i18n.translate('phone'),
                           icon: Icons.phone,
                           value: _phone,
                           isEditing: _isEditing,

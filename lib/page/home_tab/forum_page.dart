@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/empty_retry.dart';
 import '../../models/forum_post.dart';
 import '../../models/forum_category.dart';
@@ -60,6 +60,7 @@ class _ForumTabPageState extends ConsumerState<ForumTabPage>
   }
 
   Future<void> _fetchCategories() async {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final service = ref.read(forumServiceProvider);
     try {
       final res = await service.categories();
@@ -76,7 +77,7 @@ class _ForumTabPageState extends ConsumerState<ForumTabPage>
           .toList();
       setState(() {
         _categories =
-            [ForumCategory(id: 0, name: AppLocalizations.of(context)!.all)] +
+            [ForumCategory(id: 0, name: i18n.translate('all'))] +
             trimmedTopCategories.take(5).toList();
         _subCategories = _categories.isNotEmpty
             ? (_categories[0].children ?? [])
@@ -335,11 +336,12 @@ class _ForumTabPageState extends ConsumerState<ForumTabPage>
                         itemBuilder: (context, index) {
                           if (index == _posts.length) {
                             if (!_hasMore) {
+                              final i18n = ref.read(i18nNotifierProvider.notifier);
                               return Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Center(
                                   child: Text(
-                                    AppLocalizations.of(context)!.noMore,
+                                    i18n.translate('noMore'),
                                     style: TextStyle(color: Colors.white),
                                   ),
                                 ),

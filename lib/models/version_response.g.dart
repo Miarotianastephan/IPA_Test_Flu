@@ -10,7 +10,9 @@ VersionResponse _$VersionResponseFromJson(Map<String, dynamic> json) =>
     VersionResponse(
       code: (json['code'] as num).toInt(),
       msg: json['msg'] as String,
-      data: Version.fromJson(json['data'] as Map<String, dynamic>),
+      data: json['data'] == null
+          ? null
+          : Version.fromJson(json['data'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$VersionResponseToJson(VersionResponse instance) =>

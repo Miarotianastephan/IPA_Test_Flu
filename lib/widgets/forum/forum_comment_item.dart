@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/page/comment_forum_detail_page.dart';
+import 'package:live_app/provider/i18n_provider.dart';
+
 import '../../api/services/forum_service.dart';
 import '../../models/forum_comment.dart';
 import '../../models/page_params.dart';
@@ -177,7 +178,7 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
   Widget build(BuildContext context) {
     final c = widget.comment;
 
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
 
     final textColor = widget.darkStyle ? Colors.black : Colors.white;
     final subTextColor = widget.darkStyle ? Colors.grey : Colors.grey[300];
@@ -237,7 +238,7 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
                       Row(
                         children: [
                           Text(
-                            user?.nickname ?? localizations.unknownUser,
+                            user?.nickname ?? i18n.translate("unknownUser"),
                             style: TextStyle(
                               color: textColor,
                               fontWeight: FontWeight.bold,
@@ -345,8 +346,8 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
                             }
                           },
                           child: Text(
-                            "${expanded ? localizations.collapse : localizations.expand} "
-                            "${c.childCount} ${localizations.replies}",
+                            "${expanded ? i18n.translate("collapse") : i18n.translate("expand")} "
+                            "${c.childCount} ${i18n.translate("replies")}",
                             style: TextStyle(color: replyColor, fontSize: 13),
                           ),
                         ),

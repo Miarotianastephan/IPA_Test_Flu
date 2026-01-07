@@ -1,17 +1,18 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:live_app/utils/text_util.dart';
+import 'package:live_app/widgets/encrypted_image.dart';
+import 'package:live_app/widgets/video_player_screen.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-import '../provider/emoji_provider.dart';
-import '../utils/text_util.dart';
-import 'encrypted_image.dart';
-
-class ChatMessageItem extends ConsumerStatefulWidget {
+class ChatVideoMessageItem extends ConsumerStatefulWidget {
   final int messageId;
-  final String message;
+  final String videoUrl;
   final bool isSelf;
   final String avatarUrl;
   final String? nickname;
@@ -21,12 +22,11 @@ class ChatMessageItem extends ConsumerStatefulWidget {
   final bool resending;
   final bool hasRead;
   final VoidCallback? onResend;
-
   final VoidCallback? onRead;
 
-  const ChatMessageItem({
+  const ChatVideoMessageItem({
     super.key,
-    required this.message,
+    required this.videoUrl,
     required this.isSelf,
     required this.avatarUrl,
     required this.messageId,
@@ -41,118 +41,88 @@ class ChatMessageItem extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ChatMessageItem> createState() => _ChatMessageItemState();
+  ConsumerState<ChatVideoMessageItem> createState() =>
+      _ChatVideoMessageItemState();
 }
 
-class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
-  Widget buildMessageContent(String messageContent) {
-    final regex = RegExp(r'\^\*#\*([\w]+)\*#\*\^');
-    final matches = regex.allMatches(messageContent);
+class _ChatVideoMessageItemState extends ConsumerState<ChatVideoMessageItem> {
+  String? _thumbnailPath;
+  bool _isGeneratingThumbnail = false;
 
-    if (matches.isEmpty) {
-      return Text(
-        messageContent,
-        style: TextStyle(
-          color: widget.isSelf ? Colors.black : Colors.white,
-          fontSize: 16,
-        ),
+  @override
+  void initState() {
+    super.initState();
+    _generateThumbnail();
+  }
+
+  @override
+  void didUpdateWidget(ChatVideoMessageItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _generateThumbnail();
+    }
+  }
+
+  Future<void> _generateThumbnail() async {
+    if (_isGeneratingThumbnail) return;
+
+    setState(() {
+      _isGeneratingThumbnail = true;
+    });
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        video: widget.videoUrl,
+        thumbnailPath: tempDir.path,
+        imageFormat: ImageFormat.PNG,
+        maxHeight: 300,
+        quality: 75,
       );
-    }
 
-    final emojiState = ref.watch(emojiProvider(1));
-
-    final children = <InlineSpan>[];
-    int lastEnd = 0;
-
-    for (final match in matches) {
-      if (match.start > lastEnd) {
-        children.add(
-          TextSpan(
-            text: messageContent.substring(lastEnd, match.start),
-            style: TextStyle(
-              color: widget.isSelf ? Colors.black : Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        );
+      if (mounted && thumbnailPath != null) {
+        setState(() {
+          _thumbnailPath = thumbnailPath;
+          _isGeneratingThumbnail = false;
+        });
       }
-
-      final code = match.group(1)!;
-
-      try {
-        final emoji = emojiState.emojis.firstWhere(
-          (e) => e.code == '^*#*$code*#*^',
-        );
-
-        children.add(
-          WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: SvgPicture.network(
-                emoji.url,
-                width: 24,
-                height: 24,
-                placeholderBuilder: (_) => const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      } catch (e) {
-        children.add(
-          TextSpan(
-            text: code,
-            style: TextStyle(
-              color: widget.isSelf ? Colors.black : Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        );
+    } catch (e) {
+      debugPrint("Error generating thumbnail: $e");
+      if (mounted) {
+        setState(() {
+          _isGeneratingThumbnail = false;
+        });
       }
-
-      lastEnd = match.end;
     }
+  }
 
-    if (lastEnd < messageContent.length) {
-      children.add(
-        TextSpan(
-          text: messageContent.substring(lastEnd),
-          style: TextStyle(
-            color: widget.isSelf ? Colors.black : Colors.white,
-            fontSize: 16,
-          ),
+  void _openVideoPlayer() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoPlayerScreen(
+          videoUrl: widget.videoUrl,
+          isNetwork: widget.videoUrl.startsWith('http'),
         ),
-      );
-    }
-
-    return RichText(text: TextSpan(children: children));
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final bubbleColor = widget.isSelf
-        ? const Color(0xFFFFFFFF)
-        : const Color(0xFF333333);
+    final bubbleColor = const Color.fromARGB(255, 32, 32, 32);
 
     return VisibilityDetector(
-      key: Key("msg_${widget.message.hashCode}_${widget.messageId}"),
+      key: Key("video_${widget.videoUrl.hashCode}_${widget.messageId}"),
       onVisibilityChanged: (info) {
         if (!widget.hasRead && info.visibleFraction > 0.3) {
           widget.onRead?.call();
         }
       },
-
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: widget.isSelf
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            widget.isSelf ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (!widget.isSelf)
             Padding(
@@ -218,7 +188,9 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
                       maxWidth: MediaQuery.of(context).size.width * 0.7,
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: widget.isSelf
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
                       children: [
                         if (!widget.isSelf && widget.nickname != null)
                           Padding(
@@ -236,10 +208,7 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
                           children: [
                             Container(
                               margin: const EdgeInsets.only(bottom: 6),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
+                              padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: bubbleColor,
                                 borderRadius: BorderRadius.circular(12),
@@ -249,14 +218,60 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
                                     ? CrossAxisAlignment.end
                                     : CrossAxisAlignment.start,
                                 children: [
-                                  buildMessageContent(widget.message),
+                                  GestureDetector(
+                                    onTap: widget.resending
+                                        ? null
+                                        : _openVideoPlayer,
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: _buildVideoThumbnail(),
+                                        ),
+                                        // Play button overlay
+                                        if (!widget.resending)
+                                          Container(
+                                            width: 60,
+                                            height: 60,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black
+                                                  .withOpacity(0.6),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.play_arrow_rounded,
+                                              color: Colors.white,
+                                              size: 40,
+                                            ),
+                                          ),
+                                        // Resending overlay
+                                        if (widget.resending)
+                                          Container(
+                                            width: 200,
+                                            height: 200,
+                                            decoration: BoxDecoration(
+                                              color: Colors.black
+                                                  .withOpacity(0.5),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Center(
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 3,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
                                   Text(
                                     formatMessageTime(widget.createdAt),
-                                    style: TextStyle(
-                                      color: widget.isSelf
-                                          ? Colors.black54
-                                          : Colors.white70,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -293,6 +308,45 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
               size: 40,
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildVideoThumbnail() {
+    if (_isGeneratingThumbnail || _thumbnailPath == null) {
+      return Container(
+        width: 200,
+        height: 200,
+        color: Colors.black12,
+        child: const Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white54,
+          ),
+        ),
+      );
+    }
+
+    final file = File(_thumbnailPath!);
+    if (file.existsSync()) {
+      return Image.file(
+        file,
+        width: 200,
+        height: 200,
+        fit: BoxFit.cover,
+      );
+    }
+
+    return Container(
+      width: 200,
+      height: 200,
+      color: Colors.black12,
+      child: const Center(
+        child: Icon(
+          Icons.videocam_rounded,
+          color: Colors.white54,
+          size: 48,
+        ),
       ),
     );
   }

@@ -72,6 +72,7 @@ extension ConversationUserMapper on ConversationUser {
       id: Value(id),
       conversationId: Value(conversationId),
       userId: Value(userId),
+      role: Value(role),
       joinedAt: Value(joinedAt),
     );
   }

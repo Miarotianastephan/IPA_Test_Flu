@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/video_detail_provider.dart';
 
 import '../provider/search_post_list_provider.dart';
@@ -142,6 +142,10 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
   Widget build(BuildContext context) {
     const background = Colors.black;
     final videoType = ref.watch(videoTypeProvider);
+
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
+
     final isLongVideo = videoType == 2;
     ref.listen(
       searchVideoListProvider((
@@ -215,9 +219,9 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
           tabs: [
-            Tab(text: AppLocalizations.of(context)!.video),
-            Tab(text: AppLocalizations.of(context)!.post),
-            Tab(text: AppLocalizations.of(context)!.user),
+            Tab(text: translate("video")),
+            Tab(text: translate("post")),
+            Tab(text: translate("user")),
           ],
         ),
       ),

@@ -29,7 +29,7 @@ class DeviceInfoHelper {
   }
 
   String getPlatform() {
-    if (kIsWeb) return 'web';
+    if (kIsWeb) return 'h5';
 
     return switch (Platform.operatingSystem) {
       'android' => 'android',
@@ -42,6 +42,9 @@ class DeviceInfoHelper {
   }
 
   Future<Object?> _getDeviceInfo() {
+    if (kIsWeb) {
+      return _deviceInfo.webBrowserInfo;
+    }
     return switch (Platform.operatingSystem) {
       'android' => _deviceInfo.androidInfo,
       'ios' => _deviceInfo.iosInfo,
@@ -60,7 +63,7 @@ class DeviceInfoHelper {
       WindowsDeviceInfo i => i.productName,
       MacOsDeviceInfo i => i.model,
       LinuxDeviceInfo i => i.prettyName,
-      _ => null,
+      _ => 'h5',
     };
   }
 
@@ -76,7 +79,7 @@ class DeviceInfoHelper {
         'windows' => await _deviceInfo.windowsInfo,
         'macos' => await _deviceInfo.macOsInfo,
         'linux' => await _deviceInfo.linuxInfo,
-        _ => null,
+        _ => 'h5',
       };
       return switch (info) {
         AndroidDeviceInfo i => 'Android ${i.version.release}',
@@ -84,7 +87,7 @@ class DeviceInfoHelper {
         WindowsDeviceInfo i => 'Windows ${i.displayVersion}',
         MacOsDeviceInfo i => 'macOS ${i.osRelease}',
         LinuxDeviceInfo i => i.version,
-        _ => null,
+        _ => 'h5',
       };
     } catch (e) {
       debugPrint('Error getting system version: $e');

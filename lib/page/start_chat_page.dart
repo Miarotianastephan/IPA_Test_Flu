@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/empty_widget.dart';
 
 import '../models/userinfo.dart';
@@ -46,7 +46,8 @@ class _StartChatPageState extends ConsumerState<StartChatPage> {
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
 
     // 监听加载结束，更新 _userLoaded（跟 SearchDetailPage 一样的写法）
     ref.listen(searchUserListProvider(_keyword), (prev, next) {
@@ -72,7 +73,7 @@ class _StartChatPageState extends ConsumerState<StartChatPage> {
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
           title: Text(
-            localisations.startConversation,
+            translate("startConversation"),
             style: TextStyle(color: Colors.white),
           ),
         ),
@@ -84,7 +85,7 @@ class _StartChatPageState extends ConsumerState<StartChatPage> {
                 cursorColor: Colors.white,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: localisations.pleaseEnterYourUsernameOrId,
+                  hintText: translate("pleaseEnterYourUsernameOrId"),
                   hintStyle: TextStyle(color: Colors.white54),
                   prefixIcon: Icon(Icons.search, color: Colors.white70),
                   border: InputBorder.none,
@@ -112,7 +113,9 @@ class _StartChatPageState extends ConsumerState<StartChatPage> {
               child: !_hasSearched
                   ? Center(
                       child: EmptyWidget(
-                        message: localisations.searchUsernameOrIdPlaceholder,
+                        message: ref
+                            .read(i18nNotifierProvider.notifier)
+                            .translate("searchUsernameOrIdPlaceholder"),
                       ),
                     )
                   // 已经搜索过时显示列表

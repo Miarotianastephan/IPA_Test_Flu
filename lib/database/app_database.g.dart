@@ -345,6 +345,16 @@ class $ConversationUsersTable extends ConversationUsers
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+    'role',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('member'),
+  );
   static const VerificationMeta _joinedAtMeta = const VerificationMeta(
     'joinedAt',
   );
@@ -357,7 +367,13 @@ class $ConversationUsersTable extends ConversationUsers
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, conversationId, userId, joinedAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    conversationId,
+    userId,
+    role,
+    joinedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -392,6 +408,12 @@ class $ConversationUsersTable extends ConversationUsers
     } else if (isInserting) {
       context.missing(_userIdMeta);
     }
+    if (data.containsKey('role')) {
+      context.handle(
+        _roleMeta,
+        role.isAcceptableOrUnknown(data['role']!, _roleMeta),
+      );
+    }
     if (data.containsKey('joined_at')) {
       context.handle(
         _joinedAtMeta,
@@ -421,6 +443,10 @@ class $ConversationUsersTable extends ConversationUsers
         DriftSqlType.int,
         data['${effectivePrefix}user_id'],
       )!,
+      role: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}role'],
+      )!,
       joinedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}joined_at'],
@@ -438,17 +464,20 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
   final Value<int> id;
   final Value<int> conversationId;
   final Value<int> userId;
+  final Value<String> role;
   final Value<DateTime> joinedAt;
   const ConversationUsersCompanion({
     this.id = const Value.absent(),
     this.conversationId = const Value.absent(),
     this.userId = const Value.absent(),
+    this.role = const Value.absent(),
     this.joinedAt = const Value.absent(),
   });
   ConversationUsersCompanion.insert({
     this.id = const Value.absent(),
     required int conversationId,
     required int userId,
+    this.role = const Value.absent(),
     required DateTime joinedAt,
   }) : conversationId = Value(conversationId),
        userId = Value(userId),
@@ -457,12 +486,14 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
     Expression<int>? id,
     Expression<int>? conversationId,
     Expression<int>? userId,
+    Expression<String>? role,
     Expression<DateTime>? joinedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (conversationId != null) 'conversation_id': conversationId,
       if (userId != null) 'user_id': userId,
+      if (role != null) 'role': role,
       if (joinedAt != null) 'joined_at': joinedAt,
     });
   }
@@ -471,12 +502,14 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
     Value<int>? id,
     Value<int>? conversationId,
     Value<int>? userId,
+    Value<String>? role,
     Value<DateTime>? joinedAt,
   }) {
     return ConversationUsersCompanion(
       id: id ?? this.id,
       conversationId: conversationId ?? this.conversationId,
       userId: userId ?? this.userId,
+      role: role ?? this.role,
       joinedAt: joinedAt ?? this.joinedAt,
     );
   }
@@ -493,6 +526,9 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
     if (userId.present) {
       map['user_id'] = Variable<int>(userId.value);
     }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
     if (joinedAt.present) {
       map['joined_at'] = Variable<DateTime>(joinedAt.value);
     }
@@ -505,6 +541,7 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
           ..write('id: $id, ')
           ..write('conversationId: $conversationId, ')
           ..write('userId: $userId, ')
+          ..write('role: $role, ')
           ..write('joinedAt: $joinedAt')
           ..write(')'))
         .toString();
@@ -1870,6 +1907,1162 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
   }
 }
 
+class $EmojisTable extends Emojis with TableInfo<$EmojisTable, EmojiCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EmojisTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<int> type = GeneratedColumn<int>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<int> status = GeneratedColumn<int>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<int> groupId = GeneratedColumn<int>(
+    'group_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _groupNameMeta = const VerificationMeta(
+    'groupName',
+  );
+  @override
+  late final GeneratedColumn<String> groupName = GeneratedColumn<String>(
+    'group_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _groupPriceMeta = const VerificationMeta(
+    'groupPrice',
+  );
+  @override
+  late final GeneratedColumn<String> groupPrice = GeneratedColumn<String>(
+    'group_price',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _groupIsPremiumMeta = const VerificationMeta(
+    'groupIsPremium',
+  );
+  @override
+  late final GeneratedColumn<bool> groupIsPremium = GeneratedColumn<bool>(
+    'group_is_premium',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("group_is_premium" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _purchasedMeta = const VerificationMeta(
+    'purchased',
+  );
+  @override
+  late final GeneratedColumn<bool> purchased = GeneratedColumn<bool>(
+    'purchased',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("purchased" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _downloadedAtMeta = const VerificationMeta(
+    'downloadedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> downloadedAt = GeneratedColumn<DateTime>(
+    'downloaded_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    code,
+    url,
+    type,
+    status,
+    groupId,
+    groupName,
+    groupPrice,
+    groupIsPremium,
+    purchased,
+    localPath,
+    downloadedAt,
+    updatedAt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'emojis';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EmojiCache> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_urlMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupIdMeta);
+    }
+    if (data.containsKey('group_name')) {
+      context.handle(
+        _groupNameMeta,
+        groupName.isAcceptableOrUnknown(data['group_name']!, _groupNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupNameMeta);
+    }
+    if (data.containsKey('group_price')) {
+      context.handle(
+        _groupPriceMeta,
+        groupPrice.isAcceptableOrUnknown(data['group_price']!, _groupPriceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_groupPriceMeta);
+    }
+    if (data.containsKey('group_is_premium')) {
+      context.handle(
+        _groupIsPremiumMeta,
+        groupIsPremium.isAcceptableOrUnknown(
+          data['group_is_premium']!,
+          _groupIsPremiumMeta,
+        ),
+      );
+    }
+    if (data.containsKey('purchased')) {
+      context.handle(
+        _purchasedMeta,
+        purchased.isAcceptableOrUnknown(data['purchased']!, _purchasedMeta),
+      );
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    }
+    if (data.containsKey('downloaded_at')) {
+      context.handle(
+        _downloadedAtMeta,
+        downloadedAt.isAcceptableOrUnknown(
+          data['downloaded_at']!,
+          _downloadedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EmojiCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EmojiCache(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}type'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}status'],
+      )!,
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}group_id'],
+      )!,
+      groupName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}group_name'],
+      )!,
+      groupPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}group_price'],
+      )!,
+      groupIsPremium: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}group_is_premium'],
+      )!,
+      purchased: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}purchased'],
+      )!,
+      localPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_path'],
+      ),
+      downloadedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}downloaded_at'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $EmojisTable createAlias(String alias) {
+    return $EmojisTable(attachedDatabase, alias);
+  }
+}
+
+class EmojisCompanion extends UpdateCompanion<EmojiCache> {
+  final Value<int> id;
+  final Value<String> code;
+  final Value<String> url;
+  final Value<int> type;
+  final Value<int> status;
+  final Value<int> groupId;
+  final Value<String> groupName;
+  final Value<String> groupPrice;
+  final Value<bool> groupIsPremium;
+  final Value<bool> purchased;
+  final Value<String?> localPath;
+  final Value<DateTime?> downloadedAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime> createdAt;
+  const EmojisCompanion({
+    this.id = const Value.absent(),
+    this.code = const Value.absent(),
+    this.url = const Value.absent(),
+    this.type = const Value.absent(),
+    this.status = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.groupName = const Value.absent(),
+    this.groupPrice = const Value.absent(),
+    this.groupIsPremium = const Value.absent(),
+    this.purchased = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.downloadedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  EmojisCompanion.insert({
+    this.id = const Value.absent(),
+    required String code,
+    required String url,
+    required int type,
+    required int status,
+    required int groupId,
+    required String groupName,
+    required String groupPrice,
+    this.groupIsPremium = const Value.absent(),
+    this.purchased = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.downloadedAt = const Value.absent(),
+    required DateTime updatedAt,
+    required DateTime createdAt,
+  }) : code = Value(code),
+       url = Value(url),
+       type = Value(type),
+       status = Value(status),
+       groupId = Value(groupId),
+       groupName = Value(groupName),
+       groupPrice = Value(groupPrice),
+       updatedAt = Value(updatedAt),
+       createdAt = Value(createdAt);
+  static Insertable<EmojiCache> custom({
+    Expression<int>? id,
+    Expression<String>? code,
+    Expression<String>? url,
+    Expression<int>? type,
+    Expression<int>? status,
+    Expression<int>? groupId,
+    Expression<String>? groupName,
+    Expression<String>? groupPrice,
+    Expression<bool>? groupIsPremium,
+    Expression<bool>? purchased,
+    Expression<String>? localPath,
+    Expression<DateTime>? downloadedAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (code != null) 'code': code,
+      if (url != null) 'url': url,
+      if (type != null) 'type': type,
+      if (status != null) 'status': status,
+      if (groupId != null) 'group_id': groupId,
+      if (groupName != null) 'group_name': groupName,
+      if (groupPrice != null) 'group_price': groupPrice,
+      if (groupIsPremium != null) 'group_is_premium': groupIsPremium,
+      if (purchased != null) 'purchased': purchased,
+      if (localPath != null) 'local_path': localPath,
+      if (downloadedAt != null) 'downloaded_at': downloadedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  EmojisCompanion copyWith({
+    Value<int>? id,
+    Value<String>? code,
+    Value<String>? url,
+    Value<int>? type,
+    Value<int>? status,
+    Value<int>? groupId,
+    Value<String>? groupName,
+    Value<String>? groupPrice,
+    Value<bool>? groupIsPremium,
+    Value<bool>? purchased,
+    Value<String?>? localPath,
+    Value<DateTime?>? downloadedAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime>? createdAt,
+  }) {
+    return EmojisCompanion(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      url: url ?? this.url,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      groupId: groupId ?? this.groupId,
+      groupName: groupName ?? this.groupName,
+      groupPrice: groupPrice ?? this.groupPrice,
+      groupIsPremium: groupIsPremium ?? this.groupIsPremium,
+      purchased: purchased ?? this.purchased,
+      localPath: localPath ?? this.localPath,
+      downloadedAt: downloadedAt ?? this.downloadedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<int>(type.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<int>(status.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<int>(groupId.value);
+    }
+    if (groupName.present) {
+      map['group_name'] = Variable<String>(groupName.value);
+    }
+    if (groupPrice.present) {
+      map['group_price'] = Variable<String>(groupPrice.value);
+    }
+    if (groupIsPremium.present) {
+      map['group_is_premium'] = Variable<bool>(groupIsPremium.value);
+    }
+    if (purchased.present) {
+      map['purchased'] = Variable<bool>(purchased.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (downloadedAt.present) {
+      map['downloaded_at'] = Variable<DateTime>(downloadedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmojisCompanion(')
+          ..write('id: $id, ')
+          ..write('code: $code, ')
+          ..write('url: $url, ')
+          ..write('type: $type, ')
+          ..write('status: $status, ')
+          ..write('groupId: $groupId, ')
+          ..write('groupName: $groupName, ')
+          ..write('groupPrice: $groupPrice, ')
+          ..write('groupIsPremium: $groupIsPremium, ')
+          ..write('purchased: $purchased, ')
+          ..write('localPath: $localPath, ')
+          ..write('downloadedAt: $downloadedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EmojiSyncMetadataTable extends EmojiSyncMetadata
+    with TableInfo<$EmojiSyncMetadataTable, EmojiSyncMeta> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EmojiSyncMetadataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<int> type = GeneratedColumn<int>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastSyncAtMeta = const VerificationMeta(
+    'lastSyncAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncAt = GeneratedColumn<DateTime>(
+    'last_sync_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _totalCountMeta = const VerificationMeta(
+    'totalCount',
+  );
+  @override
+  late final GeneratedColumn<int> totalCount = GeneratedColumn<int>(
+    'total_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [type, lastSyncAt, totalCount];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'emoji_sync_metadata';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EmojiSyncMeta> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    }
+    if (data.containsKey('last_sync_at')) {
+      context.handle(
+        _lastSyncAtMeta,
+        lastSyncAt.isAcceptableOrUnknown(
+          data['last_sync_at']!,
+          _lastSyncAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastSyncAtMeta);
+    }
+    if (data.containsKey('total_count')) {
+      context.handle(
+        _totalCountMeta,
+        totalCount.isAcceptableOrUnknown(data['total_count']!, _totalCountMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {type};
+  @override
+  EmojiSyncMeta map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EmojiSyncMeta(
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}type'],
+      )!,
+      lastSyncAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_sync_at'],
+      )!,
+      totalCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_count'],
+      )!,
+    );
+  }
+
+  @override
+  $EmojiSyncMetadataTable createAlias(String alias) {
+    return $EmojiSyncMetadataTable(attachedDatabase, alias);
+  }
+}
+
+class EmojiSyncMetadataCompanion extends UpdateCompanion<EmojiSyncMeta> {
+  final Value<int> type;
+  final Value<DateTime> lastSyncAt;
+  final Value<int> totalCount;
+  const EmojiSyncMetadataCompanion({
+    this.type = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.totalCount = const Value.absent(),
+  });
+  EmojiSyncMetadataCompanion.insert({
+    this.type = const Value.absent(),
+    required DateTime lastSyncAt,
+    this.totalCount = const Value.absent(),
+  }) : lastSyncAt = Value(lastSyncAt);
+  static Insertable<EmojiSyncMeta> custom({
+    Expression<int>? type,
+    Expression<DateTime>? lastSyncAt,
+    Expression<int>? totalCount,
+  }) {
+    return RawValuesInsertable({
+      if (type != null) 'type': type,
+      if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (totalCount != null) 'total_count': totalCount,
+    });
+  }
+
+  EmojiSyncMetadataCompanion copyWith({
+    Value<int>? type,
+    Value<DateTime>? lastSyncAt,
+    Value<int>? totalCount,
+  }) {
+    return EmojiSyncMetadataCompanion(
+      type: type ?? this.type,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      totalCount: totalCount ?? this.totalCount,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (type.present) {
+      map['type'] = Variable<int>(type.value);
+    }
+    if (lastSyncAt.present) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
+    }
+    if (totalCount.present) {
+      map['total_count'] = Variable<int>(totalCount.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmojiSyncMetadataCompanion(')
+          ..write('type: $type, ')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('totalCount: $totalCount')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ImagesTable extends Images with TableInfo<$ImagesTable, ImageCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ImagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [url, localPath];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'images';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ImageCache> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_urlMeta);
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {url};
+  @override
+  ImageCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ImageCache(
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      )!,
+      localPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_path'],
+      ),
+    );
+  }
+
+  @override
+  $ImagesTable createAlias(String alias) {
+    return $ImagesTable(attachedDatabase, alias);
+  }
+}
+
+class ImagesCompanion extends UpdateCompanion<ImageCache> {
+  final Value<String> url;
+  final Value<String?> localPath;
+  final Value<int> rowid;
+  const ImagesCompanion({
+    this.url = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ImagesCompanion.insert({
+    required String url,
+    this.localPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : url = Value(url);
+  static Insertable<ImageCache> custom({
+    Expression<String>? url,
+    Expression<String>? localPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (url != null) 'url': url,
+      if (localPath != null) 'local_path': localPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ImagesCompanion copyWith({
+    Value<String>? url,
+    Value<String?>? localPath,
+    Value<int>? rowid,
+  }) {
+    return ImagesCompanion(
+      url: url ?? this.url,
+      localPath: localPath ?? this.localPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImagesCompanion(')
+          ..write('url: $url, ')
+          ..write('localPath: $localPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AudiosTable extends Audios with TableInfo<$AudiosTable, AudioCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AudiosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [url, localPath];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'audios';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AudioCache> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_urlMeta);
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {url};
+  @override
+  AudioCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AudioCache(
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      )!,
+      localPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_path'],
+      ),
+    );
+  }
+
+  @override
+  $AudiosTable createAlias(String alias) {
+    return $AudiosTable(attachedDatabase, alias);
+  }
+}
+
+class AudiosCompanion extends UpdateCompanion<AudioCache> {
+  final Value<String> url;
+  final Value<String?> localPath;
+  final Value<int> rowid;
+  const AudiosCompanion({
+    this.url = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AudiosCompanion.insert({
+    required String url,
+    this.localPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : url = Value(url);
+  static Insertable<AudioCache> custom({
+    Expression<String>? url,
+    Expression<String>? localPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (url != null) 'url': url,
+      if (localPath != null) 'local_path': localPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AudiosCompanion copyWith({
+    Value<String>? url,
+    Value<String?>? localPath,
+    Value<int>? rowid,
+  }) {
+    return AudiosCompanion(
+      url: url ?? this.url,
+      localPath: localPath ?? this.localPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AudiosCompanion(')
+          ..write('url: $url, ')
+          ..write('localPath: $localPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $VideosTable extends Videos with TableInfo<$VideosTable, VideoCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VideosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [url, localPath];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'videos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VideoCache> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_urlMeta);
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {url};
+  @override
+  VideoCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VideoCache(
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      )!,
+      localPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_path'],
+      ),
+    );
+  }
+
+  @override
+  $VideosTable createAlias(String alias) {
+    return $VideosTable(attachedDatabase, alias);
+  }
+}
+
+class VideosCompanion extends UpdateCompanion<VideoCache> {
+  final Value<String> url;
+  final Value<String?> localPath;
+  final Value<int> rowid;
+  const VideosCompanion({
+    this.url = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VideosCompanion.insert({
+    required String url,
+    this.localPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : url = Value(url);
+  static Insertable<VideoCache> custom({
+    Expression<String>? url,
+    Expression<String>? localPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (url != null) 'url': url,
+      if (localPath != null) 'local_path': localPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VideosCompanion copyWith({
+    Value<String>? url,
+    Value<String?>? localPath,
+    Value<int>? rowid,
+  }) {
+    return VideosCompanion(
+      url: url ?? this.url,
+      localPath: localPath ?? this.localPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VideosCompanion(')
+          ..write('url: $url, ')
+          ..write('localPath: $localPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1878,6 +3071,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ConversationUsersTable(this);
   late final $MessagesTable messages = $MessagesTable(this);
   late final $UserInfosTable userInfos = $UserInfosTable(this);
+  late final $EmojisTable emojis = $EmojisTable(this);
+  late final $EmojiSyncMetadataTable emojiSyncMetadata =
+      $EmojiSyncMetadataTable(this);
+  late final $ImagesTable images = $ImagesTable(this);
+  late final $AudiosTable audios = $AudiosTable(this);
+  late final $VideosTable videos = $VideosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1887,6 +3086,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     conversationUsers,
     messages,
     userInfos,
+    emojis,
+    emojiSyncMetadata,
+    images,
+    audios,
+    videos,
   ];
 }
 
@@ -2131,6 +3335,7 @@ typedef $$ConversationUsersTableCreateCompanionBuilder =
       Value<int> id,
       required int conversationId,
       required int userId,
+      Value<String> role,
       required DateTime joinedAt,
     });
 typedef $$ConversationUsersTableUpdateCompanionBuilder =
@@ -2138,6 +3343,7 @@ typedef $$ConversationUsersTableUpdateCompanionBuilder =
       Value<int> id,
       Value<int> conversationId,
       Value<int> userId,
+      Value<String> role,
       Value<DateTime> joinedAt,
     });
 
@@ -2162,6 +3368,11 @@ class $$ConversationUsersTableFilterComposer
 
   ColumnFilters<int> get userId => $composableBuilder(
     column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get role => $composableBuilder(
+    column: $table.role,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2195,6 +3406,11 @@ class $$ConversationUsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get joinedAt => $composableBuilder(
     column: $table.joinedAt,
     builder: (column) => ColumnOrderings(column),
@@ -2220,6 +3436,9 @@ class $$ConversationUsersTableAnnotationComposer
 
   GeneratedColumn<int> get userId =>
       $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
 
   GeneratedColumn<DateTime> get joinedAt =>
       $composableBuilder(column: $table.joinedAt, builder: (column) => column);
@@ -2268,11 +3487,13 @@ class $$ConversationUsersTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> conversationId = const Value.absent(),
                 Value<int> userId = const Value.absent(),
+                Value<String> role = const Value.absent(),
                 Value<DateTime> joinedAt = const Value.absent(),
               }) => ConversationUsersCompanion(
                 id: id,
                 conversationId: conversationId,
                 userId: userId,
+                role: role,
                 joinedAt: joinedAt,
               ),
           createCompanionCallback:
@@ -2280,11 +3501,13 @@ class $$ConversationUsersTableTableManager
                 Value<int> id = const Value.absent(),
                 required int conversationId,
                 required int userId,
+                Value<String> role = const Value.absent(),
                 required DateTime joinedAt,
               }) => ConversationUsersCompanion.insert(
                 id: id,
                 conversationId: conversationId,
                 userId: userId,
+                role: role,
                 joinedAt: joinedAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -3202,6 +4425,942 @@ typedef $$UserInfosTableProcessedTableManager =
       UserInfo,
       PrefetchHooks Function()
     >;
+typedef $$EmojisTableCreateCompanionBuilder =
+    EmojisCompanion Function({
+      Value<int> id,
+      required String code,
+      required String url,
+      required int type,
+      required int status,
+      required int groupId,
+      required String groupName,
+      required String groupPrice,
+      Value<bool> groupIsPremium,
+      Value<bool> purchased,
+      Value<String?> localPath,
+      Value<DateTime?> downloadedAt,
+      required DateTime updatedAt,
+      required DateTime createdAt,
+    });
+typedef $$EmojisTableUpdateCompanionBuilder =
+    EmojisCompanion Function({
+      Value<int> id,
+      Value<String> code,
+      Value<String> url,
+      Value<int> type,
+      Value<int> status,
+      Value<int> groupId,
+      Value<String> groupName,
+      Value<String> groupPrice,
+      Value<bool> groupIsPremium,
+      Value<bool> purchased,
+      Value<String?> localPath,
+      Value<DateTime?> downloadedAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime> createdAt,
+    });
+
+class $$EmojisTableFilterComposer
+    extends Composer<_$AppDatabase, $EmojisTable> {
+  $$EmojisTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get groupName => $composableBuilder(
+    column: $table.groupName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get groupPrice => $composableBuilder(
+    column: $table.groupPrice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get groupIsPremium => $composableBuilder(
+    column: $table.groupIsPremium,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get purchased => $composableBuilder(
+    column: $table.purchased,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EmojisTableOrderingComposer
+    extends Composer<_$AppDatabase, $EmojisTable> {
+  $$EmojisTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get groupName => $composableBuilder(
+    column: $table.groupName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get groupPrice => $composableBuilder(
+    column: $table.groupPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get groupIsPremium => $composableBuilder(
+    column: $table.groupIsPremium,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get purchased => $composableBuilder(
+    column: $table.purchased,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EmojisTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EmojisTable> {
+  $$EmojisTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<int> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<int> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get groupName =>
+      $composableBuilder(column: $table.groupName, builder: (column) => column);
+
+  GeneratedColumn<String> get groupPrice => $composableBuilder(
+    column: $table.groupPrice,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get groupIsPremium => $composableBuilder(
+    column: $table.groupIsPremium,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get purchased =>
+      $composableBuilder(column: $table.purchased, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$EmojisTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EmojisTable,
+          EmojiCache,
+          $$EmojisTableFilterComposer,
+          $$EmojisTableOrderingComposer,
+          $$EmojisTableAnnotationComposer,
+          $$EmojisTableCreateCompanionBuilder,
+          $$EmojisTableUpdateCompanionBuilder,
+          (EmojiCache, BaseReferences<_$AppDatabase, $EmojisTable, EmojiCache>),
+          EmojiCache,
+          PrefetchHooks Function()
+        > {
+  $$EmojisTableTableManager(_$AppDatabase db, $EmojisTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EmojisTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EmojisTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EmojisTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<String> url = const Value.absent(),
+                Value<int> type = const Value.absent(),
+                Value<int> status = const Value.absent(),
+                Value<int> groupId = const Value.absent(),
+                Value<String> groupName = const Value.absent(),
+                Value<String> groupPrice = const Value.absent(),
+                Value<bool> groupIsPremium = const Value.absent(),
+                Value<bool> purchased = const Value.absent(),
+                Value<String?> localPath = const Value.absent(),
+                Value<DateTime?> downloadedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => EmojisCompanion(
+                id: id,
+                code: code,
+                url: url,
+                type: type,
+                status: status,
+                groupId: groupId,
+                groupName: groupName,
+                groupPrice: groupPrice,
+                groupIsPremium: groupIsPremium,
+                purchased: purchased,
+                localPath: localPath,
+                downloadedAt: downloadedAt,
+                updatedAt: updatedAt,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String code,
+                required String url,
+                required int type,
+                required int status,
+                required int groupId,
+                required String groupName,
+                required String groupPrice,
+                Value<bool> groupIsPremium = const Value.absent(),
+                Value<bool> purchased = const Value.absent(),
+                Value<String?> localPath = const Value.absent(),
+                Value<DateTime?> downloadedAt = const Value.absent(),
+                required DateTime updatedAt,
+                required DateTime createdAt,
+              }) => EmojisCompanion.insert(
+                id: id,
+                code: code,
+                url: url,
+                type: type,
+                status: status,
+                groupId: groupId,
+                groupName: groupName,
+                groupPrice: groupPrice,
+                groupIsPremium: groupIsPremium,
+                purchased: purchased,
+                localPath: localPath,
+                downloadedAt: downloadedAt,
+                updatedAt: updatedAt,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EmojisTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EmojisTable,
+      EmojiCache,
+      $$EmojisTableFilterComposer,
+      $$EmojisTableOrderingComposer,
+      $$EmojisTableAnnotationComposer,
+      $$EmojisTableCreateCompanionBuilder,
+      $$EmojisTableUpdateCompanionBuilder,
+      (EmojiCache, BaseReferences<_$AppDatabase, $EmojisTable, EmojiCache>),
+      EmojiCache,
+      PrefetchHooks Function()
+    >;
+typedef $$EmojiSyncMetadataTableCreateCompanionBuilder =
+    EmojiSyncMetadataCompanion Function({
+      Value<int> type,
+      required DateTime lastSyncAt,
+      Value<int> totalCount,
+    });
+typedef $$EmojiSyncMetadataTableUpdateCompanionBuilder =
+    EmojiSyncMetadataCompanion Function({
+      Value<int> type,
+      Value<DateTime> lastSyncAt,
+      Value<int> totalCount,
+    });
+
+class $$EmojiSyncMetadataTableFilterComposer
+    extends Composer<_$AppDatabase, $EmojiSyncMetadataTable> {
+  $$EmojiSyncMetadataTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalCount => $composableBuilder(
+    column: $table.totalCount,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EmojiSyncMetadataTableOrderingComposer
+    extends Composer<_$AppDatabase, $EmojiSyncMetadataTable> {
+  $$EmojiSyncMetadataTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalCount => $composableBuilder(
+    column: $table.totalCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EmojiSyncMetadataTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EmojiSyncMetadataTable> {
+  $$EmojiSyncMetadataTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalCount => $composableBuilder(
+    column: $table.totalCount,
+    builder: (column) => column,
+  );
+}
+
+class $$EmojiSyncMetadataTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EmojiSyncMetadataTable,
+          EmojiSyncMeta,
+          $$EmojiSyncMetadataTableFilterComposer,
+          $$EmojiSyncMetadataTableOrderingComposer,
+          $$EmojiSyncMetadataTableAnnotationComposer,
+          $$EmojiSyncMetadataTableCreateCompanionBuilder,
+          $$EmojiSyncMetadataTableUpdateCompanionBuilder,
+          (
+            EmojiSyncMeta,
+            BaseReferences<
+              _$AppDatabase,
+              $EmojiSyncMetadataTable,
+              EmojiSyncMeta
+            >,
+          ),
+          EmojiSyncMeta,
+          PrefetchHooks Function()
+        > {
+  $$EmojiSyncMetadataTableTableManager(
+    _$AppDatabase db,
+    $EmojiSyncMetadataTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EmojiSyncMetadataTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EmojiSyncMetadataTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EmojiSyncMetadataTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> type = const Value.absent(),
+                Value<DateTime> lastSyncAt = const Value.absent(),
+                Value<int> totalCount = const Value.absent(),
+              }) => EmojiSyncMetadataCompanion(
+                type: type,
+                lastSyncAt: lastSyncAt,
+                totalCount: totalCount,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> type = const Value.absent(),
+                required DateTime lastSyncAt,
+                Value<int> totalCount = const Value.absent(),
+              }) => EmojiSyncMetadataCompanion.insert(
+                type: type,
+                lastSyncAt: lastSyncAt,
+                totalCount: totalCount,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EmojiSyncMetadataTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EmojiSyncMetadataTable,
+      EmojiSyncMeta,
+      $$EmojiSyncMetadataTableFilterComposer,
+      $$EmojiSyncMetadataTableOrderingComposer,
+      $$EmojiSyncMetadataTableAnnotationComposer,
+      $$EmojiSyncMetadataTableCreateCompanionBuilder,
+      $$EmojiSyncMetadataTableUpdateCompanionBuilder,
+      (
+        EmojiSyncMeta,
+        BaseReferences<_$AppDatabase, $EmojiSyncMetadataTable, EmojiSyncMeta>,
+      ),
+      EmojiSyncMeta,
+      PrefetchHooks Function()
+    >;
+typedef $$ImagesTableCreateCompanionBuilder =
+    ImagesCompanion Function({
+      required String url,
+      Value<String?> localPath,
+      Value<int> rowid,
+    });
+typedef $$ImagesTableUpdateCompanionBuilder =
+    ImagesCompanion Function({
+      Value<String> url,
+      Value<String?> localPath,
+      Value<int> rowid,
+    });
+
+class $$ImagesTableFilterComposer
+    extends Composer<_$AppDatabase, $ImagesTable> {
+  $$ImagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ImagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ImagesTable> {
+  $$ImagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ImagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ImagesTable> {
+  $$ImagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+}
+
+class $$ImagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ImagesTable,
+          ImageCache,
+          $$ImagesTableFilterComposer,
+          $$ImagesTableOrderingComposer,
+          $$ImagesTableAnnotationComposer,
+          $$ImagesTableCreateCompanionBuilder,
+          $$ImagesTableUpdateCompanionBuilder,
+          (ImageCache, BaseReferences<_$AppDatabase, $ImagesTable, ImageCache>),
+          ImageCache,
+          PrefetchHooks Function()
+        > {
+  $$ImagesTableTableManager(_$AppDatabase db, $ImagesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ImagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ImagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ImagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> url = const Value.absent(),
+                Value<String?> localPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) =>
+                  ImagesCompanion(url: url, localPath: localPath, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String url,
+                Value<String?> localPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ImagesCompanion.insert(
+                url: url,
+                localPath: localPath,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ImagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ImagesTable,
+      ImageCache,
+      $$ImagesTableFilterComposer,
+      $$ImagesTableOrderingComposer,
+      $$ImagesTableAnnotationComposer,
+      $$ImagesTableCreateCompanionBuilder,
+      $$ImagesTableUpdateCompanionBuilder,
+      (ImageCache, BaseReferences<_$AppDatabase, $ImagesTable, ImageCache>),
+      ImageCache,
+      PrefetchHooks Function()
+    >;
+typedef $$AudiosTableCreateCompanionBuilder =
+    AudiosCompanion Function({
+      required String url,
+      Value<String?> localPath,
+      Value<int> rowid,
+    });
+typedef $$AudiosTableUpdateCompanionBuilder =
+    AudiosCompanion Function({
+      Value<String> url,
+      Value<String?> localPath,
+      Value<int> rowid,
+    });
+
+class $$AudiosTableFilterComposer
+    extends Composer<_$AppDatabase, $AudiosTable> {
+  $$AudiosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AudiosTableOrderingComposer
+    extends Composer<_$AppDatabase, $AudiosTable> {
+  $$AudiosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AudiosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AudiosTable> {
+  $$AudiosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+}
+
+class $$AudiosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AudiosTable,
+          AudioCache,
+          $$AudiosTableFilterComposer,
+          $$AudiosTableOrderingComposer,
+          $$AudiosTableAnnotationComposer,
+          $$AudiosTableCreateCompanionBuilder,
+          $$AudiosTableUpdateCompanionBuilder,
+          (AudioCache, BaseReferences<_$AppDatabase, $AudiosTable, AudioCache>),
+          AudioCache,
+          PrefetchHooks Function()
+        > {
+  $$AudiosTableTableManager(_$AppDatabase db, $AudiosTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AudiosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AudiosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AudiosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> url = const Value.absent(),
+                Value<String?> localPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) =>
+                  AudiosCompanion(url: url, localPath: localPath, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String url,
+                Value<String?> localPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AudiosCompanion.insert(
+                url: url,
+                localPath: localPath,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AudiosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AudiosTable,
+      AudioCache,
+      $$AudiosTableFilterComposer,
+      $$AudiosTableOrderingComposer,
+      $$AudiosTableAnnotationComposer,
+      $$AudiosTableCreateCompanionBuilder,
+      $$AudiosTableUpdateCompanionBuilder,
+      (AudioCache, BaseReferences<_$AppDatabase, $AudiosTable, AudioCache>),
+      AudioCache,
+      PrefetchHooks Function()
+    >;
+typedef $$VideosTableCreateCompanionBuilder =
+    VideosCompanion Function({
+      required String url,
+      Value<String?> localPath,
+      Value<int> rowid,
+    });
+typedef $$VideosTableUpdateCompanionBuilder =
+    VideosCompanion Function({
+      Value<String> url,
+      Value<String?> localPath,
+      Value<int> rowid,
+    });
+
+class $$VideosTableFilterComposer
+    extends Composer<_$AppDatabase, $VideosTable> {
+  $$VideosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$VideosTableOrderingComposer
+    extends Composer<_$AppDatabase, $VideosTable> {
+  $$VideosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$VideosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VideosTable> {
+  $$VideosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+}
+
+class $$VideosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VideosTable,
+          VideoCache,
+          $$VideosTableFilterComposer,
+          $$VideosTableOrderingComposer,
+          $$VideosTableAnnotationComposer,
+          $$VideosTableCreateCompanionBuilder,
+          $$VideosTableUpdateCompanionBuilder,
+          (VideoCache, BaseReferences<_$AppDatabase, $VideosTable, VideoCache>),
+          VideoCache,
+          PrefetchHooks Function()
+        > {
+  $$VideosTableTableManager(_$AppDatabase db, $VideosTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VideosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$VideosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$VideosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> url = const Value.absent(),
+                Value<String?> localPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) =>
+                  VideosCompanion(url: url, localPath: localPath, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String url,
+                Value<String?> localPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VideosCompanion.insert(
+                url: url,
+                localPath: localPath,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$VideosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VideosTable,
+      VideoCache,
+      $$VideosTableFilterComposer,
+      $$VideosTableOrderingComposer,
+      $$VideosTableAnnotationComposer,
+      $$VideosTableCreateCompanionBuilder,
+      $$VideosTableUpdateCompanionBuilder,
+      (VideoCache, BaseReferences<_$AppDatabase, $VideosTable, VideoCache>),
+      VideoCache,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3214,4 +5373,14 @@ class $AppDatabaseManager {
       $$MessagesTableTableManager(_db, _db.messages);
   $$UserInfosTableTableManager get userInfos =>
       $$UserInfosTableTableManager(_db, _db.userInfos);
+  $$EmojisTableTableManager get emojis =>
+      $$EmojisTableTableManager(_db, _db.emojis);
+  $$EmojiSyncMetadataTableTableManager get emojiSyncMetadata =>
+      $$EmojiSyncMetadataTableTableManager(_db, _db.emojiSyncMetadata);
+  $$ImagesTableTableManager get images =>
+      $$ImagesTableTableManager(_db, _db.images);
+  $$AudiosTableTableManager get audios =>
+      $$AudiosTableTableManager(_db, _db.audios);
+  $$VideosTableTableManager get videos =>
+      $$VideosTableTableManager(_db, _db.videos);
 }

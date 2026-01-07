@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/video/adaptive_video_cover.dart';
 import 'package:waterfall_flow/waterfall_flow.dart';
 
@@ -181,7 +181,9 @@ class UserVideoGridState extends ConsumerState<UserVideoGrid>
                       ? const CircularProgressIndicator()
                       : state.finished
                       ? Text(
-                          AppLocalizations.of(context)!.noMore,
+                          ref
+                              .read(i18nNotifierProvider.notifier)
+                              .translate("noMore"),
                           style: TextStyle(color: Colors.white),
                         )
                       : const SizedBox.shrink(),

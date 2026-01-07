@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/comment_item_replies.dart';
 
 import '../api/services/video_service.dart';
@@ -137,7 +137,8 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
     }
   }
 
-  Widget _buildParentCommentHeader(AppLocalizations localizations) {
+  Widget _buildParentCommentHeader() {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final user = widget.parentComment.commentUser;
     final toUser = widget.parentComment.commentToUser;
 
@@ -160,7 +161,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
                 Row(
                   children: [
                     Text(
-                      user?.nickname ?? localizations.unknownUser,
+                      user?.nickname ?? i18n.translate('unknownUser'),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -206,7 +207,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -218,7 +219,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          localizations.replies,
+          i18n.translate('replies'),
           style: const TextStyle(color: Colors.white),
         ),
       ),
@@ -232,7 +233,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
                 bottom: BorderSide(color: Colors.grey[800]!, width: 1),
               ),
             ),
-            child: _buildParentCommentHeader(localizations),
+            child: _buildParentCommentHeader(),
           ),
 
           if (childComments.isNotEmpty || _loading)
@@ -247,7 +248,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
               child: Row(
                 children: [
                   Text(
-                    '${localizations.replies} (${widget.parentComment.childCount})',
+                    '${i18n.translate('replies')} (${widget.parentComment.childCount})',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 14,
@@ -281,7 +282,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
                       padding: const EdgeInsets.all(16),
                       child: Center(
                         child: Text(
-                          localizations.noMoreComments,
+                          i18n.translate('noMoreComments'),
                           style: const TextStyle(color: Colors.white70),
                         ),
                       ),

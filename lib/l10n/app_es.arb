@@ -187,9 +187,16 @@
   "phoneNumberTooShort": "El número debe contener al menos 8 dígitos",
   "phoneNumberTooLong": "El número debe contener como máximo 12 dígitos",
   "underMaintenance": "En mantenimiento",
-  "maintenance_web": "Nuestro sitio web no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.",
-  "maintenance_mobile": "Nuestra aplicación móvil no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.",
-  "maintenance_service": "Nuestro servicio no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.",
+  "maintenanceWeb": "Nuestro sitio web no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.",
+  "maintenanceMobile": "Nuestra aplicación móvil no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.",
+  "maintenanceService": "Nuestro servicio no está disponible temporalmente.\nEstamos trabajando para mejorar su experiencia.\nGracias por su paciencia.",
   "useBrowser": "Usar el navegador",
-  "downloadApp": "Descargar la aplicación"
+  "downloadApp": "Descargar la aplicación",
+  "quitApp": "Salir de la aplicación",
+  "noLanguagesAvailable": "No hay idiomas disponibles",
+  "availableLanguages": "Idiomas disponibles",
+  "downloadLanguages": "Idiomas descargados",
+  "errorLoadingDownloadedLanguages": "Error al cargar idiomas descargados",
+  "errorLoadingSelectedLanguages": "Error al cargar el idioma seleccionado",
+  "errorLoadingLanguages": "Error al cargar idiomas"
 }

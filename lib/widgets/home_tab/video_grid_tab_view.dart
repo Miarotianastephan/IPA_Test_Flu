@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:waterfall_flow/waterfall_flow.dart';
+
 import '../../models/video_info.dart';
 import '../../models/video_list_state.dart';
 import '../../page/short_video_detail_page.dart';
-import '../../provider/home_video_list_provider.dart';
 import '../../provider/cureent_video_user_provider.dart';
+import '../../provider/home_video_list_provider.dart';
 import '../empty_widget.dart';
 import '../encrypted_image.dart';
 import '../network_image_with_measure.dart';
-import '../video/video_tag_category_wrap.dart';
 import '../video/video_stat_item.dart';
+import '../video/video_tag_category_wrap.dart';
 
 class VideoGridTabView extends ConsumerStatefulWidget {
   final int filterType;
@@ -69,6 +70,8 @@ class VideoGridViewState extends ConsumerState<VideoGridTabView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(provider);
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     _itemHeights = List<double?>.filled(state.list.length, 300);
 
     if (state.loading && state.list.isEmpty) {
@@ -90,7 +93,7 @@ class VideoGridViewState extends ConsumerState<VideoGridTabView> {
                   MediaQuery.of(context).padding.top * 2 -
                   45,
               child: EmptyWidget(
-                message: AppLocalizations.of(context)!.noVideoContent,
+                message: translate("noVideoContent"),
                 icon: Icons.video_library_outlined,
               ),
             ),

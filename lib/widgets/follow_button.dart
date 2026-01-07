@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/user_follow_provider.dart';
 
 class FollowButton extends ConsumerWidget {
@@ -10,7 +10,8 @@ class FollowButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    String translate(String key) => i18n.translate(key);
     final isFollowed = ref.watch(userFollowProvider(userId)).isFollowed;
 
     return Container(
@@ -43,7 +44,7 @@ class FollowButton extends ConsumerWidget {
         ),
         child: Center(
           child: Text(
-            isFollowed ? localizations.followed : localizations.follow,
+            isFollowed ? translate("followed") : translate("follow"),
             style: TextStyle(
               color: isFollowed ? Colors.white : Colors.black,
               fontSize: 13,

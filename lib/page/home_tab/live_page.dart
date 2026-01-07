@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
-class LiveTabPage extends StatelessWidget {
+class LiveTabPage extends ConsumerWidget {
   const LiveTabPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
 
     return Center(
       child: Text(
-        localizations.live,
+        i18n.translate('live'),
         style: const TextStyle(fontSize: 24),
       ),
     );

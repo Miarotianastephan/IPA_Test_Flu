@@ -1,37 +1,38 @@
 import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/api/services/version_component.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/version.dart';
-
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class VersionPage extends StatefulWidget {
+class VersionPage extends ConsumerStatefulWidget {
   const VersionPage({super.key});
 
   @override
-  State<VersionPage> createState() => _VersionPageState();
+  ConsumerState<VersionPage> createState() => _VersionPageState();
 }
 
-class _VersionPageState extends State<VersionPage> {
+class _VersionPageState extends ConsumerState<VersionPage> {
   late Future<Version?> versionFuture;
   late Future<String> currentVersionFuture;
 
   @override
   void initState() {
+    super.initState();
     versionFuture = VersionComponent.fetchVersion();
     currentVersionFuture = VersionComponent.getCurrentVersion();
-    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    final localisations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(localisations.about),
+        title: Text(i18n.translate('about')),
         centerTitle: true,
         automaticallyImplyLeading: false,
         actions: [
@@ -48,19 +49,18 @@ class _VersionPageState extends State<VersionPage> {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(
-              child: Text("${localisations.error}: ${snapshot.error}"),
+              child: Text('${i18n.translate('error')}: ${snapshot.error}'),
             );
           } else if (!snapshot.hasData) {
-            return Center(child: Text(localisations.noData));
+            return Center(child: Text(i18n.translate('noData')));
           }
 
           final results = snapshot.data!;
           final version = results[0] as Version?;
           final currentVersion = results[1] as String;
-          debugPrint("version $version");
-          debugPrint("currentVersion $currentVersion");
+
           if (version == null) {
-            return Center(child: Text(localisations.noData));
+            return Center(child: Text(i18n.translate('noData')));
           }
 
           final updateAvailable = VersionComponent.isUpdateAvailable(
@@ -73,50 +73,46 @@ class _VersionPageState extends State<VersionPage> {
             child: ListView(
               children: [
                 InfoField(
-                  label: localisations.currentVersion,
+                  label: i18n.translate('currentVersion'),
                   value: currentVersion,
                 ),
                 const SizedBox(height: 12),
                 InfoField(
-                  label: localisations.latestVersion,
+                  label: i18n.translate('latestVersion'),
                   value: version.versionNumber,
                 ),
                 const SizedBox(height: 12),
                 InfoField(
-                  label: localisations.description,
-                  value: version.description ?? "N/A",
+                  label: i18n.translate('description'),
+                  value: version.description ?? 'N/A',
                 ),
                 const SizedBox(height: 12),
                 InfoField(
-                  label: localisations.releaseDate,
-                  value: version.dateRelease ?? "N/A",
+                  label: i18n.translate('releaseDate'),
+                  value: version.dateRelease ?? 'N/A',
                 ),
                 const SizedBox(height: 30),
                 if (updateAvailable)
                   Column(
                     children: [
                       Text(
-                        localisations.newVersionAvailable,
-                        style: TextStyle(
+                        i18n.translate('newVersionAvailable'),
+                        style: const TextStyle(
                           color: Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 12),
                       if (Platform.isAndroid &&
-                          version.urlAndroid != null &&
-                          version.urlAndroid!.isNotEmpty)
+                          version.urlAndroid?.isNotEmpty == true)
                         DownloadButton(
-                          label: localisations.download,
+                          label: i18n.translate('download'),
                           icon: const Icon(Icons.android, color: Colors.green),
                           url: version.urlAndroid,
                         ),
-
-                      if (Platform.isIOS &&
-                          version.urlIos != null &&
-                          version.urlIos!.isNotEmpty)
+                      if (Platform.isIOS && version.urlIos?.isNotEmpty == true)
                         DownloadButton(
-                          label: localisations.download,
+                          label: i18n.translate('download'),
                           icon: const Icon(Icons.apple, color: Colors.white),
                           url: version.urlIos,
                         ),
@@ -124,8 +120,8 @@ class _VersionPageState extends State<VersionPage> {
                   )
                 else
                   Text(
-                    localisations.appUpToDate,
-                    style: TextStyle(
+                    i18n.translate('appUpToDate'),
+                    style: const TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,
                     ),
@@ -182,14 +178,14 @@ class DownloadButton extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       onPressed: () async {
-        if (url != null && url!.isNotEmpty) {
+        if (url?.isNotEmpty == true) {
           final baseUrl = dotenv.env['R2_URL'];
-          final uri = Uri.parse("$baseUrl$url");
+          final uri = Uri.parse('$baseUrl$url');
 
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
           } else {
-            debugPrint("error URL : $uri");
+            debugPrint('error URL : $uri');
           }
         }
       },

@@ -185,9 +185,16 @@
   "phoneNumberTooShort": "The number must contain at least 8 digits",
   "phoneNumberTooLong": "The number must contain at most 12 digits",
   "underMaintenance": "Under Maintenance",
-  "maintenance_web": "Our website is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.",
-  "maintenance_mobile": "Our mobile app is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.",
-  "maintenance_service": "Our service is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.",
+  "maintenanceWeb": "Our website is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.",
+  "maintenanceMobile": "Our mobile app is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.",
+  "maintenanceService": "Our service is temporarily unavailable.\nWe are working hard to improve your experience.\nThank you for your patience.",
   "useBrowser": "Use the browser",
-  "downloadApp": "Download the app"
+  "downloadApp": "Download the app",
+  "quitApp": "Quit the app",
+  "noLanguagesAvailable":"No languages available",
+  "availableLanguages":"Available Languages",
+  "downloadLanguages":"Downloaded Languages",
+  "errorLoadingDownloadedLanguages":"Error loading downloaded languages",
+  "errorLoadingSelectedLanguages":"Error loading selected language",
+  "errorLoadingLanguages":"Error loading languages"
 }

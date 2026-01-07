@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/config/storage_config.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/utils/username_formatter.dart';
 import '../../provider/api_provider.dart';
 import '../../utils/toast_util.dart';
@@ -22,29 +22,29 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
   bool _obscurePassword = true;
 
   Future<void> _bind(BuildContext context) async {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final password = _passwordController.text;
     final checkPassword = _checkPasswordController.text;
     final username = _usernameController.text;
     final nickname = _nicknameController.text;
 
     if (password.isEmpty || checkPassword.isEmpty) {
-      ToastUtil.warning(localizations.enterPassword);
+      ToastUtil.warning(i18n.translate('enterPassword'));
       return;
     }
 
     if (username.isEmpty) {
-      ToastUtil.warning(localizations.enterUsername);
+      ToastUtil.warning(i18n.translate('enterUsername'));
       return;
     }
 
     if (password.length < 6 || checkPassword.length < 6) {
-      ToastUtil.warning(localizations.passwordTooShort);
+      ToastUtil.warning(i18n.translate('passwordTooShort'));
       return;
     }
 
     if (password != checkPassword) {
-      ToastUtil.warning(localizations.passwordMismatch);
+      ToastUtil.warning(i18n.translate('passwordMismatch'));
       return;
     }
 
@@ -55,14 +55,14 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
       final token = await StorageService.instance.getValue("token");
       debugPrint("Token : $token");
       await userService.bindPassword(username, nickname, password);
-      ToastUtil.success(localizations.bindSuccess);
+      ToastUtil.success(i18n.translate('bindSuccess'));
       navigator.pop();
     } catch (err) {
       final msg = err.toString();
       if (msg.contains("User already has a bound password")) {
         ToastUtil.warning("Already Has Password");
       } else {
-        ToastUtil.warning(localizations.serverError);
+        ToastUtil.warning(i18n.translate('serverError'));
       }
       debugPrint("登录出错: $err");
     }
@@ -70,7 +70,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -82,7 +82,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                localizations.bindPassword,
+                i18n.translate('bindPassword'),
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 32),
@@ -98,7 +98,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
                   floatingLabelStyle: TextStyle(
                     color: theme.colorScheme.onSurface, // 聚焦时 labelText 颜色
                   ),
-                  labelText: localizations.usernameOrEmail,
+                  labelText: i18n.translate('usernameOrEmail'),
                   prefixIcon: const Icon(Icons.person),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -128,7 +128,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
                   floatingLabelStyle: TextStyle(
                     color: theme.colorScheme.onSurface, // 聚焦时 labelText 颜色
                   ),
-                  labelText: localizations.nickname,
+                  labelText: i18n.translate('nickname'),
                   prefixIcon: const Icon(Icons.person),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -154,7 +154,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,
                 decoration: InputDecoration(
-                  labelText: localizations.password,
+                  labelText: i18n.translate('password'),
                   labelStyle: TextStyle(
                     color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
                   ),
@@ -197,7 +197,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,
                 decoration: InputDecoration(
-                  labelText: localizations.confirmPassword,
+                  labelText: i18n.translate('confirmPassword'),
                   labelStyle: TextStyle(
                     color: theme.colorScheme.onSurface, // 未聚焦状态 labelText 颜色
                   ),
@@ -248,7 +248,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
                 onPressed: () {
                   _bind(context);
                 },
-                child: Text(localizations.bind, style: TextStyle(fontSize: 18)),
+                child: Text(i18n.translate('bind'), style: TextStyle(fontSize: 18)),
               ),
             ],
           ),

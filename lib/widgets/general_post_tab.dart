@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../models/forum_post.dart';
 import 'empty_retry.dart';
 import 'forum/forum_post_card.dart';
 
-class GeneralPostTab extends StatelessWidget {
+class GeneralPostTab extends ConsumerWidget {
   final bool loading;
   final List<ForumPost> results;
   final bool isLoaded;
@@ -24,7 +25,7 @@ class GeneralPostTab extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return RefreshIndicator(
       color: Colors.white,
       onRefresh: () async => onRefresh(),
@@ -33,8 +34,8 @@ class GeneralPostTab extends StatelessWidget {
           : loading && results.isEmpty
           ? _buildFirstLoading()
           : NotificationListener<ScrollNotification>(
-              onNotification: _handleScroll,
-              child: results.isEmpty ? _buildEmpty() : _buildList(context),
+              onNotification: (scroll) => _handleScroll(scroll),
+              child: results.isEmpty ? _buildEmpty() : _buildList(context, ref),
             ),
     );
   }
@@ -47,7 +48,8 @@ class GeneralPostTab extends StatelessWidget {
     return Center(child: EmptyWithRetry(onRetry: onRefresh));
   }
 
-  Widget _buildList(BuildContext context) {
+  Widget _buildList(BuildContext context, WidgetRef ref) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     return ListView.separated(
       itemCount: results.length + (loading ? 1 : 0) + (finished ? 1 : 0),
       separatorBuilder: (_, __) => const Divider(color: Colors.white12),
@@ -61,7 +63,7 @@ class GeneralPostTab extends StatelessWidget {
             padding: EdgeInsets.all(16),
             child: Center(
               child: Text(
-                AppLocalizations.of(context)!.noMore,
+                i18n.translate('noMore'),
                 style: TextStyle(color: Colors.white),
               ),
             ),

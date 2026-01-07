@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 import 'package:live_app/models/video_info.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/video/video_grid_item.dart';
 import 'package:waterfall_flow/waterfall_flow.dart';
 
@@ -64,6 +64,7 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
   }
 
   Widget _buildShortVideoGrid() {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final filteredResults = widget.results.where((v) => v.type == 1).toList();
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -155,7 +156,7 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
                 child: Text(
-                  AppLocalizations.of(context)!.noMore,
+                  i18n.translate('noMore'),
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
@@ -166,6 +167,7 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
   }
 
   Widget _buildLongVideoList() {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final filteredResults = widget.results.where((v) => v.type == 2).toList();
 
     return CustomScrollView(
@@ -192,7 +194,7 @@ class _GeneralVideoTabState extends ConsumerState<GeneralVideoTab> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
                 child: Text(
-                  AppLocalizations.of(context)!.noMore,
+                  i18n.translate('noMore'),
                   style: const TextStyle(color: Colors.white),
                 ),
               ),

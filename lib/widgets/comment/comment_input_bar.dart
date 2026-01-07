@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
-class CommentInputBar extends StatefulWidget {
+class CommentInputBar extends ConsumerStatefulWidget {
   final TextEditingController controller;
   final String? replyingToName;
   final VoidCallback? onCancelReply;
   final Future<void> Function(String content) onSend;
-  final bool darkStyle; // 控制黑/白主题
+  final bool darkStyle;
 
   const CommentInputBar({
     super.key,
@@ -18,17 +19,23 @@ class CommentInputBar extends StatefulWidget {
   });
 
   @override
-  State<CommentInputBar> createState() => _CommentInputBarState();
+  ConsumerState<CommentInputBar> createState() => _CommentInputBarState();
 }
 
-class _CommentInputBarState extends State<CommentInputBar> {
+class _CommentInputBarState extends ConsumerState<CommentInputBar> {
   bool _isSending = false;
 
   @override
   Widget build(BuildContext context) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+
     final isReplying = widget.replyingToName != null;
     final textColor = widget.darkStyle ? Colors.black : Colors.white;
     final hintColor = widget.darkStyle ? Colors.black54 : Colors.white70;
+
+    final hintText = isReplying
+        ? '${i18n.translate('reply')} ${widget.replyingToName}...'
+        : '${i18n.translate('postComment')}...';
 
     return Row(
       children: [
@@ -39,9 +46,7 @@ class _CommentInputBarState extends State<CommentInputBar> {
             style: TextStyle(color: textColor),
             cursorColor: textColor,
             decoration: InputDecoration(
-              hintText: isReplying
-                  ? "${AppLocalizations.of(context)!.reply} ${widget.replyingToName}..."
-                  : "${AppLocalizations.of(context)!.postComment}...",
+              hintText: hintText,
               hintStyle: TextStyle(color: hintColor),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
@@ -83,7 +88,7 @@ class _CommentInputBarState extends State<CommentInputBar> {
           ),
         if (isReplying && widget.onCancelReply != null && !_isSending)
           IconButton(
-            icon: Icon(Icons.close, color: Colors.grey),
+            icon: const Icon(Icons.close, color: Colors.grey),
             onPressed: widget.onCancelReply,
           ),
       ],

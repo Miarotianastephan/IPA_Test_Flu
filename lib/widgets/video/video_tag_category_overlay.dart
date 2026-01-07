@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/video/video_tag_category_wrap.dart';
 
 import '../../provider/category_tag_provider.dart';
@@ -74,7 +74,7 @@ class TagCategoryOverlayPanelState
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
+    final i18n = ref.read(i18nNotifierProvider.notifier);
     final categoryState = ref.watch(categoryProvider);
     final tagState = ref.watch(videoTagListProvider);
     final size = MediaQuery.of(context).size;
@@ -155,7 +155,7 @@ class TagCategoryOverlayPanelState
                                 Padding(
                                   padding: EdgeInsets.all(12),
                                   child: Text(
-                                    localizations.allCategories,
+                                    i18n.translate("allCategories"),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
@@ -175,7 +175,7 @@ class TagCategoryOverlayPanelState
                                 Padding(
                                   padding: EdgeInsets.all(12),
                                   child: Text(
-                                    localizations.allTags,
+                                    i18n.translate("allTags"),
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,

@@ -1,15 +1,17 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:live_app/l10n/app_localizations.dart';
 
-class LoadingDots extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/i18n_provider.dart';
+
+class LoadingDots extends ConsumerStatefulWidget {
   const LoadingDots({super.key});
 
   @override
-  State<LoadingDots> createState() => _LoadingDotsState();
+  ConsumerState<LoadingDots> createState() => _LoadingDotsState();
 }
 
-class _LoadingDotsState extends State<LoadingDots> {
+class _LoadingDotsState extends ConsumerState<LoadingDots> {
   String _dots = "";
   late Timer _timer;
 
@@ -17,12 +19,9 @@ class _LoadingDotsState extends State<LoadingDots> {
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (!mounted) return;
       setState(() {
-        if (_dots.length < 3) {
-          _dots += ".";
-        } else {
-          _dots = "";
-        }
+        _dots = _dots.length < 3 ? '$_dots.' : '';
       });
     });
   }
@@ -35,8 +34,10 @@ class _LoadingDotsState extends State<LoadingDots> {
 
   @override
   Widget build(BuildContext context) {
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+
     return Text(
-      "${AppLocalizations.of(context)!.loading}$_dots",
+      '${i18n.translate('loading')}$_dots',
       style: const TextStyle(color: Colors.white70, fontSize: 16),
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/l10n/app_localizations.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 
 import '../../models/base_list_state.dart';
 import '../../models/forum_post.dart';
@@ -76,7 +76,9 @@ class _UserPostListState extends ConsumerState<UserPostList>
                       padding: EdgeInsets.all(16),
                       child: Center(
                         child: Text(
-                          AppLocalizations.of(context)!.noMore,
+                          ref
+                              .read(i18nNotifierProvider.notifier)
+                              .translate("noMore"),
                           style: TextStyle(color: Colors.white),
                         ),
                       ),

@@ -9,6 +9,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      
+      # 🔐 Restore Firebase config
+      - name: Restore GoogleService-Info.plist
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > ios/Runner/GoogleService-Info.plist
+          echo "✅ GoogleService-Info.plist restored"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2

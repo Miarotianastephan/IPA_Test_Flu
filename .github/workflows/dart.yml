@@ -16,37 +16,47 @@ jobs:
         with:
           flutter-version: '3.41.0'
 
-      - name: Check Xcode version
-        run: xcodebuild -version
+      - name: Check environment
+        run: |
+          flutter --version
+          dart --version
+          xcodebuild -version
 
-      - name: Install dependencies
-        run: flutter pub get
-
+      # ✅ Nettoyage AVANT pub get
       - name: Clean project
         run: flutter clean
 
-      - name: Install CocoaPods
-        run: |
-          cd ios
-          pod install
+      # ✅ Installer les dépendances
+      - name: Install dependencies
+        run: flutter pub get
 
-      - name: Build iOS
+      # 🔥 IMPORTANT : génère les fichiers iOS (xcconfig inclus)
+      - name: Prepare iOS build
+        run: flutter build ios --debug --no-codesign
+
+      # ✅ Build final release
+      - name: Build iOS Release
         run: flutter build ios --release --no-codesign
 
-      - run: mkdir Payload
+      # 📦 Création IPA
+      - name: Create Payload
+        run: mkdir Payload
         working-directory: build/ios/iphoneos
 
-      - run: mv Runner.app/ Payload
+      - name: Move app
+        run: mv Runner.app/ Payload
         working-directory: build/ios/iphoneos
 
-      - name: Zip output
+      - name: Zip IPA
         run: zip -qq -r -9 FlutterIpaExport.ipa Payload
         working-directory: build/ios/iphoneos
 
-      - name: Get current timestamp
+      # 🏷 Tag dynamique
+      - name: Get timestamp
         id: timestamp
         run: echo "timestamp=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
+      # 🚀 Upload
       - name: Upload IPA
         uses: svenstaro/upload-release-action@v2
         with:

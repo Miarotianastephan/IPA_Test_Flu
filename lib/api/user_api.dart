@@ -16,7 +16,7 @@ class UserApi {
   static const String getInfoById = '$base/getInfoById';
 
   //更新密码
-  static const String updatePassword = '$base/updatePassword';
+  static const String updatePassword = '$base/users/updatePassword';
 
   //绑定密码
   static const String bindPassword = '$base/users/bindPassword';
@@ -54,4 +54,30 @@ class UserApi {
 
   // 上传文件
   static const String upload = "$base/files/upload";
+
+  static const String buyContent = '$base/buyContent';
+  static const String getContentBought = "$base/findContentBought";
+
+  static const String recordPreview = "$base/preview/record";
+  static const String getPreviewQuota = "$base/preview/quota";
+
+  static const String getCurrencyEndpoint = '$base/get-currency';
+
+  static const String trackInstallation = '$base/installations/track';
+
+  static const String getTimePackages = "$base/time-packages";
+  static const String buyTimePackageWithWallet =
+      "$base/time-packages/buy-with-wallet";
+  static const String updateRemainingTime =
+      "$base/time-packages/update-remaining-time";
+
+  static const String userInterest = '$base/user-interest/update-from-watch';
+  static const String userPostInterest =
+      '$base/f-user-interest/update-from-interaction';
+
+  static const String getSponsoredUser = '$base/getSponsoredUser';
+
+  static const String checkUserGiftReceive = '$base/checkUserGiftReceive';
+
+  static const String getNotifCn = '$base/app/getNotifCN';
 }

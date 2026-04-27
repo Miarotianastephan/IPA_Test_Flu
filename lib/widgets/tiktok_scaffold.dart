@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/provider/current_audio_provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 const double scrollSpeed = 300;
@@ -12,7 +11,7 @@ enum TikTokPagePositon { left, right, middle, x }
 class TikTokScaffoldController extends ValueNotifier<TikTokPagePositon> {
   TikTokScaffoldController([
     super.value = TikTokPagePositon.middle,
-    bool enableGesture = true,
+    bool enableGesture = false,
   ]) : _enableGesture = ValueNotifier(enableGesture);
 
   Future? animateToPage(TikTokPagePositon pagePositon) {
@@ -92,6 +91,8 @@ class TikTokScaffold extends StatefulWidget {
 
   final Function()? onPullDownRefresh;
 
+  final int currentTabIndex;
+
   const TikTokScaffold({
     super.key,
     this.header,
@@ -103,6 +104,7 @@ class TikTokScaffold extends StatefulWidget {
     this.currentIndex = 0,
     this.onPullDownRefresh,
     this.controller,
+    required this.currentTabIndex,
   });
 
   @override
@@ -141,7 +143,7 @@ class TikTokScaffoldState extends State<TikTokScaffold>
     });
   }
 
-  Future animateToPage(p, x) async {
+  Future<void> animateToPage(TikTokPagePositon p, double x) async {
     switch (p) {
       case TikTokPagePositon.left:
         await animateTo(screenWidth);
@@ -193,6 +195,7 @@ class TikTokScaffoldState extends State<TikTokScaffold>
             visible: offsetX > -screenWidth,
             maintainState: true,
             child: _MiddlePage(
+              isFirstTab: widget.currentTabIndex == 0,
               absorbing: absorbing,
               onTopDrag: () {
                 // absorbing = true;
@@ -204,6 +207,24 @@ class TikTokScaffoldState extends State<TikTokScaffold>
               tabBar: widget.tabBar,
               isStack: !widget.hasBottomPadding,
               page: widget.page,
+              onHorizontalDragStart: (_) {
+                if (!_enableGesture) return;
+                animationControllerX?.stop();
+                animationControllerY?.stop();
+                animationControllerX?.reset();
+                animationControllerY?.reset();
+              },
+              onHorizontalDragUpdate: (details) {
+                if (widget.rightPage != null) {
+                  onHorizontalDragUpdate(details, screenWidth);
+                }
+              },
+              onHorizontalDragEnd: (details) {
+                if (widget.rightPage != null) {
+                  onHorizontalDragEnd(details, screenWidth);
+                }
+              },
+              enableGesture: _enableGesture,
             ),
           ),
         ),
@@ -428,6 +449,11 @@ class _MiddlePage extends ConsumerWidget {
 
   final Widget? header;
   final Widget? tabBar;
+  final Function(DragStartDetails)? onHorizontalDragStart;
+  final Function(DragUpdateDetails)? onHorizontalDragUpdate;
+  final Function(DragEndDetails)? onHorizontalDragEnd;
+  final bool enableGesture;
+  final bool isFirstTab;
 
   const _MiddlePage({
     this.absorbing,
@@ -438,18 +464,36 @@ class _MiddlePage extends ConsumerWidget {
     this.header,
     required this.tabBar,
     this.page,
+    this.onHorizontalDragStart,
+    this.onHorizontalDragUpdate,
+    this.onHorizontalDragEnd,
+    this.enableGesture = false,
+    required this.isFirstTab,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentAudio = ref.watch(currentAudioProvider);
     Widget tabBarContainer =
         tabBar ?? SizedBox(height: 44, child: Placeholder(color: Colors.red));
+
+    // Envelopper le tabBar dans un GestureDetector pour capturer les gestes horizontaux
+    if (onHorizontalDragStart != null ||
+        onHorizontalDragUpdate != null ||
+        onHorizontalDragEnd != null) {
+      tabBarContainer = GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragStart: onHorizontalDragStart,
+        onHorizontalDragUpdate: onHorizontalDragUpdate,
+        onHorizontalDragEnd: onHorizontalDragEnd,
+        child: tabBarContainer,
+      );
+    }
+
+    final totalPadding = MediaQuery.of(context).padding.bottom;
+
     Widget mainVideoList = Container(
       color: Colors.black,
-      padding: EdgeInsets.only(
-        bottom: isStack ? 0 : 44 + MediaQuery.of(context).padding.bottom,
-      ),
+      padding: EdgeInsets.only(bottom: isStack ? 0 : totalPadding),
       child: page,
     );
     // 刷新标志
@@ -487,55 +531,7 @@ class _MiddlePage extends ConsumerWidget {
       child: Scaffold(
         extendBody: true,
         bottomNavigationBar: tabBarContainer,
-        body: Stack(
-          children: [
-            mainVideoList,
-            if (currentAudio != null)
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  margin: EdgeInsets.only(
-                    bottom: 44 + MediaQuery.of(context).padding.bottom,
-                  ),
-                  color: Colors.black87,
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          currentAudio.cover,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.headphones, color: Colors.white),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          currentAudio.title,
-                          style: const TextStyle(color: Colors.white),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.play_arrow, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () {
-                          ref.read(currentAudioProvider.notifier).state = null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
+        body: mainVideoList,
       ),
     );
     if (page is! PageView) {
@@ -582,7 +578,7 @@ class _RightPageTransform extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Transform.translate(
-      offset: Offset(max(0, offsetX! + screenWidth), 0),
+      offset: Offset(offsetX! + screenWidth, 0),
       child: Container(
         width: screenWidth,
         height: screenHeight,

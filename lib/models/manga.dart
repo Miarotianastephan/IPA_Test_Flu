@@ -13,7 +13,7 @@ class Manga {
   final String? checking;
   final String? processing;
   final String? comment;
-  final int userId;
+  final String userId;
   final int totalChapters;
   final int categoryId;
   final int subCategoryId;

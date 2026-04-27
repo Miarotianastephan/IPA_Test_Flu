@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/html_text_field.dart';
 
 import '../../provider/api_provider.dart';
 import '../../utils/toast_util.dart';
@@ -90,7 +91,7 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
               const SizedBox(height: 32),
 
               // 密码输入
-              TextField(
+              HtmlTextField(
                 controller: _oldPasswordController,
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,
@@ -132,7 +133,7 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextField(
+              HtmlTextField(
                 controller: _newPasswordController,
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,
@@ -174,7 +175,7 @@ class ChangePasswordPageState extends ConsumerState<ChangePasswordPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextField(
+              HtmlTextField(
                 controller: _checkPasswordController,
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,

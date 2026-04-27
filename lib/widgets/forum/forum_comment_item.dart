@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:live_app/page/comment_forum_detail_page.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 import '../../api/services/forum_service.dart';
 import '../../models/forum_comment.dart';
@@ -34,6 +35,7 @@ class ForumCommentItem extends ConsumerStatefulWidget {
 class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
   bool expanded = false;
   bool loading = false;
+  bool _voteSubmitting = false;
   bool childLoaded = false;
   List<ForumComment> childComments = [];
   late final ForumService forumService;
@@ -84,11 +86,14 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
 
   /// 统一设置投票状态：none / up / down
   Future<void> _setVoteState(_VoteState newState) async {
+    if (_voteSubmitting) return;
+
     final oldState = voteState;
     final oldUp = upvoteCount;
     final oldDown = downvoteCount;
 
     setState(() {
+      _voteSubmitting = true;
       _applyVoteTransition(oldState, newState);
       voteState = newState;
       isLike = (voteState == _VoteState.up);
@@ -110,6 +115,12 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
         downvoteCount = oldDown;
         isLike = (voteState == _VoteState.up);
       });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _voteSubmitting = false;
+        });
+      }
     }
   }
 
@@ -237,13 +248,17 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            user?.nickname ?? i18n.translate("unknownUser"),
-                            style: TextStyle(
-                              color: textColor,
-                              fontWeight: FontWeight.bold,
+                          Flexible(
+                            child: Text(
+                              user?.nickname ?? i18n.translate("unknownUser"),
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          VipBadge(vip: user?.vip, vipId: user?.vipId),
 
                           if (toUser != null && widget.isChild) ...[
                             const SizedBox(width: 4),
@@ -259,6 +274,11 @@ class _ForumCommentItemState extends ConsumerState<ForumCommentItem> {
                                 color: replyColor,
                                 fontWeight: FontWeight.bold,
                               ),
+                            ),
+                            VipBadge(
+                              vip: toUser.vip,
+                              vipId: toUser.vipId,
+                              size: 14,
                             ),
                           ],
                         ],

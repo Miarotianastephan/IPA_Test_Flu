@@ -439,6 +439,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String get saveLoginCredentials => 'Guardar credenciales de inicio de sesión';
 
   @override
+  String get saveAccountInfoTitle => 'Guarda la información de tu cuenta';
+
+  @override
+  String get saveAccountInfoDescription =>
+      'Para evitar perder tu cuenta, guarda a tiempo la información de abajo.';
+
+  @override
+  String get accountLabel => 'Cuenta';
+
+  @override
+  String get saveAccountInfoButton => 'Guardar cuenta';
+
+  @override
+  String get accountInfoSavedToAlbum =>
+      'La información de la cuenta se guardó en el álbum';
+
+  @override
+  String get saveFailedTryAgainLater =>
+      'Error al guardar, intenta de nuevo más tarde';
+
+  @override
+  String get screenshotSaveTitle => 'Por favor toma una captura de pantalla';
+
+  @override
   String get clearHistory => 'Borrar historial';
 
   @override

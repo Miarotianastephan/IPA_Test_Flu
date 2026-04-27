@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/utils/phone_number_formatter.dart';
+import 'package:live_app/widgets/html_text_field.dart';
 
 class TextFieldWidget extends ConsumerWidget {
   final String label;
@@ -31,7 +32,7 @@ class TextFieldWidget extends ConsumerWidget {
     final theme = Theme.of(context);
     final i18n = ref.read(i18nNotifierProvider.notifier);
 
-    List<TextInputFormatter>? _getInputFormatters() {
+    List<TextInputFormatter>? getInputFormatters() {
       if (inputFormatters != null) {
         return [...inputFormatters!, LengthLimitingTextInputFormatter(16)];
       }
@@ -42,11 +43,11 @@ class TextFieldWidget extends ConsumerWidget {
     }
 
     if (isEditing) {
-      return TextFormField(
+      return _HtmlTextFormField(
         initialValue: value,
         maxLines: maxLines,
         keyboardType: keyboardType,
-        inputFormatters: _getInputFormatters(),
+        inputFormatters: getInputFormatters(),
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon),
@@ -84,5 +85,72 @@ class TextFieldWidget extends ConsumerWidget {
         ),
       );
     }
+  }
+}
+
+class _HtmlTextFormField extends StatefulWidget {
+  final String initialValue;
+  final int maxLines;
+  final TextInputType keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final InputDecoration decoration;
+  final FormFieldValidator<String>? validator;
+  final FormFieldSetter<String> onSaved;
+
+  const _HtmlTextFormField({
+    required this.initialValue,
+    required this.maxLines,
+    required this.keyboardType,
+    required this.inputFormatters,
+    required this.decoration,
+    required this.validator,
+    required this.onSaved,
+  });
+
+  @override
+  State<_HtmlTextFormField> createState() => _HtmlTextFormFieldState();
+}
+
+class _HtmlTextFormFieldState extends State<_HtmlTextFormField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void didUpdateWidget(covariant _HtmlTextFormField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue &&
+        _controller.text == oldWidget.initialValue) {
+      _controller.text = widget.initialValue;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FormField<String>(
+      initialValue: widget.initialValue,
+      validator: widget.validator,
+      onSaved: widget.onSaved,
+      builder: (field) {
+        return HtmlTextField(
+          controller: _controller,
+          maxLines: widget.maxLines,
+          keyboardType: widget.keyboardType,
+          inputFormatters: widget.inputFormatters,
+          decoration: widget.decoration.copyWith(errorText: field.errorText),
+          onChanged: field.didChange,
+        );
+      },
+    );
   }
 }

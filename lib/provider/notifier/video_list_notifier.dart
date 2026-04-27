@@ -1,22 +1,41 @@
-import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/base_list_state.dart';
 import '../../models/page_response.dart';
 import '../../models/video_info.dart';
 import '../../models/video_list_state.dart';
+import '../../repository/image_repository.dart';
 
 /// 通用视频列表逻辑封装
 abstract class BaseVideoListNotifier extends StateNotifier<VideoListState> {
   final Ref ref;
 
   /// 用户ID → 视频索引列表
-  Map<int, List<int>> userVideoIndexMap = {};
+  Map<String, List<int>> userVideoIndexMap = {};
 
   /// 视频ID → 索引
-  Map<int, int> videoIndexMap = {};
+  Map<String, int> videoIndexMap = {};
 
   BaseVideoListNotifier(this.ref) : super(VideoListState());
+
+  /// Override in feeds that intentionally keep a moving window in memory.
+  int? get maxVideosInMemory => null;
+
+  /// Override in feeds that should drop duplicate videos while merging pages.
+  bool get dedupeByVideoId => false;
+
+  /// Search/category lists may rely on the backend returning an empty page
+  /// instead of accurate totals or limits, so keep the old behavior by default.
+  bool get useSmartFinishedDetection => false;
+
+  /// Append the next page in a few smaller chunks to reduce a single
+  /// frame spike when the list length jumps during active scrolling.
+  bool get supportsIncrementalWebAppend => false;
+
+  int get incrementalWebAppendChunkSize => 6;
 
   /// 子类实现具体加载逻辑
   Future<PageResponse<VideoInfo>?> loadList({required int page});
@@ -25,12 +44,14 @@ abstract class BaseVideoListNotifier extends StateNotifier<VideoListState> {
   Future<void> fetch({bool refresh = false}) async {
     if (state.loading || (state.finished && !refresh)) return;
     try {
+      final previousList = List<VideoInfo>.from(state.list);
       state = state.copyWith(loading: true);
       final page = refresh ? 1 : state.page;
 
       final pageResponse = await loadList(page: page);
       final newList = pageResponse?.list ?? <VideoInfo>[];
       final total = pageResponse?.total ?? 0;
+      final pageSize = pageResponse?.limit ?? newList.length;
 
       List<VideoInfo> updatedVideos;
       int newOffset = state.offset;
@@ -38,35 +59,66 @@ abstract class BaseVideoListNotifier extends StateNotifier<VideoListState> {
       if (refresh) {
         updatedVideos = newList;
         newOffset = 0;
-        userVideoIndexMap = {};
-        videoIndexMap = {};
-        _buildIndexMaps(updatedVideos, 0);
       } else {
-        if (state.list.length + newList.length >
-            BaseListState.maxVideosInMemory) {
-          final int keepCount =
-              BaseListState.maxVideosInMemory - newList.length;
+        final maxRetainedVideos = maxVideosInMemory;
+        if (maxRetainedVideos != null &&
+            maxRetainedVideos > 0 &&
+            state.list.length + newList.length > maxRetainedVideos) {
+          final int keepCount = maxRetainedVideos - newList.length;
           final int removedCount = state.list.length - keepCount;
 
           updatedVideos = [...state.list.sublist(removedCount), ...newList];
 
           newOffset = state.offset + removedCount;
-
-          _cleanIndexMaps(removedCount);
-
-          _buildIndexMaps(newList, keepCount);
         } else {
           updatedVideos = List<VideoInfo>.from(state.list)..addAll(newList);
-
-          _buildIndexMaps(newList, state.list.length);
         }
+      }
+
+      if (dedupeByVideoId) {
+        updatedVideos = _dedupeVideosById(updatedVideos);
+      }
+
+      _rebuildIndexMaps(updatedVideos, newOffset);
+
+      if (!kIsWeb) {
+        preLoadImage(newList);
+      }
+
+      final loadedCount = newOffset + updatedVideos.length;
+      final reachedTotal = total > 0 && loadedCount >= total;
+      final reachedShortPage =
+          pageResponse != null && pageSize > 0 && newList.length < pageSize;
+      final isFinished = useSmartFinishedDetection
+          ? (newList.isEmpty || reachedTotal || reachedShortPage)
+          : newList.isEmpty;
+      final incrementalAppendItems = _extractIncrementalAppendItems(
+        previousList: previousList,
+        updatedVideos: updatedVideos,
+        newOffset: newOffset,
+      );
+
+      if (_shouldUseIncrementalWebAppend(
+        refresh: refresh,
+        pageItems: incrementalAppendItems,
+        newOffset: newOffset,
+      )) {
+        await _appendPageIncrementally(
+          baseList: previousList,
+          pageItems: incrementalAppendItems,
+          page: page,
+          total: total,
+          isFinished: isFinished,
+          offset: newOffset,
+        );
+        return;
       }
 
       state = state.copyWith(
         list: updatedVideos,
         page: page + 1,
         loading: false,
-        finished: newList.isEmpty,
+        finished: isFinished,
         total: total,
         offset: newOffset,
       );
@@ -77,44 +129,98 @@ abstract class BaseVideoListNotifier extends StateNotifier<VideoListState> {
     }
   }
 
-  void _buildIndexMaps(List<VideoInfo> newVideos, int startPhysicalIndex) {
-    for (int i = 0; i < newVideos.length; i++) {
-      final v = newVideos[i];
-      final virtualIndex = startPhysicalIndex + i + state.offset;
+  bool _shouldUseIncrementalWebAppend({
+    required bool refresh,
+    required List<VideoInfo> pageItems,
+    required int newOffset,
+  }) {
+    if (!supportsIncrementalWebAppend ||
+        refresh ||
+        pageItems.length <= incrementalWebAppendChunkSize ||
+        state.list.isEmpty) {
+      return false;
+    }
 
+    return newOffset == state.offset;
+  }
+
+  List<VideoInfo> _extractIncrementalAppendItems({
+    required List<VideoInfo> previousList,
+    required List<VideoInfo> updatedVideos,
+    required int newOffset,
+  }) {
+    if (previousList.isEmpty ||
+        newOffset != state.offset ||
+        updatedVideos.length <= previousList.length) {
+      return const <VideoInfo>[];
+    }
+
+    for (var i = 0; i < previousList.length; i++) {
+      if (previousList[i].id != updatedVideos[i].id) {
+        return const <VideoInfo>[];
+      }
+    }
+
+    return List<VideoInfo>.from(updatedVideos.skip(previousList.length));
+  }
+
+  Future<void> _appendPageIncrementally({
+    required List<VideoInfo> baseList,
+    required List<VideoInfo> pageItems,
+    required int page,
+    required int total,
+    required bool isFinished,
+    required int offset,
+  }) async {
+    final chunkSize = math.max(1, incrementalWebAppendChunkSize);
+    final growingList = List<VideoInfo>.from(baseList);
+
+    await SchedulerBinding.instance.endOfFrame;
+
+    for (int start = 0; start < pageItems.length; start += chunkSize) {
+      final end = math.min(start + chunkSize, pageItems.length);
+      final isLastChunk = end >= pageItems.length;
+      growingList.addAll(pageItems.sublist(start, end));
+      _rebuildIndexMaps(growingList, offset);
+
+      state = state.copyWith(
+        list: List<VideoInfo>.from(growingList),
+        page: isLastChunk ? page + 1 : state.page,
+        loading: !isLastChunk,
+        finished: isLastChunk ? isFinished : state.finished,
+        total: total,
+        offset: offset,
+      );
+
+      if (!isLastChunk) {
+        await SchedulerBinding.instance.endOfFrame;
+      }
+    }
+  }
+
+  void _rebuildIndexMaps(List<VideoInfo> videos, int offset) {
+    userVideoIndexMap = {};
+    videoIndexMap = {};
+
+    for (int i = 0; i < videos.length; i++) {
+      final v = videos[i];
+      final virtualIndex = offset + i;
       userVideoIndexMap.putIfAbsent(v.userId, () => []).add(virtualIndex);
       videoIndexMap[v.id] = virtualIndex;
     }
   }
 
-  void _cleanIndexMaps(int removedCount) {
-    final virtualThreshold = state.offset + removedCount;
+  List<VideoInfo> _dedupeVideosById(List<VideoInfo> videos) {
+    final seen = <String>{};
+    final deduped = <VideoInfo>[];
 
-    final videosToRemove = videoIndexMap.entries
-        .where((e) => e.value < virtualThreshold)
-        .map((e) => e.key)
-        .toList();
-
-    for (final videoId in videosToRemove) {
-      videoIndexMap.remove(videoId);
-    }
-
-    final usersToUpdate = <int>[];
-    for (final entry in userVideoIndexMap.entries) {
-      final updatedIndices = entry.value
-          .where((idx) => idx >= virtualThreshold)
-          .toList();
-
-      if (updatedIndices.isEmpty) {
-        usersToUpdate.add(entry.key);
-      } else {
-        userVideoIndexMap[entry.key] = updatedIndices;
+    for (final video in videos) {
+      if (seen.add(video.id)) {
+        deduped.add(video);
       }
     }
 
-    for (final userId in usersToUpdate) {
-      userVideoIndexMap.remove(userId);
-    }
+    return deduped;
   }
 
   /// 更新单个视频 - O(1)
@@ -132,7 +238,7 @@ abstract class BaseVideoListNotifier extends StateNotifier<VideoListState> {
   }
 
   /// 更新用户所有视频的关注状态 - O(k) where k = users videos
-  void updateFollowStatus(int userId, bool isFollow) {
+  void updateFollowStatus(String userId, bool isFollow) {
     final virtualIndices = userVideoIndexMap[userId];
     if (virtualIndices == null) return;
 
@@ -156,7 +262,7 @@ abstract class BaseVideoListNotifier extends StateNotifier<VideoListState> {
   }
 
   /// 评论数 +1 - O(1)
-  void incrementCommentCount(int videoId) {
+  void incrementCommentCount(String videoId) {
     final virtualIndex = videoIndexMap[videoId];
     if (virtualIndex == null) return;
 
@@ -191,8 +297,6 @@ abstract class BaseVideoListNotifier extends StateNotifier<VideoListState> {
 
     if (currentListLength <= 50) {
       finalVideos = [...state.list, ...videosToAdd];
-
-      _buildIndexMaps(videosToAdd, state.list.length);
     } else {
       final maxToKeep = 50;
       final int keepFromCurrent = maxToKeep - videosToRecycle;
@@ -205,20 +309,40 @@ abstract class BaseVideoListNotifier extends StateNotifier<VideoListState> {
 
         final removedCount = currentListLength - keepFromCurrent;
         newOffset = state.offset + removedCount;
-
-        _cleanIndexMaps(removedCount);
       } else {
         finalVideos = videosToAdd;
         newOffset = state.offset + currentListLength;
-
-        videoIndexMap.clear();
-        userVideoIndexMap.clear();
       }
-
-      final startIndex = keepFromCurrent > 0 ? keepFromCurrent : 0;
-      _buildIndexMaps(videosToAdd, startIndex);
     }
 
+    if (dedupeByVideoId) {
+      finalVideos = _dedupeVideosById(finalVideos);
+    }
+
+    _rebuildIndexMaps(finalVideos, newOffset);
+
     state = state.copyWith(list: finalVideos, offset: newOffset);
+  }
+
+  void preLoadImage(List<VideoInfo> videos) {
+    final imageRepo = ref.read(imageRepositoryProvider);
+    const warmCoverCount = 8;
+
+    for (int index = 0; index < videos.length; index++) {
+      final video = videos[index];
+      final url = video.cover;
+      final userAvatarUrl = video.user.avatar;
+      if (url.isNotEmpty) {
+        if (index < warmCoverCount) {
+          imageRepo.enqueueWarmBytes(url);
+        } else {
+          imageRepo.enqueueDownload(url);
+        }
+      }
+
+      if (userAvatarUrl != null && userAvatarUrl.isNotEmpty) {
+        imageRepo.enqueueDownload(userAvatarUrl);
+      }
+    }
   }
 }

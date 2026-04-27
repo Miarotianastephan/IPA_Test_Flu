@@ -10,7 +10,9 @@ import '../tables.dart';
 
 part 'conversation_dao.g.dart';
 
-@DriftAccessor(tables: [Conversations, ConversationUsers, UserInfos, Messages])
+@DriftAccessor(
+  tables: [Conversations, ConversationUsers, UserInfos, Messages, AgentSupports],
+)
 class ConversationDao extends DatabaseAccessor<AppDatabase>
     with _$ConversationDaoMixin {
   ConversationDao(super.db);
@@ -27,20 +29,16 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
       await into(conversations).insertOnConflictUpdate(conv.toCompanion());
 
       // 删除不再存在的成员（同步服务器状态）
-      final currentUserIds = conv.users.map((u) => u.userId).toSet();
+      final currentIds = conv.users.map((u) => u.effectiveId).toSet();
       final existingUsers = await (select(
         conversationUsers,
       )..where((tbl) => tbl.conversationId.equals(conv.id))).get();
 
       for (final existing in existingUsers) {
-        if (!currentUserIds.contains(existing.userId)) {
-          // 该成员在服务器上已被移除，删除本地记录
-          await (delete(conversationUsers)..where(
-                (tbl) =>
-                    tbl.conversationId.equals(conv.id) &
-                    tbl.userId.equals(existing.userId),
-              ))
-              .go();
+        if (!currentIds.contains(existing.effectiveId)) {
+          await (delete(
+            conversationUsers,
+          )..where((tbl) => tbl.id.equals(existing.id))).go();
         }
       }
 
@@ -51,6 +49,7 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
             id: Value(cu.id),
             conversationId: Value(cu.conversationId),
             userId: Value(cu.userId),
+            agentSupportId: Value(cu.agentSupportId),
             role: Value(cu.role),
             joinedAt: Value(cu.joinedAt),
           ),
@@ -59,6 +58,13 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
         // userInfo
         if (cu.user != null) {
           await into(userInfos).insertOnConflictUpdate(cu.user!.toCompanion());
+        }
+
+        // agentSupport
+        if (cu.agentSupport != null) {
+          await into(agentSupports).insertOnConflictUpdate(
+            cu.agentSupport!.toCompanion(),
+          );
         }
       }
 
@@ -80,7 +86,7 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
   // 删除会话中的特定用户
   Future<void> removeUserFromConversation(
     int conversationId,
-    int userId,
+    String userId,
   ) async {
     await (delete(conversationUsers)..where(
           (tbl) =>
@@ -105,6 +111,10 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
               userInfos,
               userInfos.id.equalsExp(conversationUsers.userId),
             ),
+            leftOuterJoin(
+              agentSupports,
+              agentSupports.id.equalsExp(conversationUsers.agentSupportId),
+            ),
           ]).get();
 
       final users = cuRows.map((row) {
@@ -114,9 +124,11 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
           id: cu.id,
           conversationId: cu.conversationId,
           userId: cu.userId,
+          agentSupportId: cu.agentSupportId,
           role: cu.role,
           joinedAt: cu.joinedAt,
           user: ui,
+          agentSupport: row.readTableOrNull(agentSupports),
         );
       }).toList();
 
@@ -134,9 +146,10 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
     return result;
   }
 
-  // 根据 peerUser 找会话
-  Future<Conversation?> getFullByPeerUser(int peerId) async {
-    // Find single (P2P) conversations where the peer user is a member
+  // 根据 peerUser 找会话 (checks both userId and agentSupportId)
+  Future<Conversation?> getFullByPeerUser(String peerId) async {
+    // Find single (P2P) conversations where the peer is a member
+    // (either as a regular user via userId or as a support agent via agentSupportId)
     final query =
         select(conversationUsers).join([
           innerJoin(
@@ -144,7 +157,8 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
             conversations.id.equalsExp(conversationUsers.conversationId),
           ),
         ])..where(
-          conversationUsers.userId.equals(peerId) &
+          (conversationUsers.userId.equals(peerId) |
+                  conversationUsers.agentSupportId.equals(peerId)) &
               conversations.type.equals('single'),
         );
 
@@ -152,7 +166,6 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
 
     if (results.isEmpty) return null;
 
-    // Get the conversation ID from the first matching single conversation
     final conversationId = results.first
         .readTable(conversationUsers)
         .conversationId;

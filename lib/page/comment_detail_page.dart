@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:live_app/models/vip.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 import 'package:live_app/widgets/comment_item_replies.dart';
 
 import '../api/services/video_service.dart';
@@ -13,7 +15,7 @@ import '../widgets/encrypted_image.dart';
 
 class CommentDetailPage extends ConsumerStatefulWidget {
   final VideoComment parentComment;
-  final int videoId;
+  final String videoId;
 
   const CommentDetailPage({
     super.key,
@@ -36,6 +38,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
   int _page = 1;
 
   String? _replyingToName;
+  Vip? _replyingToVip;
 
   @override
   void initState() {
@@ -101,6 +104,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
   void _onReplyToChild(VideoComment comment) {
     setState(() {
       _replyingToName = comment.commentUser?.nickname;
+      _replyingToVip = comment.commentUser?.vip;
     });
   }
 
@@ -120,6 +124,7 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
         childComments.insert(0, newComment);
 
         _replyingToName = null;
+        _replyingToVip = null;
       });
 
       _commentController.clear();
@@ -160,13 +165,17 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      user?.nickname ?? i18n.translate('unknownUser'),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    Flexible(
+                      child: Text(
+                        user?.nickname ?? i18n.translate('unknownUser'),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    VipBadge(vip: user?.vip),
                     if (toUser != null) ...[
                       const SizedBox(width: 4),
                       Icon(
@@ -175,13 +184,17 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
                         color: Colors.grey[300],
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        toUser.nickname ?? "",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.lightBlueAccent,
+                      Flexible(
+                        child: Text(
+                          toUser.nickname ?? "",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.lightBlueAccent,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      VipBadge(vip: toUser.vip),
                     ],
                   ],
                 ),
@@ -321,9 +334,12 @@ class _CommentDetailPageState extends ConsumerState<CommentDetailPage> {
                 replyingToName:
                     _replyingToName ??
                     widget.parentComment.commentUser?.nickname,
+                replyingToVip:
+                    _replyingToVip ?? widget.parentComment.commentUser?.vip,
                 onCancelReply: () {
                   setState(() {
                     _replyingToName = null;
+                    _replyingToVip = null;
                   });
                 },
                 darkStyle: false,

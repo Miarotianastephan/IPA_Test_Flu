@@ -8,7 +8,7 @@ import 'api_provider.dart';
 
 /// 用户帖子列表 Notifier
 class UserPostListNotifier extends BaseListNotifier<ForumPost> {
-  final int userId;
+  final String userId;
 
   UserPostListNotifier(super.ref, this.userId);
 
@@ -32,5 +32,5 @@ final userPostListProvider =
     StateNotifierProvider.family<
       UserPostListNotifier,
       BaseListState<ForumPost>,
-      int
+      String
     >((ref, userId) => UserPostListNotifier(ref, userId));

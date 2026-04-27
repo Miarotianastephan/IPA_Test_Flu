@@ -1,26 +1,26 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show NetworkAssetBundle;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
     as fln;
-import 'package:firebase_messaging/firebase_messaging.dart' as fcm;
 import 'package:huawei_push/huawei_push.dart' as hms;
 import 'package:path_provider/path_provider.dart';
 import 'package:pushy_flutter/pushy_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../main.dart';
-import 'version_component.dart';
+import 'version_service.dart';
 
 class NotificationService {
   NotificationService._();
 
   static final NotificationService instance = NotificationService._();
 
-  final fcm.FirebaseMessaging _messaging = fcm.FirebaseMessaging.instance;
   static final fln.FlutterLocalNotificationsPlugin localNotifications =
       fln.FlutterLocalNotificationsPlugin();
 
-  final VersionComponent _version = VersionComponent();
+  VersionService? _versionService;
 
   bool _usingFCM = false;
   String? _token;
@@ -31,7 +31,9 @@ class NotificationService {
   // ----------------------------
   // INIT
   // ----------------------------
-  Future<void> init() async {
+  Future<void> init({VersionService? versionService}) async {
+    _versionService = versionService;
+
     const androidSettings = fln.AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
@@ -53,7 +55,7 @@ class NotificationService {
     await _initPushServices();
 
     try {
-      await _version.check(localNotifications);
+      await _versionService?.check(localNotifications);
     } catch (e) {
       debugPrint("Version check failed: $e");
     }
@@ -101,30 +103,7 @@ class NotificationService {
   // PUSH SERVICES INIT
   // ----------------------------
   Future<void> _initPushServices() async {
-    if (Platform.isAndroid) {
-      try {
-        await _messaging.requestPermission();
-        _usingFCM = true;
-        _token = await _messaging.getToken();
-        _listenFCMMessages();
-      } catch (_) {
-        await _initPushyOrHMS();
-      }
-    } else if (Platform.isIOS) {
-      try {
-        await _messaging.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-        _token = await _messaging.getAPNSToken();
-        await _messaging.getToken();
-        _listenFCMMessages();
-        _usingFCM = true;
-      } catch (_) {
-        await _initPushyOrHMS();
-      }
-    }
+    await _initPushyOrHMS();
   }
 
   Future<void> _initPushyOrHMS() async {
@@ -147,25 +126,6 @@ class NotificationService {
     }
   }
 
-  void _listenFCMMessages() {
-    fcm.FirebaseMessaging.onMessage.listen(_showFCMNotification);
-    fcm.FirebaseMessaging.onMessageOpenedApp.listen((msg) {
-      debugPrint("FCM open: ${msg.notification?.title}");
-    });
-    fcm.FirebaseMessaging.onBackgroundMessage(
-      _firebaseMessagingBackgroundHandler,
-    );
-  }
-
-  Future<void> _showFCMNotification(fcm.RemoteMessage message) async {
-    final notification = message.notification;
-    if (notification == null) return;
-    showCustomLocalNotification(
-      notification.title ?? "Notification Firebase",
-      notification.body ?? "",
-      "",
-    );
-  }
 
   Future<fln.FilePathAndroidBitmap?> loadAvatarFromUrl(String url) async {
     try {
@@ -351,13 +311,37 @@ class NotificationService {
       "invitation_approval:$conversationId:$inviteeId",
     );
   }
+
+  Future<void> showAudioNotification(
+    String title,
+    String body, {
+    String? payload,
+  }) async {
+    const androidDetails = fln.AndroidNotificationDetails(
+      'audio_channel',
+      'Audio Playback',
+      channelDescription: 'Lecture audio en cours',
+      importance: fln.Importance.max,
+      priority: fln.Priority.high,
+      ongoing: true,
+      autoCancel: false,
+      playSound: false,
+      styleInformation: fln.MediaStyleInformation(),
+    );
+
+    const notifDetails = fln.NotificationDetails(android: androidDetails);
+
+    await localNotifications.show(
+      0,
+      title,
+      body,
+      notifDetails,
+      payload: payload ?? 'route:/TrackPlayerPage',
+    );
+  }
+
+  Future<void> clearAudioNotification() async {
+    await localNotifications.cancel(0);
+  }
 }
 
-// ----------------------------
-// BACKGROUND HANDLER
-// ----------------------------
-Future<void> _firebaseMessagingBackgroundHandler(
-  fcm.RemoteMessage message,
-) async {
-  debugPrint("FCM background: ${message.notification?.title}");
-}

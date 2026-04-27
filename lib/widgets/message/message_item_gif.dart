@@ -3,9 +3,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/models/vip.dart';
+import 'package:live_app/provider/my_user_provider.dart';
 import 'package:live_app/repository/image_repository.dart';
 import 'package:live_app/utils/text_util.dart';
 import 'package:live_app/widgets/encrypted_image.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class ChatGifMessageItem extends ConsumerStatefulWidget {
@@ -14,13 +17,15 @@ class ChatGifMessageItem extends ConsumerStatefulWidget {
   final bool isSelf;
   final String avatarUrl;
   final String? nickname;
-  final int? userId;
+  final Vip? vip;
+  final String? userId;
   final DateTime createdAt;
   final bool showFailed;
   final bool resending;
   final bool hasRead;
   final VoidCallback? onResend;
   final VoidCallback? onRead;
+  final VoidCallback? onTap;
 
   const ChatGifMessageItem({
     super.key,
@@ -29,6 +34,7 @@ class ChatGifMessageItem extends ConsumerStatefulWidget {
     required this.avatarUrl,
     required this.messageId,
     this.nickname,
+    this.vip,
     this.userId,
     required this.createdAt,
     this.showFailed = true,
@@ -36,6 +42,7 @@ class ChatGifMessageItem extends ConsumerStatefulWidget {
     this.onResend,
     this.hasRead = false,
     this.onRead,
+    this.onTap,
   });
 
   @override
@@ -86,6 +93,8 @@ class _ChatGifMessageItemState extends ConsumerState<ChatGifMessageItem> {
 
   @override
   Widget build(BuildContext context) {
+    final userState = ref.watch(userProvider);
+    final userVip = userState.user?.vip;
     final bubbleColor = const Color.fromARGB(255, 32, 32, 32);
 
     return VisibilityDetector(
@@ -109,6 +118,7 @@ class _ChatGifMessageItemState extends ConsumerState<ChatGifMessageItem> {
                 size: 40,
                 userId: widget.isSelf ? null : widget.userId,
                 nickname: widget.nickname,
+                vip: widget.vip,
               ),
             ),
           const SizedBox(width: 8),
@@ -172,12 +182,21 @@ class _ChatGifMessageItemState extends ConsumerState<ChatGifMessageItem> {
                         if (!widget.isSelf && widget.nickname != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 4, top: 10),
-                            child: Text(
-                              "@${widget.nickname}",
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 15,
-                              ),
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    "@${widget.nickname}",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 15,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                                VipBadge(vip: widget.vip, size: 15),
+                              ],
                             ),
                           ),
                         Stack(
@@ -198,9 +217,14 @@ class _ChatGifMessageItemState extends ConsumerState<ChatGifMessageItem> {
                                   Stack(
                                     alignment: Alignment.center,
                                     children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: _buildGifImage(widget.gifUrl),
+                                      GestureDetector(
+                                        onTap: widget.onTap,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: _buildGifImage(widget.gifUrl),
+                                        ),
                                       ),
                                       if (widget.resending)
                                         Container(
@@ -261,6 +285,7 @@ class _ChatGifMessageItemState extends ConsumerState<ChatGifMessageItem> {
             UserAvatar(
               url: widget.avatarUrl,
               nickname: widget.nickname,
+              vip: userVip,
               size: 40,
             ),
         ],

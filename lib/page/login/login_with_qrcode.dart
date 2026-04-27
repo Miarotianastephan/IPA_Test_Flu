@@ -1,3 +1,5 @@
+/*
+原始扫码登录实现（按需求注释保留）：
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -306,4 +308,26 @@ class _CornerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+*/
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class LoginWithQrcodePage extends ConsumerStatefulWidget {
+  const LoginWithQrcodePage({super.key});
+
+  @override
+  ConsumerState<LoginWithQrcodePage> createState() =>
+      _LoginWithQrcodePageState();
+}
+
+class _LoginWithQrcodePageState extends ConsumerState<LoginWithQrcodePage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('')),
+      body: const Center(child: Text('二维码登录已停用')),
+    );
+  }
 }

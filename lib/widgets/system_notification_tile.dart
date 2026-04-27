@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/models/vip.dart';
 import 'package:live_app/widgets/encrypted_image.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 class SystemNotificationTile extends ConsumerStatefulWidget {
   final String? title;
@@ -12,6 +14,7 @@ class SystemNotificationTile extends ConsumerStatefulWidget {
   final String? avatarUrl;
   final bool isGroupChat;
   final String? nickname;
+  final Vip? vip;
 
   const SystemNotificationTile({
     super.key,
@@ -23,6 +26,7 @@ class SystemNotificationTile extends ConsumerStatefulWidget {
     this.avatarUrl,
     this.isGroupChat = false,
     this.nickname,
+    this.vip,
   });
 
   @override
@@ -38,12 +42,20 @@ class _SystemNotificationTileState
     String translate(String key) => i18n.translate(key);
     return ListTile(
       leading: _buildLeading(),
-      title: Text(
-        widget.title ?? translate("systemNotification"),
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
-        ),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              widget.title ?? translate("systemNotification"),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          VipBadge(vip: widget.vip),
+        ],
       ),
       subtitle: Text(
         widget.lastNotification ??

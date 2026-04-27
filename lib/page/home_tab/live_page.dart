@@ -10,10 +10,7 @@ class LiveTabPage extends ConsumerWidget {
     final i18n = ref.read(i18nNotifierProvider.notifier);
 
     return Center(
-      child: Text(
-        i18n.translate('live'),
-        style: const TextStyle(fontSize: 24),
-      ),
+      child: Text(i18n.translate('live'), style: const TextStyle(fontSize: 24)),
     );
   }
 }

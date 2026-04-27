@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/widgets/video_type_toggle_button.dart';
 
 import '../provider/search_videos_provider.dart';
 import '../widgets/general_video_tab.dart';
 
-/// 区分是“标签页”还是“分类页”
+/// 区分是"标签页"还是"分类页"
 enum VideoTagCategoryType { tag, category }
 
 class VideoTagCategoryPage extends ConsumerStatefulWidget {
@@ -31,15 +30,11 @@ class VideoTagCategoryPage extends ConsumerStatefulWidget {
 }
 
 class _VideoTagCategoryPageState extends ConsumerState<VideoTagCategoryPage> {
-  bool _isLongVideo = false;
   bool _videoLoaded = false;
-
-  /// 短视频 1 / 长视频 2
-  int get _videoType => _isLongVideo ? 2 : 1;
 
   /// 根据外部的 type / id 组合成 SearchVideoParams
   SearchVideoParams get _params => SearchVideoParams(
-    typeId: _videoType,
+    typeId: null,
     sort: null,
     keyword: null,
     categoryId: widget.type == VideoTagCategoryType.category ? widget.id : null,
@@ -71,14 +66,6 @@ class _VideoTagCategoryPageState extends ConsumerState<VideoTagCategoryPage> {
     notifier.fetch(refresh: false);
   }
 
-  void _toggleVideoType() {
-    setState(() {
-      _isLongVideo = !_isLongVideo;
-      _videoLoaded = false;
-    });
-    _fetchVideos();
-  }
-
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
@@ -97,13 +84,6 @@ class _VideoTagCategoryPageState extends ConsumerState<VideoTagCategoryPage> {
         title: Text(widget.title),
         backgroundColor: background,
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          VideoTypeToggleButton(
-            isLongVideo: _isLongVideo,
-            onToggle: _toggleVideoType,
-            withText: true,
-          ),
-        ],
       ),
       body: GeneralVideoTab(
         finished: videoState.finished,
@@ -112,7 +92,6 @@ class _VideoTagCategoryPageState extends ConsumerState<VideoTagCategoryPage> {
         isLoaded: _videoLoaded,
         loading: videoState.loading,
         results: videoState.list,
-        isLongVideo: _isLongVideo,
         provider: searchVideosProvider(_params),
       ),
     );

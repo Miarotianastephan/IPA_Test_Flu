@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/services/app_service.dart';
 import '../config/storage_config.dart';
+import '../models/app_config.dart';
 import 'api_provider.dart';
 
 /// AppConfig 的状态：
@@ -10,21 +11,13 @@ import 'api_provider.dart';
 /// - loading: 是否正在加载
 /// - error: 错误信息
 class AppConfigState {
-  final Map<String, dynamic>? data;
+  final AppConfig? data;
   final bool loading;
   final String? error;
 
-  const AppConfigState({
-    this.data,
-    this.loading = false,
-    this.error,
-  });
+  const AppConfigState({this.data, this.loading = false, this.error});
 
-  AppConfigState copyWith({
-    Map<String, dynamic>? data,
-    bool? loading,
-    String? error,
-  }) {
+  AppConfigState copyWith({AppConfig? data, bool? loading, String? error}) {
     return AppConfigState(
       data: data ?? this.data,
       loading: loading ?? this.loading,
@@ -46,8 +39,10 @@ class AppConfigNotifier extends StateNotifier<AppConfigState> {
     final raw = StorageService.instance.getValue("app_config");
     if (raw != null) {
       try {
-        final map = raw is String ? jsonDecode(raw) : Map<String, dynamic>.from(raw as Map);
-        state = state.copyWith(data: map);
+        final map = raw is String
+            ? jsonDecode(raw) as Map<String, dynamic>
+            : Map<String, dynamic>.from(raw as Map);
+        state = state.copyWith(data: AppConfig.fromJson(map));
       } catch (_) {}
     }
   }
@@ -58,30 +53,35 @@ class AppConfigNotifier extends StateNotifier<AppConfigState> {
       state = state.copyWith(loading: true);
 
       final resp = await appService.appConfig();
-      final config = resp.data;
+      final configMap = resp.data;
 
       // 更新状态
-      state = state.copyWith(data: config, loading: false);
+      if (configMap != null) {
+        final config = AppConfig.fromJson(configMap);
+        state = state.copyWith(data: config, loading: false);
 
-      // 持久化本地
-      if (config != null) {
+        // 持久化本地
         await StorageService.instance.setValue(
           "app_config",
-          jsonEncode(config),
+          jsonEncode(configMap),
         );
+      } else {
+        state = state.copyWith(loading: false);
       }
     } catch (e) {
-      state = state.copyWith(
-        loading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(loading: false, error: e.toString());
     }
+  }
+
+  /// 更新配置数据（用于已获取的配置）
+  void updateConfig(AppConfig? config) {
+    state = state.copyWith(data: config, loading: false);
   }
 }
 
 /// Provider 暴露给全局使用
 final appConfigProvider =
-StateNotifierProvider<AppConfigNotifier, AppConfigState>((ref) {
-  final appService = ref.watch(appServiceProvider);
-  return AppConfigNotifier(appService);
-});
+    StateNotifierProvider<AppConfigNotifier, AppConfigState>((ref) {
+      final appService = ref.watch(appServiceProvider);
+      return AppConfigNotifier(appService);
+    });

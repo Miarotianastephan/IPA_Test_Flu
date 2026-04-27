@@ -11,8 +11,11 @@ abstract class BaseService {
     String endpoint, {
     T Function(dynamic json)? fromJson,
     dynamic body,
+    String? baseUrl,
+    bool showToast = true,
+    bool throwOnError = true,
   }) async {
-    final data = await client.post(endpoint, data: body);
+    final data = await client.post(endpoint, data: body, baseUrl: baseUrl);
 
     // http code 已经在 Dio 层会抛 DioError，这里只需要业务逻辑判断
     final response = ApiResponse<T>.fromJson(
@@ -21,7 +24,37 @@ abstract class BaseService {
     );
 
     if (response.code != 1) {
-      if (response.msg.isNotEmpty &&
+      if (showToast &&
+          response.msg.isNotEmpty &&
+          !response.msg.contains('Any conversation found')) {
+        // ToastUtil.error(response.msg);
+      }
+
+      if (throwOnError) {
+        throw Exception(response.msg);
+      }
+    }
+
+    return response;
+  }
+
+  Future<ApiResponse<T>> get<T>(
+    String endpoint, {
+    T Function(dynamic json)? fromJson,
+    String? baseUrl,
+    bool showToast = true,
+  }) async {
+    final data = await client.get(endpoint, baseUrl: baseUrl);
+
+    // http code 已经在 Dio 层会抛 DioError，这里只需要业务逻辑判断
+    final response = ApiResponse<T>.fromJson(
+      data,
+      fromJson ?? (json) => json as T,
+    );
+
+    if (response.code != 1) {
+      if (showToast &&
+          response.msg.isNotEmpty &&
           !response.msg.contains('Any conversation found')) {
         ToastUtil.error(response.msg);
       }

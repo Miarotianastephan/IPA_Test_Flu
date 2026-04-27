@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/behavior_tracker_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/empty_widget.dart';
 
@@ -10,7 +11,7 @@ import '../comment_item.dart';
 import '../comment_item_replies.dart';
 
 class CommentSection extends ConsumerStatefulWidget {
-  final int videoId;
+  final String videoId;
   final VoidCallback? onComment;
 
   const CommentSection({super.key, required this.videoId, this.onComment});
@@ -24,11 +25,7 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
   final TextEditingController _commentController = TextEditingController();
   final Set<int> _highlightedComments = {};
 
-  void _onReply(VideoComment comment) async {
-    // Ici tu peux ouvrir CommentDetailPage ou juste gérer le reply inline
-    // Pour simplifier, on fait juste un scroll vers le commentaire
-    // ou un callback
-  }
+  void _onReply(VideoComment comment) async {}
 
   Widget _buildCommentItem(VideoComment comment) {
     final expanded = _expandedComments.contains(comment.id);
@@ -112,7 +109,6 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
   @override
   void initState() {
     super.initState();
-    // Charger les commentaires initiaux
     Future.microtask(
       () => ref
           .read(commentsProvider(widget.videoId).notifier)
@@ -189,19 +185,21 @@ class _CommentSectionState extends ConsumerState<CommentSection> {
               if (content.trim().isEmpty) return;
 
               try {
-                await ref
+                final response = await ref
                     .read(commentsProvider(widget.videoId).notifier)
                     .videoService
                     .commentVideo(widget.videoId, content);
+
+                if (response.data != null) {
+                  ref.trackComment();
+                }
 
                 _commentController.clear();
                 await ref
                     .read(commentsProvider(widget.videoId).notifier)
                     .fetch(refresh: true);
                 widget.onComment?.call();
-              } catch (e) {
-                debugPrint('Error sending comment: $e');
-              }
+              } catch (e) {}
             },
           ),
         ),

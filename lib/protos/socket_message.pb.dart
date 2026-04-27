@@ -8,7 +8,7 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
@@ -93,7 +93,6 @@ class MessageMeta extends $pb.GeneratedMessage {
   static MessageMeta create() => MessageMeta._();
   @$core.override
   MessageMeta createEmptyInstance() => create();
-  static $pb.PbList<MessageMeta> createRepeated() => $pb.PbList<MessageMeta>();
   @$core.pragma('dart2js:noInline')
   static MessageMeta getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<MessageMeta>(create);
@@ -231,7 +230,6 @@ class Handshake extends $pb.GeneratedMessage {
   static Handshake create() => Handshake._();
   @$core.override
   Handshake createEmptyInstance() => create();
-  static $pb.PbList<Handshake> createRepeated() => $pb.PbList<Handshake>();
   @$core.pragma('dart2js:noInline')
   static Handshake getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Handshake>(create);
@@ -315,7 +313,6 @@ class Heartbeat extends $pb.GeneratedMessage {
   static Heartbeat create() => Heartbeat._();
   @$core.override
   Heartbeat createEmptyInstance() => create();
-  static $pb.PbList<Heartbeat> createRepeated() => $pb.PbList<Heartbeat>();
   @$core.pragma('dart2js:noInline')
   static Heartbeat getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Heartbeat>(create);
@@ -387,7 +384,6 @@ class Ack extends $pb.GeneratedMessage {
   static Ack create() => Ack._();
   @$core.override
   Ack createEmptyInstance() => create();
-  static $pb.PbList<Ack> createRepeated() => $pb.PbList<Ack>();
   @$core.pragma('dart2js:noInline')
   static Ack getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Ack>(create);
@@ -486,7 +482,6 @@ class ChatMessage extends $pb.GeneratedMessage {
   static ChatMessage create() => ChatMessage._();
   @$core.override
   ChatMessage createEmptyInstance() => create();
-  static $pb.PbList<ChatMessage> createRepeated() => $pb.PbList<ChatMessage>();
   @$core.pragma('dart2js:noInline')
   static ChatMessage getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<ChatMessage>(create);
@@ -581,8 +576,6 @@ class EventMessage extends $pb.GeneratedMessage {
   static EventMessage create() => EventMessage._();
   @$core.override
   EventMessage createEmptyInstance() => create();
-  static $pb.PbList<EventMessage> createRepeated() =>
-      $pb.PbList<EventMessage>();
   @$core.pragma('dart2js:noInline')
   static EventMessage getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<EventMessage>(create);
@@ -701,7 +694,6 @@ class BotMessage extends $pb.GeneratedMessage {
   static BotMessage create() => BotMessage._();
   @$core.override
   BotMessage createEmptyInstance() => create();
-  static $pb.PbList<BotMessage> createRepeated() => $pb.PbList<BotMessage>();
   @$core.pragma('dart2js:noInline')
   static BotMessage getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<BotMessage>(create);
@@ -796,7 +788,6 @@ class BotCommand extends $pb.GeneratedMessage {
   static BotCommand create() => BotCommand._();
   @$core.override
   BotCommand createEmptyInstance() => create();
-  static $pb.PbList<BotCommand> createRepeated() => $pb.PbList<BotCommand>();
   @$core.pragma('dart2js:noInline')
   static BotCommand getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<BotCommand>(create);
@@ -876,8 +867,6 @@ class SystemNotification extends $pb.GeneratedMessage {
   static SystemNotification create() => SystemNotification._();
   @$core.override
   SystemNotification createEmptyInstance() => create();
-  static $pb.PbList<SystemNotification> createRepeated() =>
-      $pb.PbList<SystemNotification>();
   @$core.pragma('dart2js:noInline')
   static SystemNotification getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<SystemNotification>(create);
@@ -975,8 +964,6 @@ class LiveChatMessage extends $pb.GeneratedMessage {
   static LiveChatMessage create() => LiveChatMessage._();
   @$core.override
   LiveChatMessage createEmptyInstance() => create();
-  static $pb.PbList<LiveChatMessage> createRepeated() =>
-      $pb.PbList<LiveChatMessage>();
   @$core.pragma('dart2js:noInline')
   static LiveChatMessage getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<LiveChatMessage>(create);
@@ -1091,7 +1078,6 @@ class ControlBody extends $pb.GeneratedMessage {
   static ControlBody create() => ControlBody._();
   @$core.override
   ControlBody createEmptyInstance() => create();
-  static $pb.PbList<ControlBody> createRepeated() => $pb.PbList<ControlBody>();
   @$core.pragma('dart2js:noInline')
   static ControlBody getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<ControlBody>(create);
@@ -1203,7 +1189,6 @@ class IMBody extends $pb.GeneratedMessage {
   static IMBody create() => IMBody._();
   @$core.override
   IMBody createEmptyInstance() => create();
-  static $pb.PbList<IMBody> createRepeated() => $pb.PbList<IMBody>();
   @$core.pragma('dart2js:noInline')
   static IMBody getDefault() =>
       _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<IMBody>(create);
@@ -1322,8 +1307,6 @@ class BusinessBody extends $pb.GeneratedMessage {
   static BusinessBody create() => BusinessBody._();
   @$core.override
   BusinessBody createEmptyInstance() => create();
-  static $pb.PbList<BusinessBody> createRepeated() =>
-      $pb.PbList<BusinessBody>();
   @$core.pragma('dart2js:noInline')
   static BusinessBody getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<BusinessBody>(create);
@@ -1425,7 +1408,6 @@ class MessageBody extends $pb.GeneratedMessage {
   static MessageBody create() => MessageBody._();
   @$core.override
   MessageBody createEmptyInstance() => create();
-  static $pb.PbList<MessageBody> createRepeated() => $pb.PbList<MessageBody>();
   @$core.pragma('dart2js:noInline')
   static MessageBody getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<MessageBody>(create);
@@ -1505,8 +1487,6 @@ class SocketEnvelope extends $pb.GeneratedMessage {
   static SocketEnvelope create() => SocketEnvelope._();
   @$core.override
   SocketEnvelope createEmptyInstance() => create();
-  static $pb.PbList<SocketEnvelope> createRepeated() =>
-      $pb.PbList<SocketEnvelope>();
   @$core.pragma('dart2js:noInline')
   static SocketEnvelope getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<SocketEnvelope>(create);

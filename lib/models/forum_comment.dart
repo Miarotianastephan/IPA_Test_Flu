@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:live_app/models/vip.dart';
 import 'package:live_app/utils/json_utils.dart';
 
 import 'forum_post.dart';
@@ -13,8 +14,8 @@ class ForumComment {
   @JsonKey(name: 'post_id', fromJson: parseInt)
   final int postId;
 
-  @JsonKey(name: 'user_id', fromJson: parseInt)
-  final int userId;
+  @JsonKey(name: 'user_id')
+  final String userId;
 
   @JsonKey(name: 'parent_id', fromJson: parseInt)
   final int? parentId;
@@ -86,12 +87,19 @@ class ForumComment {
 /// 评论的用户信息
 @JsonSerializable(explicitToJson: true)
 class CommentUser {
-  @JsonKey(fromJson: parseInt)
-  final int id;
+  final String id;
   final String nickname;
   final String? avatar;
+  final String? vipId;
+  final Vip? vip;
 
-  CommentUser({required this.id, required this.nickname, this.avatar});
+  CommentUser({
+    required this.id,
+    required this.nickname,
+    this.avatar,
+    this.vipId,
+    this.vip,
+  });
 
   factory CommentUser.fromJson(Map<String, dynamic> json) =>
       _$CommentUserFromJson(json);

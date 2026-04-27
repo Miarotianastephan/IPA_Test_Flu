@@ -3,11 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/userinfo.dart';
 import '../page/user_detail_page.dart';
+import 'encrypted_image.dart';
 import 'follow_button.dart';
-
-final _followStateProvider = StateProvider.family<bool, UserInfo>(
-  (ref, user) => user.isFollowed,
-);
+import 'vip_badge.dart';
 
 class UserListItem extends ConsumerWidget {
   final UserInfo user;
@@ -23,35 +21,31 @@ class UserListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final followState = ref.watch(_followStateProvider(user));
+    void handleTap() {
+      if (onTap != null) {
+        onTap?.call(user);
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => UserDetailPage(user: user)),
+        );
+      }
+    }
 
-    final isFollowed = followState;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        if (onTap != null) {
-          onTap?.call(user);
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => UserDetailPage(user: user)),
-          );
-        }
-      },
+      onTap: handleTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         child: Row(
           children: [
-            // Avatar
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: Colors.white24,
-              backgroundImage: user.avatar != null && user.avatar!.isNotEmpty
-                  ? NetworkImage(user.avatar!)
-                  : null,
-              child: (user.avatar == null || user.avatar!.isEmpty)
-                  ? const Icon(Icons.person, color: Colors.white)
-                  : null,
+            UserAvatar(
+              url: user.avatar,
+              nickname: user.nickname,
+              userId: user.id,
+              vip: user.vip,
+              size: 40,
+              onTap: handleTap,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -59,14 +53,21 @@ class UserListItem extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    "${user.nickname}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          "${user.nickname}",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      VipBadge(vip: user.vip),
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -79,7 +80,7 @@ class UserListItem extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 20),
-            FollowButton(userId: user.id.toString()),
+            FollowButton(userId: user.id),
           ],
         ),
       ),

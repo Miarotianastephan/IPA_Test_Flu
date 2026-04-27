@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/page/search_detail_page.dart';
+import 'package:live_app/constants/ad_placement.dart';
+import 'package:live_app/provider/ad_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/ad_banner_carousel.dart';
+import 'package:live_app/widgets/html_text_field.dart';
 
 import '../config/storage_config.dart';
 import '../widgets/empty_widget.dart';
@@ -23,14 +27,19 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      ref
+          .read(adListProvider(AdPlacement.videoFeedInFeed).notifier)
+          .fetch(refresh: true);
+    });
     _loadHistory();
   }
 
   /// 加载历史记录
   Future<void> _loadHistory() async {
-    final list = StorageService.instance.getValue<List<String>>(_historyKey);
+    final list = StorageService.instance.getValue<List<dynamic>>(_historyKey);
     setState(() {
-      _history = list ?? [];
+      _history = list?.cast<String>() ?? [];
     });
   }
 
@@ -66,10 +75,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     keyword = keyword.trim();
     if (keyword.isEmpty) return;
 
-    // 保存历史
     _saveHistory(keyword);
-
-    // 跳转到你的搜索结果页面
     _openResultPage(keyword);
   }
 
@@ -83,6 +89,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
+    final adState = ref.watch(adListProvider(AdPlacement.videoFeedInFeed));
 
     return Scaffold(
       backgroundColor: background,
@@ -94,7 +101,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       body: Container(
         color: background,
         padding: const EdgeInsets.all(12),
-        child: _buildHistoryList(context),
+        child: Column(
+          children: [
+            if (adState.list.isNotEmpty) ...[
+              AdBannerCarousel(ads: adState.list),
+              const SizedBox(height: 8),
+            ],
+            Expanded(child: _buildHistoryList(context)),
+          ],
+        ),
       ),
     );
   }
@@ -104,9 +119,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     return Row(
       children: [
         Expanded(
-          child: TextField(
+          child: HtmlTextField(
             controller: _controller,
             autofocus: true,
+            cursorColor: Colors.white,
             textInputAction: TextInputAction.search,
             onSubmitted: _onSearch,
             decoration: InputDecoration(

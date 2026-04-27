@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:live_app/models/ad.dart';
+import 'package:live_app/widgets/ad_banner_carousel.dart';
 import 'package:live_app/widgets/video/recommend_item.dart';
 import 'package:live_app/widgets/video/user_info_row.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../models/video_info.dart';
 import '../../provider/video_detail_provider.dart';
@@ -13,6 +14,7 @@ import 'video_tag_category_wrap.dart';
 
 class VideoDescriptionSection extends ConsumerStatefulWidget {
   final VideoInfo videoInfo;
+  final List<Ad> ads;
 
   // 回调参数
   final Future<void> Function(bool)? onFollowPressed;
@@ -24,6 +26,7 @@ class VideoDescriptionSection extends ConsumerStatefulWidget {
   const VideoDescriptionSection({
     super.key,
     required this.videoInfo,
+    this.ads = const [],
     this.onFollowPressed,
     this.onLike,
     this.onFavorite,
@@ -61,90 +64,98 @@ class _VideoDescriptionSectionState
 
     final videoState = ref.watch(videoDetailProvider(videoInfo.id)); // 自动刷新
     final recommendedVideos = videoState.recommendedVideos;
-    final isLoadingRecommended =
-        videoState.recommendedVideosLoading; // 需要在 Provider 中添加这个状态
+    final isLoadingRecommended = videoState.recommendedVideosLoading;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          UserInfoRow(
-            userId: videoInfo.userId,
-            avatarUrl: videoInfo.user.avatar ?? '',
-            nickname: videoInfo.user.nickname ?? "",
-            fansCount: videoInfo.user.fansCount ?? 0,
-            isFollowed: videoInfo.isFollow,
-            onFollowPressed: (value) async {
-              widget.onFollowPressed?.call(value);
-            },
+    final headerChildren = <Widget>[
+      UserInfoRow(
+        userId: videoInfo.userId,
+        avatarUrl: videoInfo.user.avatar ?? '',
+        nickname: videoInfo.user.nickname ?? "",
+        fansCount: videoInfo.user.fansCount ?? 0,
+        isFollowed: videoInfo.isFollow,
+        vip: videoInfo.user.vip,
+        onFollowPressed: (value) async {
+          widget.onFollowPressed?.call(value);
+        },
+      ),
+      const SizedBox(height: 16),
+      VideoInfoRow(
+        title: videoInfo.title,
+        views: videoInfo.viewCount,
+        comments: videoInfo.commentCount,
+        publishTime: DateFormat('yyyy-MM-dd HH:mm').format(videoInfo.createdAt),
+        description: videoInfo.description,
+        expanded: _expanded,
+        onToggleExpanded: () {
+          setState(() {
+            _expanded = !_expanded;
+          });
+        },
+      ),
+      const SizedBox(height: 16),
+      if (widget.ads.isNotEmpty) ...[
+        AdBannerCarousel(ads: widget.ads),
+        const SizedBox(height: 16),
+      ],
+      VideoTagCategoryWrap(
+        tags: widget.videoInfo.tags,
+        categories: widget.videoInfo.categories,
+        categoryColor: Colors.white,
+        fontSize: 15,
+      ),
+      const SizedBox(height: 16),
+      VideoActionRow(
+        isFavorited: videoInfo.isFavorite,
+        isLiked: videoInfo.isLike,
+        likes: videoInfo.likeCount,
+        favorites: videoInfo.favoriteCount,
+        shares: 10,
+        onLike: (value) async {
+          widget.onLike?.call(value);
+        },
+        onFavorite: (value) async {
+          widget.onFavorite?.call(value);
+        },
+        onShare: widget.onShare ?? () {},
+        videoInfo: videoInfo,
+      ),
+      const SizedBox(height: 24),
+    ];
+
+    return CustomScrollView(
+      key: PageStorageKey('video-description-${videoInfo.id}'),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate.fixed(headerChildren),
           ),
-          const SizedBox(height: 16),
-
-          VideoInfoRow(
-            title: videoInfo.title,
-            views: videoInfo.viewCount,
-            comments: videoInfo.commentCount,
-            publishTime: DateFormat(
-              'yyyy-MM-dd HH:mm',
-            ).format(videoInfo.createdAt),
-            description: videoInfo.description,
-            expanded: _expanded,
-            onToggleExpanded: () {
-              setState(() {
-                _expanded = !_expanded;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-
-          VideoTagCategoryWrap(
-            tags: widget.videoInfo.tags,
-            categories: widget.videoInfo.categories,
-            categoryColor: Colors.white,
-            fontSize: 15,
-          ),
-          const SizedBox(height: 16),
-
-          VideoActionRow(
-            isFavorited: videoInfo.isFavorite,
-            isLiked: videoInfo.isLike,
-            likes: videoInfo.likeCount,
-            favorites: videoInfo.favoriteCount,
-            shares: 10,
-            onLike: (value) async {
-              widget.onLike?.call(value);
-            },
-            onFavorite: (value) async {
-              widget.onFavorite?.call(value);
-            },
-            onShare: widget.onShare ?? () {},
-            videoInfo: videoInfo,
-          ),
-
-          const SizedBox(height: 24),
-
-          Skeletonizer(
-            enabled: isLoadingRecommended,
-            child: Column(
-              children: recommendedVideos.isNotEmpty
-                  ? recommendedVideos.map((video) {
-                      return RecommendedVideoItem(
-                        video: video,
-                        onTap: widget.onRecommendedVideoTap,
-                      );
-                    }).toList()
-                  : [
-                      RecommendedVideoSkeleton(),
-                      RecommendedVideoSkeleton(),
-                      RecommendedVideoSkeleton(),
-                      RecommendedVideoSkeleton(),
-                      RecommendedVideoSkeleton(),
-                    ],
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                if (recommendedVideos.isNotEmpty) {
+                  return RecommendedVideoItem(
+                    video: recommendedVideos[index],
+                    onTap: widget.onRecommendedVideoTap,
+                  );
+                }
+                if (isLoadingRecommended) {
+                  return const RecommendedVideoSkeleton();
+                }
+                return null;
+              },
+              childCount: recommendedVideos.isNotEmpty
+                  ? recommendedVideos.length
+                  : (isLoadingRecommended ? 5 : 0),
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: true,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

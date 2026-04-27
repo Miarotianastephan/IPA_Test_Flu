@@ -48,7 +48,7 @@ class GroupChatController extends StateNotifier<GroupChatState> {
 
   final int conversationId;
 
-  int? selfUserId;
+  String? selfUserId;
 
   GroupChatController(
     this.ref,

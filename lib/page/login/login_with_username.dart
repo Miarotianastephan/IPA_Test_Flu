@@ -5,10 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/models/api_response.dart';
 import 'package:live_app/models/userinfo.dart';
-import 'package:live_app/page/login/login_with_cert.dart';
-import 'package:live_app/page/login/login_with_qrcode.dart';
 import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/html_text_field.dart';
 
 import '../../provider/current_user_provider.dart';
 import '../../utils/toast_util.dart';
@@ -56,19 +55,16 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
       final res = await currentUserNotifier.login(username, password);
 
       if (res?.data != null) {
-        ToastUtil.success(translate("loginSuccess"));
-        getAppConfig();
-
         if (!mounted) return;
+        ToastUtil.success(translate("loginSuccess"));
+        await getAppConfig();
       } else {
+        if (!mounted) return;
         ToastUtil.warning(translate("loginFailed"));
       }
     } catch (err, stack) {
       debugPrint("登录失败: $err");
       debugPrintStack(stackTrace: stack);
-      setState(() {
-        _isLoading = false;
-      });
     } finally {
       if (mounted) {
         setState(() {
@@ -138,7 +134,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                       const SizedBox(height: 32),
 
                       // 账号输入
-                      TextField(
+                      HtmlTextField(
                         controller: _usernameController,
                         cursorColor: theme.colorScheme.onSurface,
                         decoration: InputDecoration(
@@ -158,7 +154,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                       const SizedBox(height: 16),
 
                       // 密码输入
-                      TextField(
+                      HtmlTextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         cursorColor: theme.colorScheme.onSurface,
@@ -212,64 +208,64 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                       const SizedBox(height: 24),
 
                       // 第三方登录
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(translate("otherLoginMethods")),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                GestureDetector(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => LoginWithQrcodePage(),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Icon(
-                                        Icons.qr_code,
-                                        size: 36,
-                                        color: Colors.green,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        translate("loginWithQrcode"),
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 24),
-                                GestureDetector(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => LoginWithCertPage(),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Icon(
-                                        Icons.key_outlined,
-                                        size: 36,
-                                        color: Colors.blueAccent,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        translate("loginWithCredential"),
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                      // Center(
+                      //   child: Column(
+                      //     children: [
+                      //       Text(translate("otherLoginMethods")),
+                      //       const SizedBox(height: 16),
+                      //       Row(
+                      //         mainAxisAlignment: MainAxisAlignment.center,
+                      //         children: [
+                      //           GestureDetector(
+                      //             onTap: () => Navigator.push(
+                      //               context,
+                      //               MaterialPageRoute(
+                      //                 builder: (_) => LoginWithQrcodePage(),
+                      //               ),
+                      //             ),
+                      //             child: Column(
+                      //               children: [
+                      //                 Icon(
+                      //                   Icons.qr_code,
+                      //                   size: 36,
+                      //                   color: Colors.green,
+                      //                 ),
+                      //                 const SizedBox(height: 4),
+                      //                 Text(
+                      //                   translate("loginWithQrcode"),
+                      //                   style: const TextStyle(fontSize: 12),
+                      //                 ),
+                      //               ],
+                      //             ),
+                      //           ),
+                      //           const SizedBox(width: 24),
+                      //           GestureDetector(
+                      //             onTap: () => Navigator.push(
+                      //               context,
+                      //               MaterialPageRoute(
+                      //                 builder: (_) => LoginWithCertPage(),
+                      //               ),
+                      //             ),
+                      //             child: Column(
+                      //               children: [
+                      //                 Icon(
+                      //                   Icons.key_outlined,
+                      //                   size: 36,
+                      //                   color: Colors.blueAccent,
+                      //                 ),
+                      //                 const SizedBox(height: 4),
+                      //                 Text(
+                      //                   translate("loginWithCredential"),
+                      //                   style: const TextStyle(fontSize: 12),
+                      //                 ),
+                      //               ],
+                      //             ),
+                      //           ),
+                      //         ],
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

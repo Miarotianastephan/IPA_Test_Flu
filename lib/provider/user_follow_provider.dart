@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/api_provider.dart';
-import 'package:live_app/utils/json_utils.dart';
 
 class FollowState {
   final bool isFollowed;
@@ -39,7 +38,7 @@ class UserFollowNotifier extends StateNotifier<FollowState> {
 
     try {
       final userService = ref.read(userServiceProvider);
-      final response = await userService.getInfoById(parseInt(userId));
+      final response = await userService.getInfoById(userId);
 
       final userData = response.data;
       if (userData != null) {
@@ -80,14 +79,14 @@ class UserFollowNotifier extends StateNotifier<FollowState> {
           fansCount: state.fansCount - 1,
         );
 
-        await userService.unfollow(parseInt(userId));
+        await userService.unfollow(userId);
       } else {
         state = state.copyWith(
           isFollowed: true,
           fansCount: state.fansCount + 1,
         );
 
-        await userService.follow(parseInt(userId));
+        await userService.follow(userId);
       }
     } catch (e) {
       state = previousState;

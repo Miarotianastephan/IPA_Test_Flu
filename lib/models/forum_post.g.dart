@@ -8,19 +8,20 @@ part of 'forum_post.dart';
 
 ForumPost _$ForumPostFromJson(Map<String, dynamic> json) => ForumPost(
   id: parseInt(json['id']),
-  userId: parseInt(json['user_id']),
+  userId: json['user_id'] as String,
   categoryId: parseInt(json['category_id']),
-  title: json['title'] as String,
-  content: json['content'] as String,
+  title: json['title'] as String? ?? '',
+  content: json['content'] as String? ?? '',
+  description: json['description'] as String? ?? '',
   isPinned: parseBool(json['is_pinned']),
   isFeatured: parseBool(json['is_featured']),
   status: parseInt(json['status']),
   price: parseDouble(json['price']),
-  favoriteCount: (json['favorite_count'] as num).toInt(),
-  likeCount: (json['like_count'] as num).toInt(),
-  dislikeCount: (json['dislike_count'] as num).toInt(),
-  viewCount: (json['view_count'] as num).toInt(),
-  commentCount: (json['comment_count'] as num).toInt(),
+  favoriteCount: parseInt(json['favorite_count']),
+  likeCount: parseInt(json['like_count']),
+  dislikeCount: parseInt(json['dislike_count']),
+  viewCount: parseInt(json['view_count']),
+  commentCount: parseInt(json['comment_count']),
   createdAt: DateTime.parse(json['created_at'] as String),
   updatedAt: DateTime.parse(json['updated_at'] as String),
   deletedAt: json['deleted_at'] == null
@@ -32,15 +33,20 @@ ForumPost _$ForumPostFromJson(Map<String, dynamic> json) => ForumPost(
   attachments: (json['attachments'] as List<dynamic>?)
       ?.map((e) => ForumAttachment.fromJson(e as Map<String, dynamic>))
       .toList(),
-  isLiked: parseBool(json['is_liked']),
-  isFavorited: parseBool(json['is_favorited']),
-  isDownvoted: parseBool(json['is_downvoted']),
+  isLiked: json['is_liked'] == null ? false : parseBool(json['is_liked']),
+  isFavorited: json['is_favorited'] == null
+      ? false
+      : parseBool(json['is_favorited']),
+  isDownvoted: json['is_downvoted'] == null
+      ? false
+      : parseBool(json['is_downvoted']),
   user: json['user'] == null
       ? null
       : SimpleUser.fromJson(json['user'] as Map<String, dynamic>),
   tags: (json['post_tags'] as List<dynamic>?)
       ?.map((e) => ForumTag.fromJson(e as Map<String, dynamic>))
       .toList(),
+  isBought: json['buyed'] == null ? false : parseBool(json['buyed']),
 );
 
 Map<String, dynamic> _$ForumPostToJson(ForumPost instance) => <String, dynamic>{
@@ -49,6 +55,7 @@ Map<String, dynamic> _$ForumPostToJson(ForumPost instance) => <String, dynamic>{
   'category_id': instance.categoryId,
   'title': instance.title,
   'content': instance.content,
+  'description': instance.description,
   'is_pinned': instance.isPinned,
   'is_featured': instance.isFeatured,
   'status': instance.status,
@@ -61,6 +68,7 @@ Map<String, dynamic> _$ForumPostToJson(ForumPost instance) => <String, dynamic>{
   'created_at': instance.createdAt.toIso8601String(),
   'updated_at': instance.updatedAt.toIso8601String(),
   'deleted_at': instance.deletedAt?.toIso8601String(),
+  'buyed': instance.isBought,
   'category': instance.category?.toJson(),
   'attachments': instance.attachments?.map((e) => e.toJson()).toList(),
   'is_liked': instance.isLiked,

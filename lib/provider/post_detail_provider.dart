@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/models/behavior_trigger_rule.dart';
+import 'package:live_app/provider/behavior_tracker_provider.dart';
 
 import '../models/forum_post.dart';
 import 'api_provider.dart';
@@ -26,8 +28,20 @@ class PostDetailState {
 /// 帖子详情 StateNotifier
 class PostDetailNotifier extends StateNotifier<PostDetailState> {
   final Ref ref;
+  int? _voteOperationId = 0;
+  int? _favoriteOperationId = 0;
 
   PostDetailNotifier(this.ref) : super(PostDetailState());
+
+  int _nextVoteOperationId() {
+    _voteOperationId = (_voteOperationId ?? 0) + 1;
+    return _voteOperationId!;
+  }
+
+  int _nextFavoriteOperationId() {
+    _favoriteOperationId = (_favoriteOperationId ?? 0) + 1;
+    return _favoriteOperationId!;
+  }
 
   /// 加载帖子详情
   Future<void> loadPostDetail(int postId) async {
@@ -51,6 +65,7 @@ class PostDetailNotifier extends StateNotifier<PostDetailState> {
     } finally {
       state = state.copyWith(loading: false);
     }
+    userPostInterest(interactionType: "view");
   }
 
   /// 点赞 / 取消点赞
@@ -60,36 +75,41 @@ class PostDetailNotifier extends StateNotifier<PostDetailState> {
 
     final service = ref.read(forumServiceProvider);
     final newValue = !post.isLiked;
+    final previousPost = post;
+    final operationId = _nextVoteOperationId();
 
-    final oldPost = post;
+    state = state.copyWith(
+      post: post.copyWith(
+        isLiked: newValue,
+        likeCount: newValue
+            ? post.likeCount + 1
+            : (post.likeCount > 0 ? post.likeCount - 1 : 0),
+        isDownvoted: newValue ? false : post.isDownvoted,
+        dislikeCount: newValue && (post.isDownvoted ?? false)
+            ? (post.dislikeCount > 0 ? post.dislikeCount - 1 : 0)
+            : post.dislikeCount,
+      ),
+    );
 
     try {
       if (newValue && (post.isDownvoted ?? false)) {
         await service.voteCancel(post.id);
       }
 
-
       if (newValue) {
         await service.vote(post.id, "up");
+        ref
+            .read(userBehaviorStatsProvider.notifier)
+            .incrementEvent(BehaviorEventType.likeCount);
+        userPostInterest(interactionType: "like");
       } else {
         await service.voteCancel(post.id);
       }
-
-      state = state.copyWith(
-        post: post.copyWith(
-          isLiked: newValue,
-          likeCount: newValue
-              ? post.likeCount + 1
-              : (post.likeCount > 0 ? post.likeCount - 1 : 0),
-          isDownvoted: newValue ? false : post.isDownvoted,
-          dislikeCount: newValue && (post.isDownvoted ?? false)
-              ? (post.dislikeCount > 0 ? post.dislikeCount - 1 : 0)
-              : post.dislikeCount,
-        ),
-      );
     } catch (e) {
       debugPrint("Erreur toggleLike: $e");
-      state = state.copyWith(post: oldPost);
+      if (operationId == _voteOperationId) {
+        _restoreVoteFields(previousPost);
+      }
     }
   }
 
@@ -100,19 +120,25 @@ class PostDetailNotifier extends StateNotifier<PostDetailState> {
 
     final service = ref.read(forumServiceProvider);
     final newValue = !post.isFavorited;
+    final previousPost = post;
+    final operationId = _nextFavoriteOperationId();
+
+    state = state.copyWith(
+      post: post.copyWith(
+        isFavorited: newValue,
+        favoriteCount: newValue
+            ? post.favoriteCount + 1
+            : (post.favoriteCount > 0 ? post.favoriteCount - 1 : 0),
+      ),
+    );
 
     try {
       await service.favorite(post.id);
-
-      state = state.copyWith(
-        post: post.copyWith(
-          isFavorited: newValue,
-          favoriteCount: newValue
-              ? post.favoriteCount + 1
-              : (post.favoriteCount > 0 ? post.favoriteCount - 1 : 0),
-        ),
-      );
-    } catch (_) {}
+    } catch (_) {
+      if (operationId == _favoriteOperationId) {
+        _restoreFavoriteFields(previousPost);
+      }
+    }
   }
 
   /// 点踩 / 取消点踩
@@ -122,6 +148,21 @@ class PostDetailNotifier extends StateNotifier<PostDetailState> {
 
     final service = ref.read(forumServiceProvider);
     final newValue = !(post.isDownvoted ?? false);
+    final previousPost = post;
+    final operationId = _nextVoteOperationId();
+
+    state = state.copyWith(
+      post: post.copyWith(
+        isDownvoted: newValue,
+        dislikeCount: newValue
+            ? post.dislikeCount + 1
+            : (post.dislikeCount > 0 ? post.dislikeCount - 1 : 0),
+        isLiked: newValue ? false : post.isLiked,
+        likeCount: newValue && post.isLiked
+            ? (post.likeCount > 0 ? post.likeCount - 1 : 0)
+            : post.likeCount,
+      ),
+    );
 
     try {
       if (newValue) {
@@ -135,20 +176,11 @@ class PostDetailNotifier extends StateNotifier<PostDetailState> {
       } else {
         await service.voteCancel(post.id);
       }
-
-      state = state.copyWith(
-        post: post.copyWith(
-          isDownvoted: newValue,
-          dislikeCount: newValue
-              ? post.dislikeCount + 1
-              : (post.dislikeCount > 0 ? post.dislikeCount - 1 : 0),
-          isLiked: newValue ? false : post.isLiked,
-          likeCount: newValue && post.isLiked
-              ? (post.likeCount > 0 ? post.likeCount - 1 : 0)
-              : post.likeCount,
-        ),
-      );
-    } catch (_) {}
+    } catch (_) {
+      if (operationId == _voteOperationId) {
+        _restoreVoteFields(previousPost);
+      }
+    }
   }
 
   /// 关注 / 取消关注作者
@@ -186,11 +218,70 @@ class PostDetailNotifier extends StateNotifier<PostDetailState> {
       post: post.copyWith(commentCount: post.commentCount + 1),
     );
   }
+
+  void markAsPurchased() {
+    final post = state.post;
+    if (post == null) return;
+
+    state = state.copyWith(post: post.copyWith(isBought: true));
+  }
+
+  Future<bool> userPostInterest({
+    required String interactionType,
+    int? watchDuration,
+    int? videoDuration,
+  }) async {
+    try {
+      final service = ref.read(userServiceProvider);
+      final response = await service.userPostInterest(
+        postId: state.post!.id.toString(),
+        interactionType: interactionType,
+        watchDuration: watchDuration,
+        videoDuration: videoDuration,
+      );
+      final code = response.code == 1;
+      if (code) {
+        return true;
+      }
+      return false;
+    } catch (e, stack) {
+      debugPrint('User Interest Error: $e\n$stack');
+      return false;
+    } finally {
+      state = state.copyWith();
+    }
+  }
+
+  void _restoreVoteFields(ForumPost previousPost) {
+    final currentPost = state.post;
+    if (currentPost == null) return;
+
+    state = state.copyWith(
+      post: currentPost.copyWith(
+        isLiked: previousPost.isLiked,
+        likeCount: previousPost.likeCount,
+        isDownvoted: previousPost.isDownvoted,
+        dislikeCount: previousPost.dislikeCount,
+      ),
+    );
+  }
+
+  void _restoreFavoriteFields(ForumPost previousPost) {
+    final currentPost = state.post;
+    if (currentPost == null) return;
+
+    state = state.copyWith(
+      post: currentPost.copyWith(
+        isFavorited: previousPost.isFavorited,
+        favoriteCount: previousPost.favoriteCount,
+      ),
+    );
+  }
 }
 
 /// Provider
 final postDetailProvider =
-    StateNotifierProvider.family<PostDetailNotifier, PostDetailState, int>((
+    StateNotifierProvider.family<PostDetailNotifier, PostDetailState, int?>((
       ref,
       postId,
     ) {

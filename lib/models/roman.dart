@@ -10,7 +10,7 @@ class Roman {
   final int id;
   final String ref;
   final String? comment;
-  final int userId;
+  final String userId;
   final int creatorId;
   final int categoryId;
   final int subCategoryId;

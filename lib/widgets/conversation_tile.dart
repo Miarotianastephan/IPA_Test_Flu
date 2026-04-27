@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:live_app/provider/emoji_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/models/vip.dart';
 import 'package:live_app/widgets/encrypted_image.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 class ConversationTile extends ConsumerStatefulWidget {
   final String? title;
@@ -17,6 +19,7 @@ class ConversationTile extends ConsumerStatefulWidget {
   final String? avatarUrl;
   final bool isGroupChat;
   final String? nickname;
+  final Vip? vip;
 
   const ConversationTile({
     super.key,
@@ -28,6 +31,7 @@ class ConversationTile extends ConsumerStatefulWidget {
     this.avatarUrl,
     this.isGroupChat = false,
     this.nickname,
+    this.vip,
   });
 
   @override
@@ -35,12 +39,37 @@ class ConversationTile extends ConsumerStatefulWidget {
 }
 
 class _ConversationTileState extends ConsumerState<ConversationTile> {
+  static const _previewTextStyle = TextStyle(
+    color: Color.fromARGB(255, 158, 158, 158),
+    fontSize: 16,
+  );
+
   Widget buildMessageContent(String messageContent) {
     final regex = RegExp(r'\^\*#\*([\w]+)\*#\*\^');
     final matches = regex.allMatches(messageContent);
 
+    // Check if message has multiple lines
+    final hasMultipleLines = messageContent.contains('\n');
+    final displayContent = hasMultipleLines
+        ? messageContent.split('\n').first
+        : messageContent;
+
     if (matches.isEmpty) {
-      return Text(messageContent, style: TextStyle(fontSize: 16));
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              displayContent,
+              style: _previewTextStyle,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (hasMultipleLines) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.more_horiz, size: 16, color: Colors.grey),
+          ],
+        ],
+      );
     }
 
     final emojiState = ref.watch(emojiProvider(1));
@@ -48,15 +77,17 @@ class _ConversationTileState extends ConsumerState<ConversationTile> {
     final children = <InlineSpan>[];
     int lastEnd = 0;
 
+    // Process only the first line for display
+    final contentToProcess = hasMultipleLines
+        ? messageContent.split('\n').first
+        : messageContent;
+
     for (final match in matches) {
       if (match.start > lastEnd) {
         children.add(
           TextSpan(
-            text: messageContent.substring(lastEnd, match.start),
-            style: TextStyle(
-              color: const Color.fromARGB(255, 158, 158, 158),
-              fontSize: 16,
-            ),
+            text: contentToProcess.substring(lastEnd, match.start),
+            style: _previewTextStyle,
           ),
         );
       }
@@ -77,22 +108,35 @@ class _ConversationTileState extends ConsumerState<ConversationTile> {
           ),
         );
       } catch (e) {
-        children.add(TextSpan(text: code, style: TextStyle(fontSize: 16)));
+        children.add(TextSpan(text: code, style: _previewTextStyle));
       }
 
       lastEnd = match.end;
     }
 
-    if (lastEnd < messageContent.length) {
+    if (lastEnd < contentToProcess.length) {
       children.add(
         TextSpan(
-          text: messageContent.substring(lastEnd),
-          style: TextStyle(fontSize: 16),
+          text: contentToProcess.substring(lastEnd),
+          style: _previewTextStyle,
         ),
       );
     }
 
-    return RichText(text: TextSpan(children: children));
+    return Row(
+      children: [
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: children),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (hasMultipleLines) ...[
+          const SizedBox(width: 4),
+          Icon(Icons.more_horiz, size: 16, color: Colors.grey),
+        ],
+      ],
+    );
   }
 
   @override
@@ -101,12 +145,22 @@ class _ConversationTileState extends ConsumerState<ConversationTile> {
     String translate(String key) => i18n.translate(key);
     return ListTile(
       leading: _buildLeading(),
-      title: Text(
-        widget.title ?? translate("systemNotification"),
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
-        ),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              widget.title ?? translate("systemNotification"),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          VipBadge(
+            vip: widget.vip,
+          ), // Changed from logoUrl: widget.vipLogoUrl to vip: widget.vip
+        ],
       ),
       subtitle: buildMessageContent(
         widget.lastMessage ?? translate("checkTheLatestSystemNotification"),
@@ -133,6 +187,7 @@ class _ConversationTileState extends ConsumerState<ConversationTile> {
       key: ValueKey(widget.avatarUrl ?? widget.nickname),
       url: widget.avatarUrl,
       nickname: widget.nickname,
+      vip: widget.vip,
       size: 40,
     );
   }

@@ -43,3 +43,39 @@ String formatMessageTime(DateTime time) {
   // 同一天 → 只显示时间
   return "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}";
 }
+
+bool isValidUrl(String? url) {
+  if (url == null || url.isEmpty) return false;
+
+  try {
+    final uri = Uri.parse(url);
+    if (uri.scheme != 'http' && uri.scheme != 'https') return false;
+    if (uri.host.isEmpty) return false;
+    if (url.contains('..')) return false;
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+String formatBytes(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  if (bytes < 1024 * 1024 * 1024) {
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+}
+
+enum ImageFileType { pdf, enc }
+
+ImageFileType? getImageFileType(String url) {
+  final uri = Uri.tryParse(url);
+  final lower = (uri?.path.isNotEmpty == true ? uri!.path : url).toLowerCase();
+
+  if (lower.endsWith('.pdf')) return ImageFileType.pdf;
+  if (lower.endsWith('.enc')) return ImageFileType.enc;
+
+  // 都不是就返回 null
+  return null;
+}

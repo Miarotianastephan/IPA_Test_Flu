@@ -4,15 +4,18 @@ import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/user_follow_provider.dart';
 import 'package:live_app/utils/utils.dart';
 import 'package:live_app/widgets/follow_button.dart';
+import 'package:live_app/widgets/vip_badge.dart';
+import 'package:live_app/models/vip.dart';
 
 import '../encrypted_image.dart';
 
 class UserInfoRow extends ConsumerStatefulWidget {
   final String avatarUrl;
-  final int userId;
+  final String userId;
   final String nickname;
   final int fansCount;
   final bool isFollowed;
+  final Vip? vip;
   final Function(bool isFollowed)? onFollowPressed;
 
   const UserInfoRow({
@@ -22,6 +25,7 @@ class UserInfoRow extends ConsumerStatefulWidget {
     required this.nickname,
     required this.fansCount,
     required this.isFollowed,
+    this.vip,
     this.onFollowPressed,
   });
 
@@ -36,7 +40,7 @@ class _UserInfoRowState extends ConsumerState<UserInfoRow> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref
-            .read(userFollowProvider(widget.userId.toString()).notifier)
+            .read(userFollowProvider(widget.userId).notifier)
             .setFromBackend(
               isFollowed: widget.isFollowed,
               fansCount: widget.fansCount,
@@ -49,7 +53,7 @@ class _UserInfoRowState extends ConsumerState<UserInfoRow> {
   @override
   Widget build(BuildContext context) {
     final i18n = ref.read(i18nNotifierProvider.notifier);
-    final followState = ref.watch(userFollowProvider(widget.userId.toString()));
+    final followState = ref.watch(userFollowProvider(widget.userId));
 
     return Row(
       children: [
@@ -74,14 +78,25 @@ class _UserInfoRowState extends ConsumerState<UserInfoRow> {
                     userId: widget.userId,
                     url: widget.avatarUrl,
                     nickname: widget.nickname,
+                    vip: widget.vip,
                   );
                 },
-                child: Text(
-                  widget.nickname,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        widget.nickname,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    VipBadge(vip: widget.vip),
+                  ],
                 ),
               ),
               const SizedBox(height: 2),
@@ -93,7 +108,7 @@ class _UserInfoRowState extends ConsumerState<UserInfoRow> {
           ),
         ),
 
-        FollowButton(userId: widget.userId.toString()),
+        FollowButton(userId: widget.userId),
       ],
     );
   }

@@ -5,10 +5,15 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:live_app/constants/ad_placement.dart';
 import 'package:live_app/models/conversation.dart';
 import 'package:live_app/page/group_info_page.dart';
+import 'package:live_app/provider/ad_provider.dart';
 import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/app_config_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/ad_banner_carousel.dart';
+import 'package:live_app/widgets/message/ad_chat_bubble.dart';
 import 'package:live_app/widgets/group_avatar_widget.dart';
 import 'package:live_app/widgets/message/action_panel.dart';
 import 'package:live_app/widgets/message/audio_message_item.dart';
@@ -63,6 +68,30 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
       throw StateError('Both conversationId and conversation are null');
     }
     return id;
+  }
+
+  bool _isAdSlot(int displayIndex, int adsToInsert, int adsAfter) {
+    if (adsToInsert == 0) return false;
+    if ((displayIndex + 1) % (adsAfter + 1) != 0) return false;
+    final adIndex = (displayIndex + 1) ~/ (adsAfter + 1) - 1;
+    return adIndex < adsToInsert;
+  }
+
+  int _getAdIndex(int displayIndex, int adsAfter) {
+    return (displayIndex + 1) ~/ (adsAfter + 1) - 1;
+  }
+
+  int _getMessageIndex(int displayIndex, int adsAfter, int adsToInsert) {
+    final adsBeforeThis = _isAdSlot(displayIndex, adsToInsert, adsAfter)
+        ? _getAdIndex(displayIndex, adsAfter)
+        : (_getAdIndex(displayIndex, adsAfter) + 1).clamp(0, adsToInsert);
+    return displayIndex - adsBeforeThis;
+  }
+
+  int _getAdsToInsert(int messageCount, int adCount, int adsAfter) {
+    if (messageCount == 0 || adCount == 0) return 0;
+    final maxAdsToInsert = messageCount ~/ adsAfter;
+    return maxAdsToInsert < adCount ? maxAdsToInsert : adCount;
   }
 
   int? _firstUnreadIndex(List messages) {
@@ -138,6 +167,14 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
     final messages = chatState.messages;
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18n.translate(key);
+
+    final adState = ref.watch(adListProvider(AdPlacement.chatList));
+    final adsAfter = ref.watch(appConfigProvider).data?.adsAfter ?? 5;
+    final int adCount = adState.list.length;
+    final int adsToInsert = adsAfter > 0
+        ? _getAdsToInsert(messages.length, adCount, adsAfter)
+        : 0;
+    final int totalItemCount = messages.length + adsToInsert;
 
     if (conversation == null) {
       return Scaffold(
@@ -283,9 +320,27 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
                     child: ListView.builder(
                       controller: _scroll,
                       padding: const EdgeInsets.all(12),
-                      itemCount: messages.length,
+                      itemCount: totalItemCount,
                       itemBuilder: (context, index) {
-                        final msg = messages[index];
+                        if (_isAdSlot(index, adsToInsert, adsAfter)) {
+                          final adIndex = _getAdIndex(index, adsAfter);
+                          if (adIndex < adState.list.length) {
+                            return AdChatBubble(ad: adState.list[adIndex]);
+                          }
+                          return const SizedBox.shrink();
+                        }
+
+                        final messageIndex = _getMessageIndex(
+                          index,
+                          adsAfter,
+                          adsToInsert,
+                        );
+                        if (messageIndex < 0 ||
+                            messageIndex >= messages.length) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final msg = messages[messageIndex];
 
                         ConversationUser? senderConvUser;
                         for (final u in conversation.users) {
@@ -303,7 +358,8 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
 
                         final firstUnread = _firstUnreadIndex(messages);
                         final isDividerHere =
-                            (firstUnread != null && firstUnread == index);
+                            (firstUnread != null &&
+                            firstUnread == messageIndex);
 
                         Map<String, dynamic> msgTojsn = jsonDecode(msg.content);
                         final msgType = msgTojsn['type'];
@@ -393,6 +449,7 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
                 ],
               ),
             ),
+            AdBannerCarousel(ads: adState.list),
             _buildInputBar(),
             _buildKeyboardOrPanelSpace(),
           ],
@@ -416,6 +473,7 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
         isSelf: msg.isSelf,
         createdAt: msg.createdAt,
         avatarUrl: senderUserInfo?.avatar ?? "",
+        vip: senderUserInfo?.vip,
         nickname: nickname,
         userId: senderConvUser?.userId,
         showFailed: msg.sendFailed,
@@ -448,6 +506,7 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
         gifUrl: content,
         isSelf: msg.isSelf,
         avatarUrl: senderUserInfo?.avatar ?? "",
+        vip: senderUserInfo?.vip,
         nickname: nickname,
         userId: senderConvUser?.userId,
         createdAt: msg.createdAt,
@@ -481,6 +540,7 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
         audioUrl: content,
         isSelf: msg.isSelf,
         avatarUrl: senderUserInfo?.avatar ?? "",
+        vip: senderUserInfo?.vip,
         nickname: nickname,
         userId: senderConvUser?.userId,
         createdAt: msg.createdAt,
@@ -514,6 +574,7 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
         videoUrl: content,
         isSelf: msg.isSelf,
         avatarUrl: senderUserInfo?.avatar ?? "",
+        vip: senderUserInfo?.vip,
         nickname: nickname,
         userId: senderConvUser?.userId,
         createdAt: msg.createdAt,
@@ -547,6 +608,7 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
         gifUrl: content,
         isSelf: msg.isSelf,
         avatarUrl: senderUserInfo?.avatar ?? "",
+        vip: senderUserInfo?.vip,
         nickname: nickname,
         userId: senderConvUser?.userId,
         createdAt: msg.createdAt,
@@ -717,7 +779,7 @@ class _GroupChatDetailPageState extends ConsumerState<GroupChatDetailPage> {
         final notifier = ref.read(
           conversationProvider(conversationId).notifier,
         );
-        notifier.sendMessage(textToSend);
+        notifier.sendMessage(textToSend, messageType: "image");
         _scroll.jumpTo(_scroll.position.maxScrollExtent);
       }
     } catch (e) {

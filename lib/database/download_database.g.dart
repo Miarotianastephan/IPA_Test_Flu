@@ -11,12 +11,12 @@ class $DownloadsTable extends Downloads
   $DownloadsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
@@ -151,6 +151,8 @@ class $DownloadsTable extends Downloads
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -233,7 +235,7 @@ class $DownloadsTable extends Downloads
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Download(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       title: attachedDatabase.typeMapping.read(
@@ -286,7 +288,7 @@ class $DownloadsTable extends Downloads
 }
 
 class Download extends DataClass implements Insertable<Download> {
-  final int id;
+  final String id;
   final String title;
   final String type;
   final int? durationSeconds;
@@ -313,7 +315,7 @@ class Download extends DataClass implements Insertable<Download> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['title'] = Variable<String>(title);
     map['type'] = Variable<String>(type);
     if (!nullToAbsent || durationSeconds != null) {
@@ -361,7 +363,7 @@ class Download extends DataClass implements Insertable<Download> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Download(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       title: serializer.fromJson<String>(json['title']),
       type: serializer.fromJson<String>(json['type']),
       durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
@@ -378,7 +380,7 @@ class Download extends DataClass implements Insertable<Download> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'title': serializer.toJson<String>(title),
       'type': serializer.toJson<String>(type),
       'durationSeconds': serializer.toJson<int?>(durationSeconds),
@@ -393,7 +395,7 @@ class Download extends DataClass implements Insertable<Download> {
   }
 
   Download copyWith({
-    int? id,
+    String? id,
     String? title,
     String? type,
     Value<int?> durationSeconds = const Value.absent(),
@@ -487,7 +489,7 @@ class Download extends DataClass implements Insertable<Download> {
 }
 
 class DownloadsCompanion extends UpdateCompanion<Download> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> title;
   final Value<String> type;
   final Value<int?> durationSeconds;
@@ -498,6 +500,7 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
   final Value<int?> sizeBytes;
   final Value<DateTime> createdAt;
   final Value<String> coverUrl;
+  final Value<int> rowid;
   const DownloadsCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
@@ -510,9 +513,10 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
     this.sizeBytes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.coverUrl = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   DownloadsCompanion.insert({
-    this.id = const Value.absent(),
+    required String id,
     required String title,
     required String type,
     this.durationSeconds = const Value.absent(),
@@ -523,12 +527,14 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
     this.sizeBytes = const Value.absent(),
     this.createdAt = const Value.absent(),
     required String coverUrl,
-  }) : title = Value(title),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
        type = Value(type),
        url = Value(url),
        coverUrl = Value(coverUrl);
   static Insertable<Download> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? title,
     Expression<String>? type,
     Expression<int>? durationSeconds,
@@ -539,6 +545,7 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
     Expression<int>? sizeBytes,
     Expression<DateTime>? createdAt,
     Expression<String>? coverUrl,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -552,11 +559,12 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
       if (sizeBytes != null) 'size_bytes': sizeBytes,
       if (createdAt != null) 'created_at': createdAt,
       if (coverUrl != null) 'cover_url': coverUrl,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   DownloadsCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? title,
     Value<String>? type,
     Value<int?>? durationSeconds,
@@ -567,6 +575,7 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
     Value<int?>? sizeBytes,
     Value<DateTime>? createdAt,
     Value<String>? coverUrl,
+    Value<int>? rowid,
   }) {
     return DownloadsCompanion(
       id: id ?? this.id,
@@ -580,6 +589,7 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
       sizeBytes: sizeBytes ?? this.sizeBytes,
       createdAt: createdAt ?? this.createdAt,
       coverUrl: coverUrl ?? this.coverUrl,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -587,7 +597,7 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -619,6 +629,9 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
     if (coverUrl.present) {
       map['cover_url'] = Variable<String>(coverUrl.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -635,7 +648,8 @@ class DownloadsCompanion extends UpdateCompanion<Download> {
           ..write('status: $status, ')
           ..write('sizeBytes: $sizeBytes, ')
           ..write('createdAt: $createdAt, ')
-          ..write('coverUrl: $coverUrl')
+          ..write('coverUrl: $coverUrl, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -654,7 +668,7 @@ abstract class _$AppDatabaseDownload extends GeneratedDatabase {
 
 typedef $$DownloadsTableCreateCompanionBuilder =
     DownloadsCompanion Function({
-      Value<int> id,
+      required String id,
       required String title,
       required String type,
       Value<int?> durationSeconds,
@@ -665,10 +679,11 @@ typedef $$DownloadsTableCreateCompanionBuilder =
       Value<int?> sizeBytes,
       Value<DateTime> createdAt,
       required String coverUrl,
+      Value<int> rowid,
     });
 typedef $$DownloadsTableUpdateCompanionBuilder =
     DownloadsCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> title,
       Value<String> type,
       Value<int?> durationSeconds,
@@ -679,6 +694,7 @@ typedef $$DownloadsTableUpdateCompanionBuilder =
       Value<int?> sizeBytes,
       Value<DateTime> createdAt,
       Value<String> coverUrl,
+      Value<int> rowid,
     });
 
 class $$DownloadsTableFilterComposer
@@ -690,7 +706,7 @@ class $$DownloadsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -755,7 +771,7 @@ class $$DownloadsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -820,7 +836,7 @@ class $$DownloadsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
@@ -887,7 +903,7 @@ class $$DownloadsTableTableManager
               $$DownloadsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<int?> durationSeconds = const Value.absent(),
@@ -898,6 +914,7 @@ class $$DownloadsTableTableManager
                 Value<int?> sizeBytes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<String> coverUrl = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => DownloadsCompanion(
                 id: id,
                 title: title,
@@ -910,10 +927,11 @@ class $$DownloadsTableTableManager
                 sizeBytes: sizeBytes,
                 createdAt: createdAt,
                 coverUrl: coverUrl,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                required String id,
                 required String title,
                 required String type,
                 Value<int?> durationSeconds = const Value.absent(),
@@ -924,6 +942,7 @@ class $$DownloadsTableTableManager
                 Value<int?> sizeBytes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 required String coverUrl,
+                Value<int> rowid = const Value.absent(),
               }) => DownloadsCompanion.insert(
                 id: id,
                 title: title,
@@ -936,6 +955,7 @@ class $$DownloadsTableTableManager
                 sizeBytes: sizeBytes,
                 createdAt: createdAt,
                 coverUrl: coverUrl,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

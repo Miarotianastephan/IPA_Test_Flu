@@ -1,15 +1,17 @@
-import 'dart:io' show Platform;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/api/services/i18n_service.dart';
 import 'package:live_app/config/i18n_cache_manager.dart';
+import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/models/i18n_language.dart';
 import 'package:live_app/models/i18n_translation.dart';
 import 'package:live_app/models/page_params.dart';
 import 'package:live_app/models/page_response.dart';
 import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/provider/locale_provider.dart';
+import 'package:live_app/utils/app_lang_version_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DownloadProgress {
@@ -39,6 +41,7 @@ final downloadProgressProvider = StateProvider<DownloadProgress>((ref) {
 });
 
 class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
+  static const int _translationPageSize = 1000;
   final I18nService _service;
   final I18nCacheManager _cacheManager;
   final Ref _ref;
@@ -53,14 +56,20 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
 
     try {
       final selectedLang = await _cacheManager.loadSelectedLanguage();
+      debugPrint('[I18N] initialize - selectedLang: $selectedLang');
 
       if (selectedLang != null) {
-        await _loadFromCache();
-
+        final country = selectedLang['country']!;
         final langCode = selectedLang['language']!;
+        debugPrint('[I18N] initialize - loading cache for: $country / $langCode');
+
+        await _loadFromCacheForLanguage(country, langCode);
+
         final parts = langCode.split('_');
-        final lang = parts.isNotEmpty ? parts[0] : 'en';
-        final countryCode = parts.length > 1 ? parts[1] : 'US';
+        final lang = parts.isNotEmpty ? parts[0] : AppLangVersionUtils.getLocaleLang();
+        final countryCode = parts.length > 1
+            ? parts[1]
+            : AppLangVersionUtils.getLocaleCountry();
 
         _ref.read(localeProvider.notifier).state = Locale(lang, countryCode);
 
@@ -75,30 +84,48 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
 
   Future<void> _firstLaunchSetup() async {
     try {
-      final response = await _service.getLanguages(
-        PageParams(page: 1, limit: 100),
-      );
-      final availableLanguages = response.data?.list ?? [];
+      final availableLanguages = await _loadAvailableLanguagesForFirstLaunch();
       if (availableLanguages.isEmpty) {
         throw Exception('No languages available from server');
       }
 
-      final systemLocale = Platform.localeName;
+      // Get system locale in a cross-platform way (works on web and mobile)
+      final platformLocale = ui.PlatformDispatcher.instance.locale;
+      // final systemLocale =
+      //     '${platformLocale.languageCode}_${platformLocale.countryCode ?? platformLocale.languageCode.toUpperCase()}';
+      // final String systemLocale;
+      // systemLocale = AppLangVersionUtils.getLanguageCode();
+      // debugPrint('System locale: $systemLocale');
 
-      I18nLanguage matchingLang = availableLanguages.firstWhere(
-        (lang) => lang.languageCode == systemLocale,
-        orElse: () => availableLanguages.first,
+      // Try to find exact match first (e.g., "fr_FR")
+      I18nLanguage? matchingLang = availableLanguages
+          .cast<I18nLanguage?>()
+          .firstWhere(
+            //(lang) => lang?.languageCode == systemLocale,
+            (lang) => lang?.languageCode == 'en',
+            orElse: () => null,
+          );
+
+      // If no exact match, try matching just the language part (e.g., "fr" matches "fr_FR")
+      matchingLang ??= availableLanguages.cast<I18nLanguage?>().firstWhere(
+        (lang) =>
+            lang?.languageCode.startsWith('${platformLocale.languageCode}_') ==
+            true,
+        orElse: () => null,
       );
 
-      if (matchingLang.languageCode != systemLocale) {
-        matchingLang = availableLanguages.firstWhere(
-          (lang) => lang.languageCode == 'en_US',
-          orElse: () => availableLanguages.first,
-        );
-      }
+      // If still no match, fallback to default
+      final defaultLangCode = AppLangVersionUtils.getLanguageCode();
+      matchingLang ??= availableLanguages.cast<I18nLanguage?>().firstWhere(
+        (lang) => lang?.languageCode == defaultLangCode,
+        orElse: () => null,
+      );
+
+      // Ultimate fallback: use first available language
+      final langToDownload = matchingLang ?? availableLanguages.first;
 
       final actualLanguage = await _downloadAndSaveLanguage(
-        matchingLang,
+        langToDownload,
         isInitial: true,
       );
 
@@ -107,24 +134,52 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
         actualLanguage.languageCode,
       );
 
-      final parts = actualLanguage.languageCode.split('_');
-      final lang = parts.isNotEmpty ? parts[0] : 'en';
-      final countryCode = parts.length > 1 ? parts[1] : 'US';
-      _ref.read(localeProvider.notifier).state = Locale(lang, countryCode);
+      if (AppLangVersionUtils.isCn() || AppLangVersionUtils.isTk()) {
+        final parts = actualLanguage.languageCode.split('_');
+        final lang = parts.isNotEmpty ? parts[0] : 'zh';
+        final countryCode = parts.length > 1 ? parts[1] : 'CN';
+        _ref.read(localeProvider.notifier).state = Locale(lang, countryCode);
+      } else {
+        final parts = actualLanguage.languageCode.split('_');
+        final lang = parts.isNotEmpty ? parts[0] : 'en';
+        final countryCode = parts.length > 1 ? parts[1] : 'US';
+        _ref.read(localeProvider.notifier).state = Locale(lang, countryCode);
+      }
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow;
     }
   }
 
+  Future<List<I18nLanguage>> _loadAvailableLanguagesForFirstLaunch() async {
+    final sharedLanguages = await _ref.read(availableLanguagesProvider.future);
+    if (sharedLanguages.isNotEmpty) {
+      return sharedLanguages;
+    }
+
+    final token = StorageService.instance.getValue("token");
+    if (token == null) {
+      return const <I18nLanguage>[];
+    }
+
+    final response = await _service.getLanguages(PageParams(page: 1, limit: 100));
+    final languages = response.data?.list ?? [];
+    if (languages.isNotEmpty) {
+      await _cacheManager.saveAvailableLanguages(languages);
+    }
+    return languages;
+  }
+
   Future<void> changeLanguage(I18nLanguage language) async {
     try {
+      debugPrint('[I18N] changeLanguage - requested: ${language.languageCode} (${language.countryName})');
       I18nLanguage actualLanguage = language;
 
       final isDownloaded = await _cacheManager.isLanguageDownloaded(
         language.countryName,
         language.languageCode,
       );
+      debugPrint('[I18N] changeLanguage - isDownloaded: $isDownloaded');
 
       if (!isDownloaded) {
         actualLanguage = await _downloadAndSaveLanguage(language);
@@ -140,10 +195,13 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
         actualLanguage.countryName,
         actualLanguage.languageCode,
       );
+      debugPrint('[I18N] changeLanguage - saved: ${actualLanguage.languageCode}');
 
       final parts = actualLanguage.languageCode.split('_');
-      final lang = parts.isNotEmpty ? parts[0] : 'en';
-      final countryCode = parts.length > 1 ? parts[1] : 'US';
+      final lang = parts.isNotEmpty ? parts[0] : AppLangVersionUtils.getLocaleLang();
+      final countryCode = parts.length > 1
+          ? parts[1]
+          : AppLangVersionUtils.getLocaleCountry();
       _ref.read(localeProvider.notifier).state = Locale(lang, countryCode);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -203,8 +261,12 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
         if (actualLanguage.languageCode != language) {
           final langCode = actualLanguage.languageCode; // eg: "fr_FR"
           final parts = langCode.split('_');
-          final langPart = parts.isNotEmpty ? parts[0] : 'en';
-          final countryPart = parts.length > 1 ? parts[1] : 'US';
+          final langPart = parts.isNotEmpty
+              ? parts[0]
+              : AppLangVersionUtils.getLocaleLang();
+          final countryPart = parts.length > 1
+              ? parts[1]
+              : AppLangVersionUtils.getLocaleCountry();
 
           _ref.read(localeProvider.notifier).state = Locale(
             langPart,
@@ -285,10 +347,12 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
           language.languageCode,
         );
 
-        if (firstPage.list.isEmpty && language.languageCode != 'en_US') {
-          // Fallback to English if initial fails
-          final englishLang = await _getEnglishLanguage();
-          return _downloadAndSaveLanguage(englishLang, isInitial: true);
+        final defaultLangCode = AppLangVersionUtils.getLanguageCode();
+        if (firstPage.list.isEmpty &&
+            language.languageCode != defaultLangCode) {
+          // Fallback to default language if initial fails
+          final fallbackLang = await _getDefaultLanguage();
+          return _downloadAndSaveLanguage(fallbackLang, isInitial: true);
         }
 
         // Apply first page immediately
@@ -316,14 +380,16 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
         I18nLanguage actualLanguage = language;
         List<I18nTranslation> finalTranslations = languageTranslations;
 
-        if (languageTranslations.isEmpty && language.languageCode != 'en_US') {
-          final englishLang = await _getEnglishLanguage();
+        final defaultLangCode = AppLangVersionUtils.getLanguageCode();
+        if (languageTranslations.isEmpty &&
+            language.languageCode != defaultLangCode) {
+          final fallbackLang = await _getDefaultLanguage();
           finalTranslations = await _downloadTranslationsForLanguage(
-            englishLang.countryName,
-            englishLang.languageCode,
-            'English',
+            fallbackLang.countryName,
+            fallbackLang.languageCode,
+            fallbackLang.displayName,
           );
-          actualLanguage = englishLang;
+          actualLanguage = fallbackLang;
         }
 
         await _cacheManager.saveTranslations(finalTranslations, actualLanguage);
@@ -405,7 +471,7 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
     String languageCode,
   ) async {
     final response = await _service.getTranslations(
-      PageParams(page: page, limit: 100),
+      PageParams(page: page, limit: _translationPageSize),
       country,
       languageCode,
     );
@@ -422,7 +488,7 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
   ) async {
     final allTranslations = <I18nTranslation>[];
     int currentPage = 1;
-    const pageSize = 100;
+    const pageSize = _translationPageSize;
     int total = 0;
 
     do {
@@ -455,16 +521,18 @@ class I18nNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
     return allTranslations;
   }
 
-  Future<I18nLanguage> _getEnglishLanguage() async {
+  Future<I18nLanguage> _getDefaultLanguage() async {
+    final defaultLangCode = AppLangVersionUtils.getLanguageCode();
     final languagesResponse = await _service.getLanguages(
       PageParams(page: 1, limit: 100),
     );
     final languages = languagesResponse.data?.list ?? [];
-    final englishLang = languages.firstWhere(
-      (lang) => lang.languageCode == 'en_US', // eg: "en_US"
-      orElse: () => throw Exception('English language not found'),
+    final defaultLang = languages.firstWhere(
+      (lang) => lang.languageCode == defaultLangCode,
+      orElse: () =>
+          throw Exception('Default language $defaultLangCode not found'),
     );
-    return englishLang;
+    return defaultLang;
   }
 
   String translate(String key, {String? fallback}) {
@@ -515,11 +583,18 @@ final availableLanguagesProvider = FutureProvider<List<I18nLanguage>>((
     return cachedLanguages;
   }
 
+  // Check if user is authenticated before calling API
+  final token = StorageService.instance.getValue("token");
+  if (token == null) {
+    return cachedLanguages ?? [];
+  }
+
   try {
     final service = ref.watch(i18nServiceProvider);
     final response = await service.getLanguages(
       PageParams(page: 1, limit: 100),
     );
+
     final languages = response.data?.list ?? [];
 
     if (languages.isNotEmpty) {
@@ -527,7 +602,11 @@ final availableLanguagesProvider = FutureProvider<List<I18nLanguage>>((
     }
 
     return languages;
-  } catch (e) {
+  } catch (e, stack) {
+    debugPrint(
+      '[I18N] availableLanguagesProvider: Error fetching languages: $e',
+    );
+    debugPrint('[I18N] availableLanguagesProvider: Stack: $stack');
     if (cachedLanguages != null) {
       return cachedLanguages;
     }

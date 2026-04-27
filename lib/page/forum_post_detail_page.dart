@@ -6,12 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:live_app/config/storage_config.dart';
+import 'package:live_app/constants/ad_placement.dart';
 import 'package:live_app/database/download_database.dart';
 import 'package:live_app/models/userinfo.dart';
+import 'package:live_app/provider/ad_provider.dart';
+import 'package:live_app/provider/behavior_tracker_provider.dart';
 import 'package:live_app/provider/download_video_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/ad_banner_carousel.dart';
 import 'package:live_app/widgets/download_button.dart';
 import 'package:live_app/widgets/empty_widget.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 import '../models/forum_attachment.dart';
 import '../models/forum_comment.dart';
@@ -19,6 +24,7 @@ import '../models/forum_post.dart';
 import '../provider/api_provider.dart';
 import '../provider/forum_comments_provider.dart';
 import '../provider/post_detail_provider.dart';
+import '../provider/selected_post_provider.dart';
 import '../utils/utils.dart';
 import '../widgets/comment/comment_input_bar.dart';
 import '../widgets/encrypted_image.dart';
@@ -42,14 +48,19 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   ForumComment? _replyingTo;
+  bool _bannerClosed = false;
 
   ForumPost? forumPost;
 
   @override
   void initState() {
     super.initState();
+
     Future.microtask(() {
       getUserFromCache();
+      ref
+          .read(adListProvider(AdPlacement.communityLarge).notifier)
+          .fetch(refresh: true);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 加载帖子详情
@@ -72,6 +83,14 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
     });
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _focusNode.dispose();
+    _commentController.dispose();
+    super.dispose();
+  }
+
   Future<void> getUserFromCache() async {
     final data = await StorageService.instance.getValue("user_info");
     if (data != null && data.isNotEmpty) {
@@ -86,7 +105,16 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
     if (_userInfo == null || _userInfo!.isVisitor) {}
   }
 
-  void _openGallery(List<ForumAttachment> attachments, ForumAttachment target) {
+  String translate(String key) =>
+      ref.read(i18nNotifierProvider.notifier).translate(key);
+
+  void _openGallery(
+    List<ForumAttachment> attachments,
+    ForumAttachment target,
+    ForumPost post,
+  ) {
+    ref.read(selectedPostProvider.notifier).state = post;
+    debugPrint("selectedPostProvider: ${post.title}");
     final filtered = attachments
         .where((a) => a.fileType == 'image' || a.fileType == 'video')
         .toList();
@@ -96,8 +124,24 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
       return a.fileType == 'image' ? -1 : 1;
     });
 
+    final isVideoLocked =
+        post.price > 0 &&
+        !ref.hasPermission(Permission.accessPostsFree) &&
+        !post.isBought;
+
     final items = filtered.map((a) {
-      return GalleryItem(url: a.fileUrl, isVideo: a.fileType == 'video');
+      final isVideo = a.fileType == 'video';
+      return GalleryItem(
+        url: a.fileUrl,
+        isVideo: isVideo,
+        isLocked: isVideo && isVideoLocked,
+        thumbnailUrl: isVideo ? a.thumbnailUrl : null,
+        encryptionKey: a.encryptionKey,
+        price: post.price,
+        contentId: post.id,
+        contentTitle: post.title,
+        contentType: 'posts',
+      );
     }).toList();
 
     final index = filtered.indexWhere((a) => a.id == target.id);
@@ -105,8 +149,15 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            GalleryPage(items: items, initialIndex: index >= 0 ? index : 0),
+        builder: (_) => GalleryPage(
+          items: items,
+          initialIndex: index >= 0 ? index : 0,
+          onPurchaseSuccess: () {
+            ref
+                .read(postDetailProvider(widget.postId).notifier)
+                .loadPostDetail(widget.postId);
+          },
+        ),
       ),
     );
   }
@@ -156,6 +207,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   ref
                       .read(postDetailProvider(widget.postId).notifier)
                       .toggleFavorite();
+                  ref
+                      .read(postDetailProvider(widget.postId).notifier)
+                      .userPostInterest(interactionType: "favorite");
                 },
               ),
               IconButton(
@@ -177,19 +231,27 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            DateFormat('yyyy-MM-dd  HH:mm').format(post.createdAt),
-            style: const TextStyle(color: Colors.white60, fontSize: 14),
+          Row(
+            children: [
+              Text(
+                DateFormat('yyyy-MM-dd  HH:mm').format(post.createdAt),
+                style: const TextStyle(color: Colors.white60, fontSize: 14),
+              ),
+              Spacer(),
+              // if (post.price > 0) PriceTag(basePrice: post.price),
+            ],
           ),
+
           const SizedBox(height: 20),
           Text(
-            post.content,
+            post.description,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               height: 1.5,
             ),
           ),
+
           // 分离图片和视频
           if (post.attachments != null && post.attachments!.isNotEmpty)
             Padding(
@@ -211,7 +273,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                         children: [
                           ...images.take(3).map((img) {
                             return GestureDetector(
-                              onTap: () => _openGallery(post.attachments!, img),
+                              onTap: () =>
+                                  _openGallery(post.attachments!, img, post),
                               child: Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 child: AspectRatio(
@@ -244,8 +307,11 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                 scrollDirection: Axis.horizontal,
                                 children: images.skip(3).map((img) {
                                   return GestureDetector(
-                                    onTap: () =>
-                                        _openGallery(post.attachments!, img),
+                                    onTap: () => _openGallery(
+                                      post.attachments!,
+                                      img,
+                                      post,
+                                    ),
                                     child: Container(
                                       width: 120,
                                       margin: const EdgeInsets.only(right: 8),
@@ -294,7 +360,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                           ...videos.take(3).map((video) {
                             return GestureDetector(
                               onTap: () =>
-                                  _openGallery(post.attachments!, video),
+                                  _openGallery(post.attachments!, video, post),
                               child: Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 child: Stack(
@@ -329,7 +395,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                           stream: ref
                                               .watch(offlineRepoProvider)
                                               .db
-                                              .watchById(video.id),
+                                              .watchById(video.id.toString()),
                                           builder: (context, snapshot) {
                                             final existing = snapshot.data;
                                             final localPath =
@@ -380,7 +446,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                               .notifier,
                                                         );
                                                     await repo.resumeDownload(
-                                                      id: video.id,
+                                                      id: video.id.toString(),
                                                       translate: i18nNotifier
                                                           .translate,
                                                     );
@@ -403,7 +469,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                               .notifier,
                                                         );
                                                     await repo.downloadResource(
-                                                      id: video.id,
+                                                      id: video.id.toString(),
                                                       filename:
                                                           "video_${video.id}.mp4",
                                                       translate: i18nNotifier
@@ -444,8 +510,11 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                 scrollDirection: Axis.horizontal,
                                 children: videos.skip(3).map((video) {
                                   return GestureDetector(
-                                    onTap: () =>
-                                        _openGallery(post.attachments!, video),
+                                    onTap: () => _openGallery(
+                                      post.attachments!,
+                                      video,
+                                      post,
+                                    ),
                                     child: Container(
                                       width: 160,
                                       margin: const EdgeInsets.only(right: 8),
@@ -482,7 +551,9 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                               stream: ref
                                                   .watch(offlineRepoProvider)
                                                   .db
-                                                  .watchById(video.id),
+                                                  .watchById(
+                                                    video.id.toString(),
+                                                  ),
                                               builder: (context, snapshot) {
                                                 final existing = snapshot.data;
                                                 final localPath =
@@ -537,7 +608,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                             );
                                                         await repo
                                                             .resumeDownload(
-                                                              id: video.id,
+                                                              id: video.id
+                                                                  .toString(),
                                                               translate:
                                                                   i18nNotifier
                                                                       .translate,
@@ -561,7 +633,8 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                                                                   .notifier,
                                                             );
                                                         await repo.downloadResource(
-                                                          id: video.id,
+                                                          id: video.id
+                                                              .toString(),
                                                           filename:
                                                               "video_${video.id}.mp4",
                                                           translate:
@@ -654,6 +727,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                       ref
                           .read(postDetailProvider(widget.postId).notifier)
                           .toggleFavorite();
+                      // trackLike();
                     },
                   ),
                   Text(
@@ -746,6 +820,7 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(postDetailProvider(widget.postId));
+    final adState = ref.watch(adListProvider(AdPlacement.communityLarge));
     final post = state.post;
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18n.translate(key);
@@ -782,17 +857,27 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        post?.user?.nickname ??
-                            ref
-                                .read(i18nNotifierProvider.notifier)
-                                .translate('anonymousUser'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              post?.user?.nickname ??
+                                  ref
+                                      .read(i18nNotifierProvider.notifier)
+                                      .translate('anonymousUser'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          VipBadge(
+                            vip: post?.user?.vip,
+                            vipId: post?.user?.vipId,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -810,13 +895,21 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
               ),
               const SizedBox(width: 10),
 
-              FollowButton(userId: post?.userId.toString() ?? ""),
+              FollowButton(userId: post?.userId ?? ""),
             ],
           ),
           backgroundColor: Colors.black,
         ),
         body: Column(
           children: [
+            if (adState.list.isNotEmpty && !_bannerClosed) ...[
+              const SizedBox(height: 8),
+              AdBannerCarousel(
+                ads: adState.list,
+                onClose: () => setState(() => _bannerClosed = true),
+              ),
+              const SizedBox(height: 8),
+            ],
             Expanded(
               child: Builder(
                 builder: (_) {
@@ -862,6 +955,10 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                     parentId: _replyingTo?.id,
                   );
 
+                  if (resp.data != null) {
+                    ref.trackComment();
+                  }
+
                   // resp.data 是 ForumComment
                   final newComment = resp.data;
 
@@ -872,6 +969,10 @@ class _ForumPostDetailPageState extends ConsumerState<ForumPostDetailPage> {
                   ref
                       .read(forumCommentsProvider(widget.postId).notifier)
                       .addComment(newComment);
+
+                  ref
+                      .read(postDetailProvider(widget.postId).notifier)
+                      .userPostInterest(interactionType: "comment");
 
                   // 更新贴子评论数
                   ref

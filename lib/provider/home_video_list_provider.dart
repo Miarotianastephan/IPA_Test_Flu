@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/base_list_state.dart';
 import '../models/page_params.dart';
 import '../models/page_response.dart';
 import '../models/video_info.dart';
@@ -14,6 +15,21 @@ class HomeVideoListNotifier extends BaseVideoListNotifier {
   HomeVideoListNotifier(super.ref, this.type, this.featuredType);
 
   @override
+  int get maxVideosInMemory => BaseListState.maxVideosInMemory;
+
+  @override
+  bool get dedupeByVideoId => true;
+
+  @override
+  bool get useSmartFinishedDetection => true;
+
+  @override
+  bool get supportsIncrementalWebAppend => true;
+
+  @override
+  int get incrementalWebAppendChunkSize => 4;
+
+  @override
   Future<PageResponse<VideoInfo>?> loadList({required int page}) async {
     final videoService = ref.read(videoServiceProvider);
     final res = await videoService.homeList(
@@ -26,7 +42,7 @@ class HomeVideoListNotifier extends BaseVideoListNotifier {
 }
 
 final homeVideoListProvider =
-StateNotifierProvider.family<
+    StateNotifierProvider.family<
       HomeVideoListNotifier,
       VideoListState,
       (int type, int featuredType)

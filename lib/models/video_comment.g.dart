@@ -9,7 +9,7 @@ part of 'video_comment.dart';
 VideoComment _$VideoCommentFromJson(Map<String, dynamic> json) => VideoComment(
   id: parseInt(json['id']),
   videoId: parseInt(json['video_id']),
-  userId: parseInt(json['user_id']),
+  userId: json['user_id'] as String,
   content: json['content'] as String,
   parentId: parseInt(json['parent_id']),
   likeCount: parseInt(json['like_count']),

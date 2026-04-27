@@ -7,8 +7,7 @@ import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/provider/conversation_list_provider.dart';
 import 'package:live_app/provider/current_user_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
-import 'package:live_app/widgets/encrypted_image.dart';
-import 'package:toastification/toastification.dart';
+import 'package:live_app/utils/toast_util.dart';
 
 import '../../../models/in_app_notice.dart';
 import '../../../protos/socket_message.pb.dart';
@@ -95,48 +94,8 @@ class NoticeHandler extends MessageHandler {
     return null;
   }
 
-  void showNotice(BuildContext content, InAppNotice notice) {
-    toastification.showCustom(
-      context: content,
-      autoCloseDuration: const Duration(seconds: 5),
-      alignment: Alignment.topCenter,
-      builder: (context, item) {
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              toastification.dismiss(item);
-              notice.onTap();
-            },
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(0),
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                leading: UserAvatar(url: "${notice.avatarUrl}"),
-                title: Text(
-                  notice.title,
-                  style: const TextStyle(color: Colors.white),
-                ),
-                subtitle: Text(
-                  notice.content,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white54),
-                ),
-                trailing: Text(
-                  TimeOfDay.fromDateTime(notice.time!).format(content),
-                  style: const TextStyle(color: Colors.white38),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+  void showNotice(BuildContext context, InAppNotice notice) {
+    ToastUtil.showNotice(context, notice);
   }
 
   Future<InAppNotice?> handleChatToNotice(

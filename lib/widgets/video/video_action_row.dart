@@ -90,7 +90,6 @@ class VideoActionRow extends ConsumerWidget {
               switch (existing.status) {
                 case "completed":
                   if (fileExists) {
-                    debugPrint("Vidéo déjà téléchargée: $localPath ✅");
                     return const Icon(
                       Icons.download_done,
                       color: Colors.white,
@@ -104,7 +103,6 @@ class VideoActionRow extends ConsumerWidget {
                   }
 
                 case "paused":
-                  debugPrint("Téléchargement en pause");
                   return IconButton(
                     icon: const Icon(Icons.play_arrow, color: Colors.white),
                     onPressed: () async {
@@ -120,7 +118,6 @@ class VideoActionRow extends ConsumerWidget {
                   );
 
                 case "failed":
-                  debugPrint("Téléchargement échoué");
                   return IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.red),
                     onPressed: () async {
@@ -137,14 +134,12 @@ class VideoActionRow extends ConsumerWidget {
                   );
 
                 case "cancelled":
-                  debugPrint("Téléchargement annulé");
                   return DownloadButton(
                     videoInfo: videoInfo,
                     filename: "video_${videoInfo.id}.mp4",
                   );
 
                 default:
-                  debugPrint("Vidéo non téléchargée: $localPath");
                   return DownloadButton(
                     videoInfo: videoInfo,
                     filename: "video_${videoInfo.id}.mp4",

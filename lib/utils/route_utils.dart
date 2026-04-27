@@ -1,20 +1,52 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/page/download_page.dart';
-import 'package:live_app/page/group_chat_detail_page.dart';
 import 'package:live_app/provider/i18n_provider.dart';
-import 'package:live_app/widgets/video_screen.dart';
 
-import '../models/userinfo.dart';
-import '../page/chat_detail_page.dart';
+import 'deferred_route_factories.dart' deferred as route_factories;
+
+typedef DeferredWidgetBuilder = Widget Function(BuildContext context);
+
+class DeferredRoutePage extends StatefulWidget {
+  final Future<void> Function() loadLibrary;
+  final DeferredWidgetBuilder builder;
+
+  const DeferredRoutePage({
+    super.key,
+    required this.loadLibrary,
+    required this.builder,
+  });
+
+  @override
+  State<DeferredRoutePage> createState() => _DeferredRoutePageState();
+}
+
+class _DeferredRoutePageState extends State<DeferredRoutePage> {
+  late final Future<void> _loadFuture = widget.loadLibrary();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _loadFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          if (snapshot.hasError) {
+            return Scaffold(
+              body: Center(child: Text(snapshot.error.toString())),
+            );
+          }
+          return widget.builder(context);
+        }
+
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      },
+    );
+  }
+}
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/ChatDetailPage': (context) {
     final args = ModalRoute.of(context)!.settings.arguments as Map?;
-    final userJson = args?['user'];
-    if (userJson == null) {
+    if (args?['user'] == null) {
       return Consumer(
         builder: (context, ref, _) {
           final i18n = ref.read(i18nNotifierProvider.notifier);
@@ -24,8 +56,10 @@ final Map<String, WidgetBuilder> appRoutes = {
         },
       );
     }
-    final user = UserInfo.fromJson(jsonDecode(userJson));
-    return ChatDetailPage(user: user);
+    return DeferredRoutePage(
+      loadLibrary: route_factories.loadLibrary,
+      builder: (_) => route_factories.buildChatDetailPage(args),
+    );
   },
   '/GroupChatDetailPage': (context) {
     final args = ModalRoute.of(context)!.settings.arguments as Map?;
@@ -48,15 +82,31 @@ final Map<String, WidgetBuilder> appRoutes = {
         },
       );
     }
-    return GroupChatDetailPage(conversationId: conversationId);
+    return DeferredRoutePage(
+      loadLibrary: route_factories.loadLibrary,
+      builder: (_) => route_factories.buildGroupChatDetailPage(args),
+    );
   },
-  '/DownloadsPage': (context) => const DownloadsPage(),
+  '/DownloadsPage': (context) => DeferredRoutePage(
+    loadLibrary: route_factories.loadLibrary,
+    builder: (_) => route_factories.buildDownloadsPage(null),
+  ),
   '/video': (context) {
     final args = ModalRoute.of(context)!.settings.arguments as Map?;
     final path = args?['path'] as String?;
     if (path == null) {
       return const Scaffold(body: Center(child: Text("Chemin vidéo manquant")));
     }
-    return VideoScreen(localPath: path);
+    return DeferredRoutePage(
+      loadLibrary: route_factories.loadLibrary,
+      builder: (_) => route_factories.buildVideoPage(args),
+    );
+  },
+  '/TrackPlayerPage': (context) {
+    final args = ModalRoute.of(context)!.settings.arguments as Map?;
+    return DeferredRoutePage(
+      loadLibrary: route_factories.loadLibrary,
+      builder: (_) => route_factories.buildTrackPlayerPage(args),
+    );
   },
 };

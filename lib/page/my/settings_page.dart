@@ -1,11 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/api/services/version_component.dart';
+import 'package:live_app/api/services/version_service.dart';
 import 'package:live_app/models/version.dart';
 import 'package:live_app/page/my/language_selection_page.dart';
+import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/domain_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/repository/image_repository.dart';
 import 'package:live_app/utils/toast_util.dart';
@@ -33,7 +34,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _loadVersionInfo() async {
     try {
-      final currentVersion = await VersionComponent.getCurrentVersion();
+      final currentVersion = await VersionService.getCurrentVersion();
       setState(() {
         _currentVersion = currentVersion;
       });
@@ -48,7 +49,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       final stats = await imageRepo.getCacheStats();
       if (mounted) {
         setState(() {
-          _cacheSize = stats['formattedSize'] ?? '0 B';
+          _cacheSize = stats.formattedSize;
         });
       }
     } catch (e) {
@@ -79,20 +80,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     });
 
     try {
-      final latestVersion = await VersionComponent.fetchVersion();
-      final currentVersion = await VersionComponent.getCurrentVersion();
+      final versionService = ref.read(versionServiceProvider);
+      final latestVersion = await versionService.fetchVersion();
+      final currentVersion = await VersionService.getCurrentVersion();
 
       setState(() {
         _isCheckingUpdate = false;
       });
 
       if (latestVersion == null) {
-        ToastUtil.info('No version available at the moment.');
+        ToastUtil.info(i18n.translate('noVersionAvailableAtTheMoment'));
         return;
       }
 
       if (mounted) {
-        final updateAvailable = VersionComponent.isUpdateAvailable(
+        final updateAvailable = VersionService.isUpdateAvailable(
           latestVersion.versionNumber,
           currentVersion,
         );
@@ -217,7 +219,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         : _latestVersion!.urlAndroid;
 
     if (url != null && url.isNotEmpty) {
-      final baseUrl = dotenv.env['R2_URL'];
+      final baseUrl = ref.read(domainProvider).domain?.storage;
       final uri = Uri.parse("$baseUrl$url");
 
       if (await canLaunchUrl(uri)) {
@@ -283,7 +285,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: Colors.white.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: const Icon(
@@ -309,7 +311,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               translate('confirmClearCache'),
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 height: 1.5,
                               ),
                             ),

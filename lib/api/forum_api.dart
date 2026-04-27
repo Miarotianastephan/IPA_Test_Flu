@@ -18,4 +18,5 @@ class ForumApi {
   static const String comments = '$base/post/comments';
   static const String commentChildren = '$base/comment/children';
   static const String history = '$base/history';
+  static const String postCategoryTag = '$base/categories/categoryTag';
 }

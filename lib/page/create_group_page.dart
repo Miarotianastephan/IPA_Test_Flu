@@ -6,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/page/select_members_page.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/html_text_field.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 import '../provider/api_provider.dart';
 import '../provider/conversation_list_provider.dart';
@@ -252,7 +254,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
 
     try {
       final messageService = ref.read(messageServiceProvider);
-      final userIds = _selectedMembers.map((u) => u.id.toString()).toList();
+      final userIds = _selectedMembers.map((u) => u.id).toList();
 
       final resp = await messageService.createGroup(
         name: groupName,
@@ -390,7 +392,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  TextField(
+                  HtmlTextField(
                     controller: _groupNameController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
@@ -417,7 +419,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  TextField(
+                  HtmlTextField(
                     controller: _descriptionController,
                     style: const TextStyle(color: Colors.white),
                     maxLines: 3,
@@ -584,12 +586,20 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                       ),
                                     ),
                             ),
-                            title: Text(
-                              user.nickname ?? "User ${user.id}",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
+                            title: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    user.nickname ?? "User ${user.id}",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                VipBadge(vip: user.vip),
+                              ],
                             ),
                             subtitle: user.bio != null
                                 ? Text(

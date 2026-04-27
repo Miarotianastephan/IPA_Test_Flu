@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 
 class VideoTypeToggleButton extends ConsumerWidget {
-  final bool isLongVideo;
+  final bool? isLongVideo;
   final VoidCallback onToggle;
   final bool withText;
 
   const VideoTypeToggleButton({
     super.key,
-    required this.isLongVideo,
+    this.isLongVideo,
     required this.onToggle,
     required this.withText,
   });
@@ -23,7 +23,9 @@ class VideoTypeToggleButton extends ConsumerWidget {
             child: Row(
               children: [
                 Text(
-                  isLongVideo
+                  isLongVideo == null
+                      ? ""
+                      : isLongVideo!
                       ? i18n.translate('longVideo')
                       : i18n.translate('shortVideo'),
 
@@ -31,7 +33,14 @@ class VideoTypeToggleButton extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
                 TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: isLongVideo ? 1.25 : 1.0),
+                  tween: Tween<double>(
+                    begin: 0,
+                    end: isLongVideo == null
+                        ? 0.0
+                        : isLongVideo!
+                        ? 1.25
+                        : 1.0,
+                  ),
                   duration: const Duration(milliseconds: 450),
                   curve: Curves.easeInOut,
                   builder: (context, value, child) {
@@ -51,7 +60,14 @@ class VideoTypeToggleButton extends ConsumerWidget {
         : InkWell(
             onTap: onToggle,
             child: TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0, end: isLongVideo ? 1.25 : 1.0),
+              tween: Tween<double>(
+                begin: 0,
+                end: isLongVideo == null
+                    ? 0.0
+                    : isLongVideo!
+                    ? 1.25
+                    : 1.0,
+              ),
               duration: const Duration(milliseconds: 450),
               curve: Curves.easeInOut,
               builder: (context, value, child) {

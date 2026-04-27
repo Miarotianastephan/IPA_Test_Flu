@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:live_app/models/roman.dart';
 import 'package:live_app/page/creator_detail_page.dart';
 import 'package:live_app/provider/i18n_provider.dart';
@@ -19,7 +18,6 @@ class _RomanReaderPageState extends ConsumerState<RomanReaderPage> {
   int _currentChapterIndex = 0;
   String _selectedLanguage = "en";
   double _fontSize = 18;
-  String _fontFamily = "Nobel";
   bool _uiVisible = true;
   Timer? _hideTimer;
   Color _backgroundColor = Colors.black;
@@ -28,31 +26,6 @@ class _RomanReaderPageState extends ConsumerState<RomanReaderPage> {
       _backgroundColor == Colors.white ? Colors.black : Colors.white;
   String translate(String key) =>
       ref.read(i18nNotifierProvider.notifier).translate(key);
-  TextStyle _getFontStyle() {
-    switch (_fontFamily) {
-      case "New York":
-        return GoogleFonts.playfairDisplay();
-      case "Helvetica":
-        return GoogleFonts.openSans();
-      case "Nobel":
-        return GoogleFonts.nunito();
-      case "Gothic":
-        return GoogleFonts.ebGaramond();
-      case "Roboto":
-        return GoogleFonts.roboto();
-      case "Lato":
-        return GoogleFonts.lato();
-      case "Merriweather":
-        return GoogleFonts.merriweather();
-      case "Montserrat":
-        return GoogleFonts.montserrat();
-      case "Raleway":
-        return GoogleFonts.raleway();
-
-      default:
-        return GoogleFonts.roboto();
-    }
-  }
 
   void _scrollToTop() {
     _scrollController.animateTo(
@@ -177,38 +150,6 @@ class _RomanReaderPageState extends ConsumerState<RomanReaderPage> {
                           style: TextStyle(color: modalTextColor, fontSize: 24),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      children:
-                          [
-                            "New York",
-                            "Helvetica",
-                            "Nobel",
-                            "Merriweather",
-                            "Gothic",
-                            "Roboto",
-                            "Lato",
-                            "Montserrat",
-                            "Raleway",
-                          ].map((font) {
-                            final selected = _fontFamily == font;
-                            return ChoiceChip(
-                              checkmarkColor: Colors.white,
-                              label: Text(
-                                font,
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              selected: selected,
-                              onSelected: (_) {
-                                setState(() => _fontFamily = font);
-                                setModalState(() {});
-                              },
-                              backgroundColor: Colors.transparent,
-                              selectedColor: Colors.grey[800],
-                            );
-                          }).toList(),
                     ),
                     const SizedBox(height: 12),
                     Container(
@@ -545,7 +486,7 @@ class _RomanReaderPageState extends ConsumerState<RomanReaderPage> {
                           const SizedBox(height: 8),
                           Text(
                             content.content,
-                            style: _getFontStyle().copyWith(
+                            style: TextStyle(
                               color: textColor,
                               fontSize: _fontSize,
                               height: 1.5,

@@ -11,15 +11,35 @@ import '../i18n_api.dart';
 class I18nService extends BaseService {
   I18nService(super.client);
 
+  final Map<String, Future<ApiResponse<PageResponse<I18nLanguage>>>>
+      _languagesInFlight = {};
+  final Map<String, Future<ApiResponse<PageResponse<I18nTranslation>>>>
+      _translationsInFlight = {};
+
   Future<ApiResponse<PageResponse<I18nLanguage>>> getLanguages(
     PageParams params,
   ) {
-    return post<PageResponse<I18nLanguage>>(
+    final requestKey = '${params.page}_${params.limit}';
+    final inFlight = _languagesInFlight[requestKey];
+    if (inFlight != null) {
+      return inFlight;
+    }
+
+    final request = post<PageResponse<I18nLanguage>>(
       I18nApi.getLanguages,
       body: {...params.toJson()},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => I18nLanguage.fromJson(item)),
     );
+
+    _languagesInFlight[requestKey] = request;
+    request.whenComplete(() {
+      if (identical(_languagesInFlight[requestKey], request)) {
+        _languagesInFlight.remove(requestKey);
+      }
+    });
+
+    return request;
   }
 
   Future<ApiResponse<PageResponse<I18nTranslation>>> getTranslations(
@@ -28,13 +48,28 @@ class I18nService extends BaseService {
     String language,
   ) {
     final body = {...params.toJson(), "country": country, "language": language};
+    final requestKey =
+        '${params.page}_${params.limit}_${country}_$language';
+    final inFlight = _translationsInFlight[requestKey];
+    if (inFlight != null) {
+      return inFlight;
+    }
 
-    return post<PageResponse<I18nTranslation>>(
+    final request = post<PageResponse<I18nTranslation>>(
       I18nApi.getTranslations,
       body: body,
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => I18nTranslation.fromJson(item)),
     );
+
+    _translationsInFlight[requestKey] = request;
+    request.whenComplete(() {
+      if (identical(_translationsInFlight[requestKey], request)) {
+        _translationsInFlight.remove(requestKey);
+      }
+    });
+
+    return request;
   }
 
   Future<ApiResponse<I18nVersionCheck>> checkVersion(

@@ -12,6 +12,7 @@ import 'package:live_app/provider/current_user_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/group_avatar_widget.dart';
 import 'package:live_app/widgets/message/message_popup_menu_route.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 class GroupInfoPage extends ConsumerStatefulWidget {
   final Conversation conversation;
@@ -55,7 +56,7 @@ class _GroupInfoPageState extends ConsumerState<GroupInfoPage> {
       orElse: () => ConversationUser(
         id: 0,
         conversationId: widget.conversationId,
-        userId: currentUserId ?? 0,
+        userId: currentUserId ?? "",
         role: "member",
         joinedAt: DateTime.now(),
       ),
@@ -289,7 +290,7 @@ class _GroupInfoPageState extends ConsumerState<GroupInfoPage> {
       orElse: () => ConversationUser(
         id: 0,
         conversationId: widget.conversationId,
-        userId: currentUserId ?? 0,
+        userId: currentUserId ?? "",
         role: "member",
         joinedAt: DateTime.now(),
       ),
@@ -314,9 +315,17 @@ class _GroupInfoPageState extends ConsumerState<GroupInfoPage> {
               )
             : null,
       ),
-      title: Text(
-        nickname,
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              nickname,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          VipBadge(vip: userInfo?.vip),
+        ],
       ),
       subtitle: Text(
         "@${member.role}",
@@ -459,13 +468,13 @@ class _GroupInfoPageState extends ConsumerState<GroupInfoPage> {
       final notifier = ref.read(
         conversationProvider(widget.conversationId).notifier,
       );
-      final response = await notifier.kickMember(member.userId);
+      final response = await notifier.kickMember(member.userId!);
 
       if (!mounted) return;
 
       if (response != 0) {
         // Remove the kicked member from the conversation immediately
-        await notifier.removeMemberFromConversation(member.userId);
+        await notifier.removeMemberFromConversation(member.userId!);
 
         // Refresh the conversation data from server
         await ref
@@ -541,9 +550,7 @@ class _GroupInfoPageState extends ConsumerState<GroupInfoPage> {
       final notifier = ref.read(
         conversationProvider(widget.conversationId).notifier,
       );
-      final success = await notifier.setUserAsGroupAdmin(
-        member.userId.toString(),
-      );
+      final success = await notifier.setUserAsGroupAdmin(member.userId!);
 
       if (!mounted) return;
 
@@ -636,7 +643,7 @@ class _GroupInfoPageState extends ConsumerState<GroupInfoPage> {
           try {
             final response = await messageService.inviteUserToGroup(
               conversationId: widget.conversationId,
-              userId: user.id.toString(),
+              userId: user.id,
             );
 
             if (response.code == 1) {
@@ -719,9 +726,7 @@ class _GroupInfoPageState extends ConsumerState<GroupInfoPage> {
       final notifier = ref.read(
         conversationProvider(widget.conversationId).notifier,
       );
-      final success = await notifier.transferOwnership(
-        member.userId.toString(),
-      );
+      final success = await notifier.transferOwnership(member.userId!);
 
       if (!mounted) return;
 

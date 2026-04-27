@@ -4,15 +4,21 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/database/download_database.dart';
+import 'package:live_app/provider/app_config_provider.dart';
+import 'package:live_app/provider/cumulative_watch_time_provider.dart';
 import 'package:live_app/provider/download_video_provider.dart';
+import 'package:live_app/provider/expired_preview_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/user_follow_provider.dart';
+import 'package:live_app/utils/text_util.dart';
 import 'package:live_app/utils/utils.dart';
 import 'package:live_app/widgets/download_button.dart';
 
 import '../../models/video_info.dart';
 import '../Animation/follow_splash_animation.dart';
 import '../encrypted_image.dart';
+import '../vip_badge.dart';
+import 'purchased_badge.dart';
 
 class VideoOverlayActions extends ConsumerStatefulWidget {
   final VideoInfo video;
@@ -27,6 +33,10 @@ class VideoOverlayActions extends ConsumerStatefulWidget {
   final void Function(VideoInfo) onUserTap;
   final void Function(bool) onHidden;
   final VoidCallback? onCommentAdded;
+  final ValueListenable<bool>? isPlayingListenable;
+  final ValueListenable<Duration>? positionListenable;
+  final VoidCallback? onPreviewExpired;
+  final VoidCallback? onPreviewUnlocked;
 
   const VideoOverlayActions({
     super.key,
@@ -42,6 +52,10 @@ class VideoOverlayActions extends ConsumerStatefulWidget {
     required this.onUserTap,
     required this.onHidden,
     this.onCommentAdded,
+    this.isPlayingListenable,
+    this.positionListenable,
+    this.onPreviewExpired,
+    this.onPreviewUnlocked,
   });
 
   @override
@@ -61,6 +75,12 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
   int _likeCount = 0;
   int _commentCount = 0;
   bool isTapLike = false;
+
+  int _previewCountdown = 0;
+  bool _previewExpired = false;
+  int? _previewCountdownStartPositionMs;
+  int _maxPreviewConsumedSeconds = 0;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +96,135 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
       begin: 0.2,
       end: 1.2,
     ).animate(CurvedAnimation(parent: _likeController, curve: Curves.easeOut));
+
+    _initPreviewCountdown();
+    widget.isPlayingListenable?.addListener(_onPlayingChanged);
+    widget.positionListenable?.addListener(_onPositionChanged);
+
+    // Listen for watch time running out to start preview countdown
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.listenManual(cumulativeWatchTimeProvider, (_, _) {
+        _onWatchTimeChanged();
+      });
+    });
+  }
+
+  bool get _isBasePaidVideo =>
+      widget.video.price > 0 &&
+      !widget.video.isBought &&
+      !ref.hasPermission(Permission.accessShortFree);
+
+  int get _previewDurationSeconds {
+    final appConfig = ref.read(appConfigProvider);
+    return appConfig.data?.paymentFeatureFlags?.previewDurationSeconds ?? 10;
+  }
+
+  void _initPreviewCountdown() {
+    if (!_isBasePaidVideo) return;
+
+    final isAlreadyExpired = ref
+        .read(expiredPreviewProvider.notifier)
+        .isExpired(widget.video.id);
+    if (isAlreadyExpired) {
+      _previewExpired = true;
+      _previewCountdown = 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onPreviewExpired?.call();
+      });
+      return;
+    }
+
+    final watchTimeState = ref.read(cumulativeWatchTimeProvider);
+    if (watchTimeState.remainingSeconds > 0) return;
+
+    _initPreviewSeconds();
+  }
+
+  void _initPreviewSeconds() {
+    _previewCountdown = _previewDurationSeconds;
+    _previewCountdownStartPositionMs = null;
+    _maxPreviewConsumedSeconds = 0;
+  }
+
+  void _onWatchTimeChanged() {
+    if (!_isBasePaidVideo || _previewExpired) return;
+    final watchTimeState = ref.read(cumulativeWatchTimeProvider);
+
+    if (watchTimeState.remainingSeconds > 0) {
+      _previewCountdownStartPositionMs = null;
+      return;
+    }
+
+    if (_previewCountdown == 0) {
+      _initPreviewSeconds();
+    }
+    _syncPreviewCountdownFromPosition();
+  }
+
+  void _onPlayingChanged() {
+    if (_previewExpired || !_isBasePaidVideo) return;
+    _syncPreviewCountdownFromPosition();
+  }
+
+  void _onPositionChanged() {
+    if (_previewExpired || !_isBasePaidVideo) return;
+    _syncPreviewCountdownFromPosition();
+  }
+
+  void _syncPreviewCountdownFromPosition() {
+    final watchTimeState = ref.read(cumulativeWatchTimeProvider);
+    if (watchTimeState.remainingSeconds > 0 || _previewExpired) {
+      _previewCountdownStartPositionMs = null;
+      return;
+    }
+
+    final isPlaying = widget.isPlayingListenable?.value ?? false;
+    if (!isPlaying) return;
+
+    final position = widget.positionListenable?.value;
+    if (position == null) return;
+
+    if (_previewCountdown == 0) {
+      _initPreviewSeconds();
+    }
+
+    final currentPositionMs = position.inMilliseconds;
+    _previewCountdownStartPositionMs ??= currentPositionMs;
+
+    var playedMs = currentPositionMs - _previewCountdownStartPositionMs!;
+    if (playedMs < 0) {
+      _previewCountdownStartPositionMs = currentPositionMs;
+      playedMs = 0;
+    }
+
+    final consumedSeconds = playedMs ~/ 1000;
+    if (consumedSeconds > _maxPreviewConsumedSeconds) {
+      _maxPreviewConsumedSeconds = consumedSeconds;
+    }
+
+    final nextCountdown = (_previewDurationSeconds - _maxPreviewConsumedSeconds)
+        .clamp(0, _previewDurationSeconds)
+        .toInt();
+
+    if (nextCountdown != _previewCountdown) {
+      setState(() {
+        _previewCountdown = nextCountdown;
+      });
+    }
+
+    if (nextCountdown <= 0) {
+      _markPreviewExpired();
+    }
+  }
+
+  void _markPreviewExpired() {
+    if (_previewExpired) return;
+    setState(() {
+      _previewCountdown = 0;
+      _previewExpired = true;
+    });
+    ref.read(expiredPreviewProvider.notifier).markExpired(widget.video.id);
+    widget.onPreviewExpired?.call();
   }
 
   @override
@@ -85,6 +234,14 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
       setState(() {
         _commentCount = widget.commentCount;
       });
+    }
+    if (oldWidget.isPlayingListenable != widget.isPlayingListenable) {
+      oldWidget.isPlayingListenable?.removeListener(_onPlayingChanged);
+      widget.isPlayingListenable?.addListener(_onPlayingChanged);
+    }
+    if (oldWidget.positionListenable != widget.positionListenable) {
+      oldWidget.positionListenable?.removeListener(_onPositionChanged);
+      widget.positionListenable?.addListener(_onPositionChanged);
     }
   }
 
@@ -96,6 +253,8 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
 
   @override
   void dispose() {
+    widget.isPlayingListenable?.removeListener(_onPlayingChanged);
+    widget.positionListenable?.removeListener(_onPositionChanged);
     _splashEntry?.remove();
     _splashEntry = null;
     _likeController.dispose();
@@ -186,8 +345,25 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
     overlay.insert(_splashEntry!);
   }
 
+  String _formatSeconds(int totalSeconds) {
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final watchTimeState = ref.watch(cumulativeWatchTimeProvider);
+    final hasWatchTime = watchTimeState.remainingSeconds > 0;
+    final isPaid =
+        widget.video.price > 0 &&
+        !widget.video.isBought &&
+        !ref.hasPermission(Permission.accessShortFree);
+
     return Stack(
       children: [
         // 底部文字
@@ -200,18 +376,49 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.video.user.nickname != null
-                        ? "@${widget.video.user.nickname}"
-                        : "",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          widget.video.user.nickname != null
+                              ? "@${widget.video.user.nickname}"
+                              : "",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      VipBadge(vip: widget.video.user.vip, size: 16),
+                    ],
                   ),
+                  const SizedBox(height: 5),
+                  ExpandableText(
+                    widget.video.title.isNotEmpty ? widget.video.title : "",
+                  ),
+                  //duration
                   const SizedBox(height: 8),
-                  ExpandableText(widget.video.description),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.play_circle_outline,
+                        color: Colors.white70,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        formatDuration(widget.video.duration),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -223,7 +430,7 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
           child: Padding(
             padding: const EdgeInsets.only(right: 15, bottom: 20),
             child: SizedBox(
-              width: 56,
+              width: 50,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -247,6 +454,7 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                                   userId: widget.video.userId,
                                   url: widget.video.user.avatar,
                                   nickname: widget.video.user.nickname,
+                                  vip: widget.video.user.vip,
                                 );
                               },
                             ),
@@ -260,7 +468,7 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                                     await ref
                                         .read(
                                           userFollowProvider(
-                                            widget.video.userId.toString(),
+                                            widget.video.userId,
                                           ).notifier,
                                         )
                                         .toggleFollow();
@@ -460,11 +668,58 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                         size: 30,
                       ),
                     ),
+                    SizedBox(height: 30),
                   ],
                 ),
               ),
             ),
           ),
+        ),
+        Align(
+          alignment: Alignment.bottomRight,
+          child: isPaid
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 10, bottom: 15),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black38,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          hasWatchTime
+                              ? Icons.timer_outlined
+                              : Icons.lock_outline,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          hasWatchTime
+                              ? _formatSeconds(watchTimeState.remainingSeconds)
+                              : '${_previewCountdown}s',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : (widget.video.isBought && widget.video.price > 0)
+              ? const Padding(
+                  padding: EdgeInsets.only(right: 10, bottom: 15),
+                  child: PurchasedBadge(),
+                )
+              : const SizedBox.shrink(),
         ),
       ],
     );

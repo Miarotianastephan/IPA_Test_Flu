@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:live_app/utils/json_utils.dart';
+
 import 'page_params.dart';
 
 part 'search_video_request.g.dart';
@@ -31,14 +32,15 @@ class SearchVideoRequest {
   factory SearchVideoRequest.fromJson(Map<String, dynamic> json) =>
       _$SearchVideoRequestFromJson(json);
 
-  Map<String, dynamic> toJson() => {
-    ...page.toJson(),
-    if (keyword?.isNotEmpty ?? false) 'keyword': keyword,
-    if (categoryId != null) 'category_id': categoryId,
-    if (tagId != null) 'tag_id': tagId,
-    if (type != null) 'type': type,
-    if (sort?.isNotEmpty ?? false) 'sort': sort,
-    if (province?.isNotEmpty ?? false) 'province': province,
-    if (city?.isNotEmpty ?? false) 'city': city,
-  };
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{...page.toJson()}..remove('type');
+    if (keyword?.isNotEmpty ?? false) map['keyword'] = keyword;
+    if (categoryId != null) map['category_id'] = categoryId;
+    if (tagId != null) map['tag_id'] = tagId;
+    if (type != null) map['type'] = type;
+    if (sort?.isNotEmpty ?? false) map['sort'] = sort;
+    if (province?.isNotEmpty ?? false) map['province'] = province;
+    if (city?.isNotEmpty ?? false) map['city'] = city;
+    return map;
+  }
 }

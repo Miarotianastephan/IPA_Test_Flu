@@ -27,15 +27,14 @@ class ConversationUserDao extends DatabaseAccessor<AppDatabase>
     final rows = await query.get();
 
     return rows.map((row) {
-      // 这里的 cu 是 Drift 构造好的 ConversationUser（user 字段为 null）
-      final cu = row.readTable(conversationUsers); // ConversationUser
-      final user = row.readTableOrNull(userInfos); // UserInfo?
+      final cu = row.readTable(conversationUsers);
+      final user = row.readTableOrNull(userInfos);
 
-      // 手动补上 user 字段，返回一个新的 ConversationUser
       return ConversationUser(
         id: cu.id,
         conversationId: cu.conversationId,
         userId: cu.userId,
+        agentSupportId: cu.agentSupportId,
         role: cu.role,
         joinedAt: cu.joinedAt,
         user: user,
@@ -64,6 +63,7 @@ class ConversationUserDao extends DatabaseAccessor<AppDatabase>
                   id: Value(u.id),
                   conversationId: Value(u.conversationId),
                   userId: Value(u.userId),
+                  agentSupportId: Value(u.agentSupportId),
                   role: Value(u.role),
                   joinedAt: Value(u.joinedAt),
                 ),

@@ -26,4 +26,7 @@ class VideoApi {
   static const String likeList = '$base/likeList';
 
   static const String playVideo = '$base/playVideo';
+
+  static const String videoCategoryTag =
+      '/api/user/v-video-category/categoryTag';
 }

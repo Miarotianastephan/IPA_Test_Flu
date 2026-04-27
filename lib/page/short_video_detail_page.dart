@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/video_info.dart';
 import '../api/services/video_service.dart';
 import '../provider/api_provider.dart';
+import '../provider/cumulative_watch_time_provider.dart';
+import '../provider/web_video_mute_provider.dart';
 import '../widgets/comment/comment_input_bar.dart';
 import '../widgets/video/short_video_item.dart';
 import 'search_page.dart';
@@ -11,6 +15,7 @@ class ShortVideoDetailPage extends ConsumerStatefulWidget {
   final int initialIndex;
   final ValueChanged<int>? onPageChanged;
   final dynamic provider;
+  final List<VideoInfo> Function(dynamic state)? selectVideos;
   final String? heroTagPrefix;
   final bool isUserDetailPop;
 
@@ -19,6 +24,7 @@ class ShortVideoDetailPage extends ConsumerStatefulWidget {
     required this.initialIndex,
     this.onPageChanged,
     required this.provider,
+    this.selectVideos,
     this.heroTagPrefix,
     this.isUserDetailPop = false,
   });
@@ -151,11 +157,39 @@ class _VideoDetailPageState extends ConsumerState<ShortVideoDetailPage>
   }
 
   @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    _controllers.clear();
+    _commentController.dispose();
+    _pageController.dispose();
+    _controller.dispose();
+    ref.read(cumulativeWatchTimeProvider.notifier).stopTracking();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
     final provider = widget.provider;
     final notifier = ref.read(provider.notifier);
-    final videos = ref.watch(provider).list;
+    final providerState = ref.watch(provider);
+    final videos = widget.selectVideos != null
+        ? widget.selectVideos!(providerState)
+        : providerState.list;
+
+    if (videos.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
+
+    if (_currentIndex >= videos.length) {
+      _currentIndex = videos.length - 1;
+    }
+
     final dragDistance = _dragOffsetX.abs();
     final scale = 1.0 - (dragDistance / 600).clamp(0.0, 0.4);
 
@@ -250,10 +284,8 @@ class _VideoDetailPageState extends ConsumerState<ShortVideoDetailPage>
                         _horizontalDrag = _horizontalDrag.clamp(-width, 0);
                       });
                     },
-                    key: ValueKey(
-                      ref.watch(widget.provider).list[_currentIndex].id,
-                    ),
-                    user: ref.watch(widget.provider).list[_currentIndex].user,
+                    key: ValueKey(videos[_currentIndex].id),
+                    user: videos[_currentIndex].user,
                     onBack: () {
                       _animateHorizontalTo(0);
                     },
@@ -317,6 +349,8 @@ class _VideoDetailPageState extends ConsumerState<ShortVideoDetailPage>
                           ? "${widget.heroTagPrefix}_${videos[index].id}"
                           : "video_${videos[index].id}";
                       var view = ShortVideoItem(
+                        pageKey: "ShortVideoDetailPage",
+                        isFirstItem: index == 0,
                         videoInfo: videos[index],
                         controller: _getController(index),
                         onUserTap: (videoInfo) async {
@@ -408,18 +442,45 @@ class _VideoDetailPageState extends ConsumerState<ShortVideoDetailPage>
                 onPressed: () => Navigator.pop(context),
               ),
             ),
+
           if (!isHideHeader)
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               right: 8,
-              child: IconButton(
-                icon: const Icon(Icons.search, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SearchPage()),
-                  );
-                },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (kIsWeb)
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final muteState = ref.watch(webVideoMuteProvider);
+                        if (!muteState.isMuted) return const SizedBox.shrink();
+                        return GestureDetector(
+                          onTap: () {
+                            ref
+                                .read(webVideoMuteProvider.notifier)
+                                .setMuted(false);
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.only(right: 8.0),
+                            child: Icon(
+                              Icons.volume_off_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SearchPage()),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
         ],

@@ -1,8 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:live_app/api/vip_api.dart';
+import 'package:live_app/models/content_bought.dart';
 import 'package:live_app/models/emoji.dart';
 import 'package:live_app/models/file.dart';
 import 'package:live_app/models/first_open.dart';
+import 'package:live_app/models/notif_chinese.dart';
 import 'package:live_app/models/page_params.dart';
+import 'package:live_app/models/time_package.dart';
+import 'package:live_app/utils/percent_watch.dart';
 
 import '../../models/api_response.dart';
 import '../../models/page_response.dart';
@@ -12,7 +20,7 @@ import 'base_service.dart';
 
 class UserService extends BaseService {
   UserService(super.client);
-
+  double percentWatch = PercentWatch.percent;
   Future<ApiResponse<UserInfo>> login(String username, String password) {
     return post<UserInfo>(
       UserApi.login,
@@ -25,6 +33,7 @@ class UserService extends BaseService {
     int idFirstOpen, {
     String? userid,
     String? code,
+    Map<String, dynamic>? trackingQueryParams,
   }) {
     Map<String, dynamic> body = {"id_first_open": idFirstOpen};
 
@@ -33,6 +42,9 @@ class UserService extends BaseService {
     }
     if (code != null) {
       body["code"] = code;
+    }
+    if (trackingQueryParams != null && trackingQueryParams.isNotEmpty) {
+      body["tracking_query_params"] = trackingQueryParams;
     }
 
     return post<UserInfo>(
@@ -88,18 +100,18 @@ class UserService extends BaseService {
     );
   }
 
-  Future<ApiResponse<String>> follow(int userId) {
+  Future<ApiResponse<String>> follow(String userId) {
     return post<String>(
       UserApi.follow,
-      body: {"user_id": userId.toString()},
+      body: {"user_id": userId},
       fromJson: (json) => json.toString(),
     );
   }
 
-  Future<ApiResponse<String>> unfollow(int userId) {
+  Future<ApiResponse<String>> unfollow(String userId) {
     return post<String>(
       UserApi.unfollow,
-      body: {"user_id": userId.toString()},
+      body: {"user_id": userId},
       fromJson: (json) => json.toString(),
     );
   }
@@ -171,10 +183,10 @@ class UserService extends BaseService {
     );
   }
 
-  Future<ApiResponse<UserInfo>> getInfoById(int userId) {
+  Future<ApiResponse<UserInfo>> getInfoById(String userId) {
     return post<UserInfo>(
       UserApi.getInfoById,
-      body: {"user_id": userId.toString()},
+      body: {"user_id": userId},
       fromJson: (json) => UserInfo.fromJson(json),
     );
   }
@@ -203,15 +215,171 @@ class UserService extends BaseService {
     );
   }
 
-  Future<ApiResponse<File>> uploadFile(String filePath) async {
-    final formData = FormData.fromMap({
-      "file": await MultipartFile.fromFile(filePath),
-    });
+  Future<ApiResponse<File>> uploadFile(
+    String filePath, {
+    Uint8List? bytes,
+    String? fileName,
+    String type = 'image',
+  }) async {
+    FormData formData;
+
+    if (kIsWeb && bytes != null) {
+      formData = FormData.fromMap({
+        "file": MultipartFile.fromBytes(bytes, filename: fileName),
+        "type": type,
+      });
+    } else {
+      formData = FormData.fromMap({
+        "file": await MultipartFile.fromFile(filePath),
+        "type": type,
+      });
+    }
 
     return post<File>(
       UserApi.upload,
       body: formData,
       fromJson: (json) => File.fromJson(json),
+    );
+  }
+
+  Future<ApiResponse<String>> buyContent(String type, String typeId) async {
+    return post<String>(
+      UserApi.buyContent,
+      body: {"id_type": typeId, "type": type},
+      fromJson: (json) => json.toString(),
+    );
+  }
+
+  Future<ApiResponse<PageResponse<ContentBought>>> findContentBought({
+    required String type,
+    required int page,
+    required int limit,
+  }) {
+    return post<PageResponse<ContentBought>>(
+      UserApi.getContentBought,
+      body: {"type": type, "page": page, "limit": limit},
+      fromJson: (json) =>
+          PageResponse.fromJson(json, (item) => ContentBought.fromJson(item)),
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> recordPreview(String videoId) {
+    return post<Map<String, dynamic>>(
+      UserApi.recordPreview,
+      body: {'video_id': videoId},
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+  }
+
+  /// Get remaining preview quota for today
+  /// Returns {remaining: int, total: int, resetAt: DateTime}
+  Future<ApiResponse<Map<String, dynamic>>> getPreviewQuota() {
+    return post<Map<String, dynamic>>(
+      UserApi.getPreviewQuota,
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+  }
+
+  Future<ApiResponse<UserInfo>> buyWithWallet(int vipId) {
+    return post<UserInfo>(
+      VipApi.buy,
+      body: {"vip_id": vipId},
+      fromJson: (json) => UserInfo.fromJson(json),
+    );
+  }
+
+  Future<ApiResponse<PageResponse<TimePackage>>> getTimePackages({
+    required int page,
+    required int limit,
+  }) {
+    return post<PageResponse<TimePackage>>(
+      UserApi.getTimePackages,
+      body: {"page": page, "limit": limit},
+      fromJson: (json) =>
+          PageResponse.fromJson(json, (item) => TimePackage.fromJson(item)),
+    );
+  }
+
+  Future<ApiResponse<UserInfo>> buyTimePackageWithWallet(int timePackageId) {
+    return post<UserInfo>(
+      UserApi.buyTimePackageWithWallet,
+      body: {"timePackageId": timePackageId},
+      fromJson: (json) => UserInfo.fromJson(json),
+    );
+  }
+
+  Future<ApiResponse<UserInfo>> updateRemainingTime({required int duration}) {
+    return post<UserInfo>(
+      UserApi.updateRemainingTime,
+      body: {"duration": duration},
+      fromJson: (json) => UserInfo.fromJson(json),
+    );
+  }
+
+  Future<ApiResponse<void>> userInterest({
+    required String userId,
+    required String videoId,
+    required int watchDuration,
+    required int videoDuration,
+  }) {
+    return post<void>(
+      UserApi.userInterest,
+      body: {
+        "userId": userId,
+        "videoId": videoId,
+        "watchDuration": watchDuration,
+        "videoDuration": videoDuration,
+      },
+      fromJson: (_) {},
+    );
+  }
+
+  Future<ApiResponse<void>> userPostInterest({
+    required String postId,
+    required String interactionType,
+    int? watchDuration,
+    int? videoDuration,
+  }) {
+    final body = <String, dynamic>{
+      "postId": postId,
+      "interactionType": interactionType,
+    };
+    if (watchDuration != null) {
+      body["watchDuration"] = watchDuration;
+    }
+    if (videoDuration != null) {
+      body["videoDuration"] = videoDuration;
+    }
+
+    return post<void>(UserApi.userPostInterest, body: body, fromJson: (_) {});
+  }
+
+  Future<ApiResponse<PageResponse<UserInfo>>> getSponsoredUser({
+    required int page,
+    required int limit,
+  }) {
+    return post<PageResponse<UserInfo>>(
+      UserApi.getSponsoredUser,
+      body: {"page": page, "limit": limit},
+      fromJson: (json) =>
+          PageResponse.fromJson(json, (item) => UserInfo.fromJson(item)),
+    );
+  }
+
+  Future<ApiResponse<({int amount, int forceReload})>> checkUserGiftReceive() {
+    return post<({int amount, int forceReload})>(
+      UserApi.checkUserGiftReceive,
+      fromJson: (json) => (
+        amount: json['amount'] as int? ?? 0,
+        forceReload: json['forceReload'] as int? ?? 0,
+      ),
+    );
+  }
+
+  Future<ApiResponse<NotifChinese>> getNotifChinese() {
+    return post<NotifChinese>(
+      UserApi.getNotifCn,
+      fromJson: (json) => NotifChinese.fromJson(json),
     );
   }
 }

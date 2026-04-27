@@ -33,7 +33,9 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
             .toList();
 
         return Scaffold(
+          backgroundColor: Colors.black,
           appBar: AppBar(
+            backgroundColor: Colors.black,
             title: Text(translate("downloadedContent")),
             actions: [
               VideoTypeToggleButtonDonwload(
@@ -277,7 +279,8 @@ class _DownloadTileState extends State<_DownloadTile> {
     var item = widget.item;
     final ref = widget.ref;
     final i18nNotifier = ref.read(i18nNotifierProvider.notifier);
-    final progress = ref.watch(progressProvider(item.id));
+    final int itemId = item.id is int ? item.id : int.parse(item.id.toString());
+    final progress = ref.watch(progressProvider(itemId));
     if (item.progress > 0) {
       _lastProgress = item.progress.clamp(
         progress > item.progress ? progress : 1,
@@ -325,12 +328,11 @@ class _DownloadTileState extends State<_DownloadTile> {
                         onPressed: () async {
                           final repo = ref.read(offlineRepoProvider);
                           await repo.deleteResource(item.id);
-                          ref.read(preparedProvider(item.id).notifier).state =
+                          ref.read(preparedProvider(itemId).notifier).state =
                               false;
-                          ref.read(preparingProvider(item.id).notifier).state =
+                          ref.read(preparingProvider(itemId).notifier).state =
                               false;
-                          ref.read(progressProvider(item.id).notifier).state =
-                              0;
+                          ref.read(progressProvider(itemId).notifier).state = 0;
                           ref.invalidate(isStorageSaturatedProvider);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -425,7 +427,7 @@ class _DownloadTileState extends State<_DownloadTile> {
                       } else {
                         await repo.pauseDownload(item.id);
                         item = item.copyWith(status: "paused");
-                        ref.read(progressProvider(item.id).notifier).state =
+                        ref.read(progressProvider(itemId).notifier).state =
                             _lastProgress;
                         setState(() {
                           isPaused = item.status;
@@ -438,11 +440,10 @@ class _DownloadTileState extends State<_DownloadTile> {
                     onPressed: () async {
                       final repo = ref.read(offlineRepoProvider);
                       await repo.cancelDownload(item.id);
-                      ref.read(preparedProvider(item.id).notifier).state =
+                      ref.read(preparedProvider(itemId).notifier).state = false;
+                      ref.read(preparingProvider(itemId).notifier).state =
                           false;
-                      ref.read(preparingProvider(item.id).notifier).state =
-                          false;
-                      ref.read(progressProvider(item.id).notifier).state = 0;
+                      ref.read(progressProvider(itemId).notifier).state = 0;
                     },
                   ),
                 ],

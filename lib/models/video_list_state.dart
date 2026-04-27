@@ -2,8 +2,8 @@ import 'base_list_state.dart';
 import 'video_info.dart';
 
 class VideoListState extends BaseListState<VideoInfo> {
-  final Map<int, List<int>> userVideoIndexMap;
-  final Map<int, int> videoIndexMap;
+  final Map<String, List<int>> userVideoIndexMap;
+  final Map<String, int> videoIndexMap;
 
   VideoListState({
     List<VideoInfo>? list,
@@ -12,14 +12,11 @@ class VideoListState extends BaseListState<VideoInfo> {
     super.loading,
     super.finished,
     super.offset,
-    Map<int, List<int>>? userVideoIndexMap,
-    Map<int, int>? videoIndexMap,
-  }) : userVideoIndexMap = userVideoIndexMap ?? <int, List<int>>{},
-        videoIndexMap = videoIndexMap ?? <int, int>{},
-        super(
-        list: list ?? <VideoInfo>[],
-      );
-
+    Map<String, List<int>>? userVideoIndexMap,
+    Map<String, int>? videoIndexMap,
+  }) : userVideoIndexMap = userVideoIndexMap ?? <String, List<int>>{},
+       videoIndexMap = videoIndexMap ?? <String, int>{},
+       super(list: list ?? <VideoInfo>[]);
 
   @override
   VideoListState copyWith({
@@ -29,8 +26,8 @@ class VideoListState extends BaseListState<VideoInfo> {
     bool? loading,
     bool? finished,
     int? offset,
-    Map<int, List<int>>? userVideoIndexMap,
-    Map<int, int>? videoIndexMap,
+    Map<String, List<int>>? userVideoIndexMap,
+    Map<String, int>? videoIndexMap,
   }) {
     return VideoListState(
       list: list ?? this.list,
@@ -45,8 +42,8 @@ class VideoListState extends BaseListState<VideoInfo> {
   }
 
   /// 从当前视频列表快速生成索引表
-  Map<int, List<int>> buildUserIndexMap() {
-    final map = <int, List<int>>{};
+  Map<String, List<int>> buildUserIndexMap() {
+    final map = <String, List<int>>{};
     for (int i = 0; i < list.length; i++) {
       final userId = list[i].userId;
       map.putIfAbsent(userId, () => []).add(i);
@@ -55,8 +52,8 @@ class VideoListState extends BaseListState<VideoInfo> {
   }
 
   /// 从当前视频列表快速生成视频ID索引映射表
-  Map<int, int> buildVideoIndexMap() {
-    final map = <int, int>{};
+  Map<String, int> buildVideoIndexMap() {
+    final map = <String, int>{};
     for (int i = 0; i < list.length; i++) {
       final videoId = list[i].id;
       map[videoId] = i;

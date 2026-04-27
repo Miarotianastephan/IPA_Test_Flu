@@ -1,16 +1,19 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:live_app/models/vip.dart';
 import 'package:live_app/utils/json_utils.dart';
+
 import 'agent.dart';
 
 part 'userinfo.g.dart';
 
 @JsonSerializable(explicitToJson: true)
 class UserInfo {
-  @JsonKey(fromJson: parseInt)
-  final int id;
-  @JsonKey(name: 'display_id', fromJson: parseInt)
-  final int displayId;
+  final String id;
+  @JsonKey(name: 'display_id')
+  final String displayId;
   final String? username;
+  @JsonKey(name: 'password')
+  final String? password;
   final String? credential;
   @JsonKey(name: 'is_visitor', fromJson: parseBool)
   final bool isVisitor;
@@ -40,11 +43,23 @@ class UserInfo {
   final int? likeCount;
   @JsonKey(name: 'is_followed', fromJson: parseBool)
   final bool isFollowed;
+  @JsonKey(name: 'is_bot', fromJson: parseBool)
+  final bool isBot;
+  @JsonKey(name: 'vip_id', fromJson: parseInt)
+  final int? vipId;
+  final Vip? vip;
+  @JsonKey(name: 'daily_watch_time_left', defaultValue: 300, fromJson: parseInt)
+  final int? dailyWatchTimeLeft;
+  @JsonKey(name: 'extra_watch_time_left', defaultValue: 0, fromJson: parseInt)
+  final int? extraWatchTimeLeft;
+  @JsonKey(name: 'last_daily_watch_date')
+  final DateTime? lastDailyWatchDate;
 
   UserInfo({
     required this.id,
     required this.displayId,
     this.username,
+    this.password,
     required this.credential,
     required this.isVisitor,
     required this.isBindPass,
@@ -64,7 +79,29 @@ class UserInfo {
     this.followCount,
     this.likeCount,
     this.isFollowed = false,
+    this.isBot = false,
+    this.vipId,
+    this.vip,
+    this.lastDailyWatchDate,
+    this.dailyWatchTimeLeft,
+    this.extraWatchTimeLeft,
   });
+
+  /// Creates a minimal placeholder UserInfo (e.g. for support agent display)
+  factory UserInfo.placeholder({
+    required String id,
+    String? nickname,
+  }) {
+    return UserInfo(
+      id: id,
+      displayId: '',
+      credential: null,
+      isVisitor: false,
+      isBindPass: false,
+      agentId: 0,
+      nickname: nickname,
+    );
+  }
 
   factory UserInfo.fromJson(Map<String, dynamic> json) =>
       _$UserInfoFromJson(json);
@@ -72,9 +109,10 @@ class UserInfo {
   Map<String, dynamic> toJson() => _$UserInfoToJson(this);
 
   UserInfo copyWith({
-    int? id,
-    int? displayId,
+    String? id,
+    String? displayId,
     String? username,
+    String? password,
     String? credential,
     bool? isVisitor,
     bool? isBindPass,
@@ -94,11 +132,18 @@ class UserInfo {
     int? followCount,
     int? likeCount,
     bool? isFollowed,
+    bool? isBot,
+    int? vipId,
+    Vip? vip,
+    DateTime? lastDailyWatchDate,
+    int? dailyWatchTimeLeft,
+    int? extraWatchTimeLeft,
   }) {
     return UserInfo(
       id: id ?? this.id,
       displayId: displayId ?? this.displayId,
       username: username ?? this.username,
+      password: password ?? this.password,
       credential: credential ?? this.credential,
       isVisitor: isVisitor ?? this.isVisitor,
       isBindPass: isBindPass ?? this.isBindPass,
@@ -118,6 +163,12 @@ class UserInfo {
       followCount: followCount ?? this.followCount,
       likeCount: likeCount ?? this.likeCount,
       isFollowed: isFollowed ?? this.isFollowed,
+      isBot: isBot ?? this.isBot,
+      vipId: vipId ?? this.vipId,
+      vip: vip ?? this.vip,
+      lastDailyWatchDate: lastDailyWatchDate ?? this.lastDailyWatchDate,
+      dailyWatchTimeLeft: dailyWatchTimeLeft ?? this.dailyWatchTimeLeft,
+      extraWatchTimeLeft: extraWatchTimeLeft ?? this.extraWatchTimeLeft,
     );
   }
 }

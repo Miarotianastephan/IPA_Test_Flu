@@ -2,9 +2,9 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/database/download_database.dart';
+import 'package:live_app/models/forum_attachment.dart';
 import 'package:live_app/models/forum_post.dart';
 import 'package:live_app/models/video_info.dart';
-import 'package:live_app/models/forum_attachment.dart';
 import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/provider/download_video_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
@@ -29,7 +29,7 @@ class DownloadButton extends ConsumerStatefulWidget {
 }
 
 class _DownloadButtonState extends ConsumerState<DownloadButton> {
-  int get _id => widget.videoInfo?.id ?? widget.attachment!.id;
+  String get _id => widget.videoInfo?.id ?? widget.attachment!.id.toString();
   String get _url => widget.videoInfo?.url ?? widget.attachment!.fileUrl;
   String get _cover =>
       widget.videoInfo?.cover ?? widget.attachment?.thumbnailUrl ?? "";
@@ -126,6 +126,11 @@ class _DownloadButtonState extends ConsumerState<DownloadButton> {
           onPressed: _isPreparing || existing?.status == "downloading"
               ? null
               : () => _startDownload(translate),
+          // : () => ref.checkPermission(
+          //     context,
+          //     Permission.downloadResources,
+          //     () => _startDownload(translate),
+          //   ),
         );
       },
     );

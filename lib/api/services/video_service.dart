@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:live_app/config/storage_config.dart';
+import 'package:live_app/models/category_tag.dart';
 import 'package:live_app/models/hls_playback_info.dart';
 import 'package:live_app/models/search_video_request.dart';
 import 'package:live_app/models/userinfo.dart';
@@ -7,9 +9,9 @@ import 'package:live_app/models/video_comment.dart';
 import 'package:live_app/models/video_tag.dart';
 
 import '../../models/api_response.dart';
-import '../../models/video_category.dart';
 import '../../models/page_params.dart';
 import '../../models/page_response.dart';
+import '../../models/video_category.dart';
 import '../../models/video_info.dart';
 import '../video_api.dart';
 import 'base_service.dart';
@@ -30,23 +32,23 @@ class VideoService extends BaseService {
     );
   }
 
-  Future<ApiResponse<String>> favoriteVideo(int videoId) async {
+  Future<ApiResponse<String>> favoriteVideo(String videoId) async {
     return post<String>(
       VideoApi.favoriteVideo,
-      body: {"video_id": videoId.toString()},
+      body: {"video_id": videoId},
       fromJson: (json) => json.toString(),
     );
   }
 
-  Future<ApiResponse<String>> unFavoriteVideo(int videoId) async {
+  Future<ApiResponse<String>> unFavoriteVideo(String videoId) async {
     return post<String>(
       VideoApi.unFavoriteVideo,
-      body: {"video_id": videoId.toString()},
+      body: {"video_id": videoId},
       fromJson: (json) => json.toString(),
     );
   }
 
-  Future<ApiResponse<String>> shareVideo(int id) {
+  Future<ApiResponse<String>> shareVideo(String id) {
     return post<String>(
       VideoApi.shareVideo,
       body: {"id": id},
@@ -54,24 +56,24 @@ class VideoService extends BaseService {
     );
   }
 
-  Future<ApiResponse<String>> unlikeVideo(int videoId) async {
+  Future<ApiResponse<String>> unlikeVideo(String videoId) async {
     return post<String>(
       VideoApi.unlikeVideo,
-      body: {"video_id": videoId.toString()},
+      body: {"video_id": videoId},
       fromJson: (json) => json.toString(),
     );
   }
 
-  Future<ApiResponse<String>> likeVideo(int videoId) async {
+  Future<ApiResponse<String>> likeVideo(String videoId) async {
     return post<String>(
       VideoApi.likeVideo,
-      body: {"video_id": videoId.toString()},
+      body: {"video_id": videoId},
       fromJson: (json) => json.toString(),
     );
   }
 
   Future<ApiResponse<VideoComment>> commentVideo(
-    int id,
+    String id,
     String content, {
     int? parentId,
   }) async {
@@ -81,9 +83,9 @@ class VideoService extends BaseService {
     }
     final currentUser = UserInfo.fromJson(jsonDecode(jsonString));
     final body = {
-      "id": id.toString(),
+      "id": id,
       "content": content,
-      "user_id": currentUser.id.toString(),
+      "user_id": currentUser.id,
       if (parentId != null) "parent_id": parentId.toString(),
     };
 
@@ -96,11 +98,11 @@ class VideoService extends BaseService {
 
   Future<ApiResponse<PageResponse<VideoComment>>> videoRootCommentList(
     PageParams params,
-    int id,
+    String id,
   ) {
     return post<PageResponse<VideoComment>>(
       VideoApi.videoRootCommentList,
-      body: {...params.toJson(), "id": id.toString()},
+      body: {...params.toJson(), "id": id},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => VideoComment.fromJson(item)),
     );
@@ -136,11 +138,11 @@ class VideoService extends BaseService {
 
   Future<ApiResponse<PageResponse<VideoInfo>>> userVideos(
     PageParams params,
-    int userId,
+    String userId,
   ) {
     return post<PageResponse<VideoInfo>>(
       VideoApi.userVideos,
-      body: {...params.toJson(), "user_id": userId.toString()},
+      body: {...params.toJson(), "user_id": userId},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => VideoInfo.fromJson(item)),
     );
@@ -148,7 +150,7 @@ class VideoService extends BaseService {
 
   Future<ApiResponse<PageResponse<VideoInfo>>> userFavorites(
     PageParams params,
-    int userId,
+    String userId,
   ) {
     return post<PageResponse<VideoInfo>>(
       VideoApi.userFavorites,
@@ -193,7 +195,7 @@ class VideoService extends BaseService {
     );
   }
 
-  Future<ApiResponse<VideoInfo>> detail(int videoId) {
+  Future<ApiResponse<VideoInfo>> detail(String videoId) {
     return post<VideoInfo>(
       VideoApi.detail,
       body: {"id": videoId},
@@ -201,21 +203,21 @@ class VideoService extends BaseService {
     );
   }
 
-  Future<ApiResponse<String>> seen(int videoId) {
+  Future<ApiResponse<String>> seen(String videoId) {
     return post<String>(
       VideoApi.seen,
-      body: {"video_id": videoId.toString()},
+      body: {"video_id": videoId},
       fromJson: (json) => json.toString(),
     );
   }
 
   Future<ApiResponse<PageResponse<VideoInfo>>> relevanceRecommend(
     PageParams params,
-    int videoId,
+    String videoId,
   ) {
     return post<PageResponse<VideoInfo>>(
       VideoApi.relevanceRecommend,
-      body: {...params.toJson(), "id": videoId.toString()},
+      body: {...params.toJson(), "id": videoId},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => VideoInfo.fromJson(item)),
     );
@@ -223,11 +225,10 @@ class VideoService extends BaseService {
 
   Future<ApiResponse<PageResponse<VideoInfo>>> favoriteList(
     PageParams params,
-    int type,
   ) {
     return post<PageResponse<VideoInfo>>(
       VideoApi.favoriteList,
-      body: {...params.toJson(), "type": type},
+      body: {...params.toJson()},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => VideoInfo.fromJson(item)),
     );
@@ -235,11 +236,10 @@ class VideoService extends BaseService {
 
   Future<ApiResponse<PageResponse<VideoInfo>>> historyList(
     PageParams params,
-    int type,
   ) {
     return post<PageResponse<VideoInfo>>(
       VideoApi.historyList,
-      body: {...params.toJson(), "type": type},
+      body: {...params.toJson()},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => VideoInfo.fromJson(item)),
     );
@@ -247,11 +247,10 @@ class VideoService extends BaseService {
 
   Future<ApiResponse<PageResponse<VideoInfo>>> likeList(
     PageParams params,
-    int type,
   ) {
     return post<PageResponse<VideoInfo>>(
       VideoApi.likeList,
-      body: {...params.toJson(), "type": type},
+      body: {...params.toJson()},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => VideoInfo.fromJson(item)),
     );
@@ -267,5 +266,27 @@ class VideoService extends BaseService {
     );
 
     return HlsPlaybackInfo(m3u8Content: m3u8Content);
+  }
+
+  Future<ApiResponse<PageResponse<CategoryTag>>> videoCategoryTag({
+    required String categoryId,
+  }) {
+    return post<PageResponse<CategoryTag>>(
+      VideoApi.videoCategoryTag,
+      body: {"category_id": categoryId},
+      fromJson: (json) =>
+          PageResponse.fromJson(json, (item) => CategoryTag.fromJson(item)),
+    );
+  }
+
+  Future<ApiResponse<void>> claimAd({
+    required String url,
+    required String adId,
+    required String userId,
+  }) {
+    return get<ApiResponse<void>>(
+      "$url?userId=$userId&adId=$adId",
+      showToast: false,
+    );
   }
 }

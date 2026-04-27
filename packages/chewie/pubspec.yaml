@@ -1,0 +1,15 @@
+name: chewie
+description: A lightweight video player wrapper for Flutter (minimal fork without controls)
+version: 1.13.0
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  video_player: ^2.10.0
+
+flutter:
+  uses-material-design: true

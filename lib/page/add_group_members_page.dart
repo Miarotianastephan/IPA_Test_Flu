@@ -4,6 +4,7 @@ import 'package:live_app/models/conversation.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/page/select_members_page.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 import '../provider/api_provider.dart';
 
@@ -188,12 +189,20 @@ class _AddGroupMembersPageState extends ConsumerState<AddGroupMembersPage> {
                                     ),
                                   ),
                           ),
-                          title: Text(
-                            user.nickname ?? "User ${user.id}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
+                          title: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  user.nickname ?? "User ${user.id}",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              VipBadge(vip: user.vip),
+                            ],
                           ),
                           trailing: IconButton(
                             icon: const Icon(

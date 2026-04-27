@@ -46,3 +46,11 @@ app.*.map.json
 /.metadata
 /pubspec.lock
 .env
+
+# FVM Version Cache
+.fvm/
+/.fvmrc
+
+.claude/*
+/output/playwright
+/.playwright-cli

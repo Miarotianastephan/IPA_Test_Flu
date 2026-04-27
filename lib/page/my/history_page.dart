@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
-import 'package:live_app/provider/video_detail_provider.dart';
 
 import '../../provider/my_post_providers.dart';
 import '../../provider/my_video_providers.dart';
 import '../../widgets/general_post_tab.dart';
 import '../../widgets/general_video_tab.dart';
-import '../../widgets/video_type_toggle_button.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
   const HistoryPage({super.key});
@@ -45,24 +43,14 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
     });
   }
 
-  bool get _isVideoTab => _tabController.index == 0;
-
   void _fetchVideos() {
     ref
-        .read(
-          userVideoListProvider((
-            type: ref.watch(videoTypeProvider),
-            listType: UserVideoListType.history,
-          )).notifier,
-        )
+        .read(userVideoListProvider(UserVideoListType.history).notifier)
         .fetch(refresh: true);
   }
 
   void _loadMoreVideos() {
-    final provider = userVideoListProvider((
-      type: ref.watch(videoTypeProvider),
-      listType: UserVideoListType.history,
-    ));
+    final provider = userVideoListProvider(UserVideoListType.history);
 
     final notifier = ref.read(provider.notifier);
     final state = ref.read(provider);
@@ -88,26 +76,12 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
     notifier.fetch(refresh: false);
   }
 
-  void _toggleVideoType() {
-    final current = ref.read(videoTypeProvider);
-    ref.read(videoTypeProvider.notifier).state = current == 1 ? 2 : 1;
-    setState(() {
-      _videoLoaded = false;
-    });
-    _fetchVideos();
-  }
-
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18n.translate(key);
-    final videoType = ref.watch(videoTypeProvider);
-    final isLongVideo = videoType == 2;
-    final videoProvider = userVideoListProvider((
-      type: videoType,
-      listType: UserVideoListType.history,
-    ));
+    final videoProvider = userVideoListProvider(UserVideoListType.history);
 
     final postProvider = userPostListProvider(UserPostListType.history);
 
@@ -132,29 +106,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
         backgroundColor: background,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: AnimatedPadding(
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeInOut,
-          padding: EdgeInsets.only(right: _isVideoTab ? 0 : 56),
-          child: AnimatedAlign(
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeInOut,
-            alignment: _isVideoTab ? Alignment.centerLeft : Alignment.center,
-            child: Text(
-              translate("watchHistory"),
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
+        title: Text(
+          translate("watchHistory"),
+          style: TextStyle(color: Colors.white),
         ),
-        centerTitle: !_isVideoTab,
-        actions: [
-          if (_isVideoTab)
-            VideoTypeToggleButton(
-              isLongVideo: isLongVideo,
-              onToggle: _toggleVideoType,
-              withText: true,
-            ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -177,7 +132,6 @@ class _HistoryPageState extends ConsumerState<HistoryPage>
             isLoaded: _videoLoaded,
             loading: videoState.loading,
             results: videoState.list,
-            isLongVideo: isLongVideo,
             provider: videoProvider,
           ),
 

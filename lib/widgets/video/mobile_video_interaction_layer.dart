@@ -1,28 +1,28 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/video_playback_provider.dart';
 import 'package:live_app/widgets/video/video_overlay_icon.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:chewie/chewie.dart';
 
-class MobileVideoInteractionLayer extends StatefulWidget {
+class MobileVideoInteractionLayer extends ConsumerStatefulWidget {
   final bool useMediaKit;
   final Player? player;
   final ChewieController? chewieController;
-
   const MobileVideoInteractionLayer({
     super.key,
     required this.useMediaKit,
     this.player,
     this.chewieController,
   });
-
   @override
-  State<MobileVideoInteractionLayer> createState() =>
+  ConsumerState<MobileVideoInteractionLayer> createState() =>
       _MobileVideoInteractionLayerState();
 }
 
 class _MobileVideoInteractionLayerState
-    extends State<MobileVideoInteractionLayer> {
+    extends ConsumerState<MobileVideoInteractionLayer> {
   Timer? rewindTimer;
   bool isRewinding = false;
   bool isForwarding = false;
@@ -49,9 +49,12 @@ class _MobileVideoInteractionLayerState
       widget.player!.state.playing
           ? widget.player!.pause()
           : widget.player!.play();
+      ref.read(videoPausedProvider.notifier).state =
+          widget.player!.state.playing;
     } else if (widget.chewieController != null) {
       final controller = widget.chewieController!.videoPlayerController;
       controller.value.isPlaying ? controller.pause() : controller.play();
+      ref.read(videoPausedProvider.notifier).state = controller.value.isPlaying;
     }
   }
 

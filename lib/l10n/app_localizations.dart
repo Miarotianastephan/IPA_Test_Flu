@@ -952,6 +952,48 @@ abstract class AppLocalizations {
   /// **'Save login credentials'**
   String get saveLoginCredentials;
 
+  /// No description provided for @saveAccountInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Please save your account information'**
+  String get saveAccountInfoTitle;
+
+  /// No description provided for @saveAccountInfoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'To avoid losing your account, please save the information below in time.'**
+  String get saveAccountInfoDescription;
+
+  /// No description provided for @accountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountLabel;
+
+  /// No description provided for @saveAccountInfoButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save account'**
+  String get saveAccountInfoButton;
+
+  /// No description provided for @accountInfoSavedToAlbum.
+  ///
+  /// In en, this message translates to:
+  /// **'Account information has been saved to the album'**
+  String get accountInfoSavedToAlbum;
+
+  /// No description provided for @saveFailedTryAgainLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed, please try again later'**
+  String get saveFailedTryAgainLater;
+
+  /// No description provided for @screenshotSaveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Please take a screenshot'**
+  String get screenshotSaveTitle;
+
   /// No description provided for @clearHistory.
   ///
   /// In en, this message translates to:

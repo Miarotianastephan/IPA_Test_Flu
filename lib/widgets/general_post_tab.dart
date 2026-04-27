@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
@@ -10,9 +12,14 @@ class GeneralPostTab extends ConsumerWidget {
   final bool loading;
   final List<ForumPost> results;
   final bool isLoaded;
-  final VoidCallback onRefresh;
+  final FutureOr<void> Function() onRefresh;
   final VoidCallback onLoadMore;
   final bool finished;
+  final String? scrollStorageKey;
+  final bool showCategory;
+  final bool showDeleteButton;
+  final bool showSeparators;
+  final void Function(int index)? onDelete;
 
   const GeneralPostTab({
     super.key,
@@ -22,6 +29,11 @@ class GeneralPostTab extends ConsumerWidget {
     required this.onRefresh,
     required this.onLoadMore,
     required this.finished,
+    this.scrollStorageKey,
+    this.showCategory = false,
+    this.showDeleteButton = false,
+    this.showSeparators = false,
+    this.onDelete,
   });
 
   @override
@@ -51,8 +63,14 @@ class GeneralPostTab extends ConsumerWidget {
   Widget _buildList(BuildContext context, WidgetRef ref) {
     final i18n = ref.read(i18nNotifierProvider.notifier);
     return ListView.separated(
+      key: scrollStorageKey == null
+          ? null
+          : PageStorageKey<String>(scrollStorageKey!),
+      addAutomaticKeepAlives: false,
       itemCount: results.length + (loading ? 1 : 0) + (finished ? 1 : 0),
-      separatorBuilder: (_, __) => const Divider(color: Colors.white12),
+      separatorBuilder: (_, _) => showSeparators
+          ? const Divider(color: Colors.white12)
+          : const SizedBox.shrink(),
       itemBuilder: (context, index) {
         if (loading && index == results.length) {
           return _buildLoadMoreIndicator();
@@ -71,7 +89,33 @@ class GeneralPostTab extends ConsumerWidget {
         }
 
         final item = results[index];
-        return ForumPostCard(post: item);
+        if (showDeleteButton && onDelete != null) {
+          return Stack(
+            children: [
+              ForumPostCard(post: item, showCategory: showCategory),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: () => onDelete!(index),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+        return ForumPostCard(post: item, showCategory: showCategory);
       },
     );
   }

@@ -435,6 +435,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get saveLoginCredentials => '保存登录凭证';
 
   @override
+  String get saveAccountInfoTitle => '请保存账号信息';
+
+  @override
+  String get saveAccountInfoDescription => '为避免账号丢失，请及时保存以下账号信息。';
+
+  @override
+  String get accountLabel => '账号';
+
+  @override
+  String get saveAccountInfoButton => '保存账号';
+
+  @override
+  String get accountInfoSavedToAlbum => '账号信息已保存到相册';
+
+  @override
+  String get saveFailedTryAgainLater => '保存失败，请稍后重试';
+
+  @override
+  String get screenshotSaveTitle => '请截图保存';
+
+  @override
   String get clearHistory => '清除记录';
 
   @override

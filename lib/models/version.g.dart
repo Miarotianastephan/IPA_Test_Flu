@@ -13,6 +13,7 @@ Version _$VersionFromJson(Map<String, dynamic> json) => Version(
   description: json['description'] as String?,
   urlAndroid: json['url_android'] as String?,
   urlIos: json['url_ios'] as String?,
+  forceInstall: json['force_install'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$VersionToJson(Version instance) => <String, dynamic>{
@@ -22,4 +23,5 @@ Map<String, dynamic> _$VersionToJson(Version instance) => <String, dynamic>{
   'description': instance.description,
   'url_android': instance.urlAndroid,
   'url_ios': instance.urlIos,
+  'force_install': instance.forceInstall,
 };

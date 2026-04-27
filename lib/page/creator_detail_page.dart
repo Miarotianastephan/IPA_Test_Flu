@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:live_app/models/audio.dart';
 import 'package:live_app/models/manga.dart';
 import 'package:live_app/models/roman.dart';
 import 'package:live_app/page/novel_grid.dart';
@@ -39,6 +40,9 @@ class _CreatorDetailPageState extends State<CreatorDetailPage>
           }
           if (item is Roman) {
             return item.category.name;
+          }
+          if (item is Audio) {
+            return item.audioCategory.name;
           }
           return "Autre";
         })
@@ -101,20 +105,25 @@ class _CreatorDetailPageState extends State<CreatorDetailPage>
                     if (item is Roman) {
                       return item.category.name == cat;
                     }
+                    if (item is Audio) {
+                      return (item.audioCategory.name) == cat;
+                    }
                     return false;
                   }).toList();
-              
+
                   if (filtered.isEmpty) {
                     return EmptyWidget();
                   }
-              
+
                   final first = filtered.first;
                   if (first is Manga) {
                     return _buildMangaSection(filtered.cast<Manga>());
                   } else if (first is Roman) {
                     return _buildRomanSection(filtered.cast<Roman>());
+                  } else if (first is Audio) {
+                    return _buildAudioSection(filtered.cast<Audio>());
                   }
-              
+
                   return const SizedBox.shrink();
                 }).toList(),
               ),
@@ -132,4 +141,8 @@ Widget _buildMangaSection(List<Manga> mangas) {
 
 Widget _buildRomanSection(List<Roman> roman) {
   return NovelGrid(items: roman, showCreatorInfo: false);
+}
+
+Widget _buildAudioSection(List<Audio> audios) {
+  return NovelGrid(items: audios, showCreatorInfo: false, isAudio: true);
 }

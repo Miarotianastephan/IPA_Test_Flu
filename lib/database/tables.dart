@@ -10,6 +10,7 @@ import '../models/image_cache.dart';
 import '../models/message.dart';
 import '../models/userinfo.dart';
 import '../models/video_cache.dart';
+import '../models/agent_support.dart';
 
 ///////////////////////////////////////////////////////////////////////////
 //  CONVERSATIONS TABLE
@@ -46,7 +47,10 @@ class ConversationUsers extends Table {
 
   IntColumn get conversationId => integer().named('conversation_id')();
 
-  IntColumn get userId => integer().named('user_id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  TextColumn get agentSupportId =>
+      text().nullable().named('agent_support_id')();
 
   TextColumn get role => text().withDefault(const Constant('member'))();
 
@@ -86,7 +90,10 @@ class Messages extends Table {
 
   IntColumn get conversationId => integer().named('conversation_id')();
 
-  IntColumn get senderId => integer().named('sender_id')();
+  TextColumn get senderId => text().nullable().named('sender_id')();
+
+  TextColumn get senderSupportId =>
+      text().nullable().named('sender_support_id')();
 
   TextColumn get content => text()();
 
@@ -127,9 +134,9 @@ class Messages extends Table {
 
 @UseRowClass(UserInfo)
 class UserInfos extends Table {
-  IntColumn get id => integer()();
+  TextColumn get id => text()();
 
-  IntColumn get displayId => integer().named('display_id')();
+  TextColumn get displayId => text().named('display_id')();
 
   TextColumn get username => text().nullable()();
 
@@ -169,6 +176,25 @@ class UserInfos extends Table {
 
   BoolColumn get isFollowed =>
       boolean().named('is_followed').withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {id};
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  AGENT SUPPORT TABLE
+///////////////////////////////////////////////////////////////////////////
+
+@UseRowClass(AgentSupport)
+class AgentSupports extends Table {
+  TextColumn get id => text()();
+  TextColumn get username => text().nullable()();
+  TextColumn get loginId => text().nullable().named('login_id')();
+  TextColumn get password => text().nullable()();
+  TextColumn get role => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().nullable().named('created_at')();
+  DateTimeColumn get updatedAt => dateTime().nullable().named('updated_at')();
+  TextColumn get avatar => text().nullable()();
 
   @override
   Set<Column<Object>>? get primaryKey => {id};

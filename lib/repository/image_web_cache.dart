@@ -1,5 +1,5 @@
 import 'dart:js_interop';
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:web/web.dart' as web;
 import 'dart:async';
 
@@ -25,40 +25,35 @@ class ImageWebCache {
 
   Future<void> _init() async {
     final completer = Completer<void>();
-    debugPrint('[ImageWebCache] Opening IndexedDB: $dbName (v$dbVersion)');
 
     final indexedDB = web.window.indexedDB;
     final request = indexedDB.open(dbName, dbVersion);
 
     request.onupgradeneeded = (web.IDBVersionChangeEvent event) {
-      debugPrint('[ImageWebCache] Database upgrade needed');
       final db = request.result as web.IDBDatabase;
       if (!db.objectStoreNames.contains(storeName)) {
-        debugPrint('[ImageWebCache] Creating object store: $storeName');
         db.createObjectStore(storeName);
       }
     }.toJS;
 
     request.onsuccess = (web.Event event) {
-      debugPrint('[ImageWebCache] Database opened successfully');
       _db = request.result as web.IDBDatabase;
       completer.complete();
     }.toJS;
 
     request.onerror = (web.Event event) {
-      debugPrint('[ImageWebCache] Failed to open database: ${request.error}');
       completer.completeError('Failed to open IndexedDB');
     }.toJS;
 
     return completer.future;
   }
 
-  Future<String?> get(String url) async {
+  Future<Uint8List?> get(String url) async {
     try {
       await init();
       if (_db == null) return null;
 
-      final completer = Completer<String?>();
+      final completer = Completer<Uint8List?>();
       final transaction = _db!.transaction(storeName.toJS, 'readonly');
       final store = transaction.objectStore(storeName);
       final request = store.get(url.toJS);
@@ -66,27 +61,23 @@ class ImageWebCache {
       request.onsuccess = (web.Event event) {
         final result = request.result;
         if (result != null && !result.isUndefinedOrNull) {
-          debugPrint('[ImageWebCache] Cache hit for $url');
-          completer.complete((result as JSString).toDart);
+          completer.complete((result as JSUint8Array).toDart);
         } else {
-          debugPrint('[ImageWebCache] Cache miss for $url');
           completer.complete(null);
         }
       }.toJS;
 
       request.onerror = (web.Event event) {
-        debugPrint('[ImageWebCache] Error during get: ${request.error}');
         completer.complete(null);
       }.toJS;
 
       return completer.future;
     } catch (e) {
-      debugPrint('[ImageWebCache] Exception in get: $e');
       return null;
     }
   }
 
-  Future<void> put(String url, String base64) async {
+  Future<void> put(String url, Uint8List bytes) async {
     try {
       await init();
       if (_db == null) return;
@@ -95,22 +86,19 @@ class ImageWebCache {
       final transaction = _db!.transaction(storeName.toJS, 'readwrite');
       final store = transaction.objectStore(storeName);
 
-      debugPrint('[ImageWebCache] Storing image in IndexedDB for $url');
-      final request = store.put(base64.toJS, url.toJS);
+      final request = store.put(bytes.toJS, url.toJS);
 
       request.onsuccess = (web.Event event) {
-        debugPrint('[ImageWebCache] Successfully stored image in IndexedDB');
         completer.complete();
       }.toJS;
 
       request.onerror = (web.Event event) {
-        debugPrint('[ImageWebCache] Error during put: ${request.error}');
         completer.completeError('Failed to store image in IndexedDB');
       }.toJS;
 
       return completer.future;
     } catch (e) {
-      debugPrint('[ImageWebCache] Exception in put: $e');
+      // Ignore write failures and fall back to network on next request.
     }
   }
 
@@ -125,18 +113,16 @@ class ImageWebCache {
       final request = store.clear();
 
       request.onsuccess = (web.Event event) {
-        debugPrint('[ImageWebCache] Successfully cleared IndexedDB');
         completer.complete();
       }.toJS;
 
       request.onerror = (web.Event event) {
-        debugPrint('[ImageWebCache] error during clear: ${request.error}');
         completer.completeError('Failed to clear IndexedDB');
       }.toJS;
 
       return completer.future;
     } catch (e) {
-      debugPrint('[ImageWebCache] Exception in clear: $e');
+      // Ignore clear failures; cache cleanup is best-effort on web.
     }
   }
 
@@ -160,7 +146,6 @@ class ImageWebCache {
 
       return completer.future;
     } catch (e) {
-      debugPrint('[ImageWebCache] Exception in getCount: $e');
       return 0;
     }
   }

@@ -21,7 +21,19 @@ class HlsProxyServer {
   final Map<String, Map<String, String>> _headers = {};
   final Map<String, int> _totalSegments = {};
   final Map<String, int> _servedSegments = {};
-  final dio_lib.Dio _dio = dio_lib.Dio();
+
+  static const int _maxRetries = 3;
+  static const Duration _connectTimeout = Duration(seconds: 30);
+  static const Duration _receiveTimeout = Duration(seconds: 60);
+  static const Duration _sendTimeout = Duration(seconds: 30);
+
+  final dio_lib.Dio _dio = dio_lib.Dio(
+    dio_lib.BaseOptions(
+      connectTimeout: _connectTimeout,
+      receiveTimeout: _receiveTimeout,
+      sendTimeout: _sendTimeout,
+    ),
+  );
 
   int? get port => _port;
   bool get isRunning => _server != null;
@@ -211,35 +223,62 @@ class HlsProxyServer {
     final encodedUrl = match.group(2)!;
     final segmentUrl = Uri.decodeComponent(encodedUrl);
 
-    try {
-      final headers = _headers[sessionId] ?? {};
-      final response = await _dio.get<List<int>>(
-        segmentUrl,
-        options: dio_lib.Options(
-          responseType: dio_lib.ResponseType.bytes,
-          headers: headers,
-        ),
-      );
+    final headers = _headers[sessionId] ?? {};
+    final data = await _fetchWithRetry(segmentUrl, headers);
 
-      if (response.statusCode == 200 && response.data != null) {
-        request.response.headers.contentType = ContentType('video', 'mp2t');
-        request.response.headers.add('Cache-Control', 'max-age=3600');
-        request.response.headers.add('Cache-Control', 'max-age=3600');
-        request.response.add(response.data!);
-        await request.response.close();
+    if (data != null) {
+      request.response.headers.contentType = ContentType('video', 'mp2t');
+      request.response.headers.add('Cache-Control', 'max-age=3600');
+      request.response.add(data);
+      await request.response.close();
 
-        final current = _servedSegments[sessionId] ?? 0;
-        _servedSegments[sessionId] = current + 1;
-      } else {
-        request.response.statusCode = HttpStatus.badGateway;
-        request.response.write('Failed to fetch segment');
-        await request.response.close();
-      }
-    } catch (e) {
+      final current = _servedSegments[sessionId] ?? 0;
+      _servedSegments[sessionId] = current + 1;
+    } else {
       request.response.statusCode = HttpStatus.badGateway;
-      request.response.write('Error fetching segment: $e');
+      request.response.write(
+        'Failed to fetch segment after $_maxRetries retries',
+      );
       await request.response.close();
     }
+  }
+
+  Future<List<int>?> _fetchWithRetry(
+    String url,
+    Map<String, String> headers,
+  ) async {
+    for (int attempt = 1; attempt <= _maxRetries; attempt++) {
+      try {
+        final response = await _dio.get<List<int>>(
+          url,
+          options: dio_lib.Options(
+            responseType: dio_lib.ResponseType.bytes,
+            headers: headers,
+          ),
+        );
+
+        if (response.statusCode == 200 && response.data != null) {
+          return response.data;
+        }
+      } on dio_lib.DioException catch (e) {
+        final isLastAttempt = attempt == _maxRetries;
+        if (isLastAttempt) {
+          debugPrint(
+            '[HlsProxyServer] Failed after $_maxRetries attempts: ${e.message}',
+          );
+          return null;
+        }
+        final delay = Duration(milliseconds: 250 * (1 << attempt));
+        debugPrint(
+          '[HlsProxyServer] Retry $attempt/$_maxRetries after ${delay.inMilliseconds}ms',
+        );
+        await Future.delayed(delay);
+      } catch (e) {
+        debugPrint('[HlsProxyServer] Unexpected error: $e');
+        return null;
+      }
+    }
+    return null;
   }
 
   Future<void> _handleKeyRequest(HttpRequest request) async {
@@ -257,32 +296,20 @@ class HlsProxyServer {
     final encodedUrl = match.group(2)!;
     final keyUrl = Uri.decodeComponent(encodedUrl);
 
-    try {
-      final headers = _headers[sessionId] ?? {};
-      final response = await _dio.get<List<int>>(
-        keyUrl,
-        options: dio_lib.Options(
-          responseType: dio_lib.ResponseType.bytes,
-          headers: headers,
-        ),
-      );
+    final headers = _headers[sessionId] ?? {};
+    final data = await _fetchWithRetry(keyUrl, headers);
 
-      if (response.statusCode == 200 && response.data != null) {
-        request.response.headers.contentType = ContentType(
-          'application',
-          'octet-stream',
-        );
-        request.response.headers.add('Cache-Control', 'max-age=3600');
-        request.response.add(response.data!);
-        await request.response.close();
-      } else {
-        request.response.statusCode = HttpStatus.badGateway;
-        request.response.write('Failed to fetch key');
-        await request.response.close();
-      }
-    } catch (e) {
+    if (data != null) {
+      request.response.headers.contentType = ContentType(
+        'application',
+        'octet-stream',
+      );
+      request.response.headers.add('Cache-Control', 'max-age=3600');
+      request.response.add(data);
+      await request.response.close();
+    } else {
       request.response.statusCode = HttpStatus.badGateway;
-      request.response.write('Error fetching key: $e');
+      request.response.write('Failed to fetch key after $_maxRetries retries');
       await request.response.close();
     }
   }

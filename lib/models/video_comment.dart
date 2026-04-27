@@ -12,8 +12,8 @@ class VideoComment {
   final int id;
   @JsonKey(name: 'video_id', fromJson: parseInt)
   final int videoId;
-  @JsonKey(name: 'user_id', fromJson: parseInt)
-  final int userId;
+  @JsonKey(name: 'user_id')
+  final String userId;
   final String content;
   @JsonKey(name: 'parent_id', fromJson: parseInt)
   final int? parentId;

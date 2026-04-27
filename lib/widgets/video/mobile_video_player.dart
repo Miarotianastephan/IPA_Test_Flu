@@ -3,32 +3,39 @@ import 'dart:io';
 import 'package:chewie/chewie.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/widgets/video/mobile_video_controls_overlay.dart';
 import 'package:live_app/widgets/video/mobile_video_interaction_layer.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:video_player/video_player.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
-class MobileVideoPlayer extends StatefulWidget {
+class MobileVideoPlayer extends ConsumerStatefulWidget {
   final String? videoUrl;
   final String? localPath;
   final VideoScreenController? controller;
+  final bool autoPlay;
   const MobileVideoPlayer({
     super.key,
     this.videoUrl,
     this.localPath,
     this.controller,
+    this.autoPlay = true,
   });
-
   @override
-  State<MobileVideoPlayer> createState() => _MobileVideoPlayerState();
+  ConsumerState<MobileVideoPlayer> createState() => _MobileVideoPlayerState();
 }
 
 class VideoScreenController {
+  VoidCallback? play;
   VoidCallback? pause;
+  VoidCallback? resume;
+  Stream<Duration>? onProgress;
+  Stream<void>? onCompleted;
 }
 
-class _MobileVideoPlayerState extends State<MobileVideoPlayer>
+class _MobileVideoPlayerState extends ConsumerState<MobileVideoPlayer>
     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   bool useMediaKit = false;
   bool isInitialized = false;
@@ -39,6 +46,9 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
   bool showControls = true;
   Timer? _hideTimer;
   VoidCallback? _videoListener;
+  final _progressCtrl = StreamController<Duration>.broadcast();
+  final _completedCtrl = StreamController<void>.broadcast();
+  bool _isPlayerDisposed = false;
   @override
   void initState() {
     super.initState();
@@ -51,18 +61,38 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
       } else {
         await _initializeChewie();
       }
-      widget.controller != null
-          ? widget.controller!.pause = () {
-              if (useMediaKit) {
-                player?.pause();
-              } else {}
-            }
-          : null;
+      if (widget.controller != null) {
+        widget.controller!.onProgress = _progressCtrl.stream;
+        widget.controller!.onCompleted = _completedCtrl.stream;
+        widget.controller!.play = () {
+          if (useMediaKit && !_isPlayerDisposed) {
+            player?.play();
+          } else {
+            _videoPlayerController?.play();
+          }
+        };
+        widget.controller!.pause = () {
+          if (useMediaKit && !_isPlayerDisposed) {
+            player?.pause();
+          } else {
+            _videoPlayerController?.pause();
+          }
+        };
+        widget.controller!.resume = () {
+          if (useMediaKit && !_isPlayerDisposed) {
+            player?.play();
+          } else {
+            _videoPlayerController?.play();
+          }
+        };
+      }
 
-      if (useMediaKit) {
-        player?.play();
-      } else {
-        _videoPlayerController?.play();
+      if (widget.autoPlay) {
+        if (useMediaKit && !_isPlayerDisposed) {
+          player?.play();
+        } else {
+          _videoPlayerController?.play();
+        }
       }
 
       setState(() {
@@ -92,7 +122,7 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
 
   Future<void> _initializeMediaKit() async {
     WidgetsBinding.instance.removeObserver(this);
-    if (player != null) {
+    if (player != null && !_isPlayerDisposed) {
       mediaKitController = null;
       player!.pause();
       player?.dispose();
@@ -100,9 +130,20 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
     player = Player();
     mediaKitController = VideoController(player!);
     player?.stream.playing.listen((isPlaying) {
-      if (!mounted) return;
+      if (!mounted || _isPlayerDisposed) return;
+
       if (!isPlaying && !showControls) {
         setState(() => showControls = true);
+      }
+    });
+    player!.stream.position.listen((pos) {
+      if (!_isPlayerDisposed) {
+        _progressCtrl.add(pos);
+      }
+    });
+    player!.stream.completed.listen((completed) {
+      if (!_isPlayerDisposed && completed) {
+        _completedCtrl.add(null);
       }
     });
     final source =
@@ -110,15 +151,15 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
         ? Media(widget.localPath!)
         : Media(widget.videoUrl!);
     try {
+      if (_isPlayerDisposed) return;
       await player!.open(source, play: false);
+      if (_isPlayerDisposed) return;
       await player!.play();
 
       setState(() {
         isInitialized = true;
       });
-    } catch (e) {
-      debugPrint('Error initializing MediaKit: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _initializeChewie() async {
@@ -129,7 +170,13 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
     try {
       await _videoPlayerController!.initialize();
       _videoListener = () {
-        final isPaused = !_videoPlayerController!.value.isPlaying;
+        final v = _videoPlayerController!.value;
+        _progressCtrl.add(v.position);
+        if (v.duration > Duration.zero &&
+            v.position >= v.duration - const Duration(milliseconds: 200)) {
+          _completedCtrl.add(null);
+        }
+        final isPaused = !v.isPlaying;
         if (isPaused && !showControls) {
           if (!mounted) return;
           setState(() => showControls = true);
@@ -138,18 +185,17 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
       _videoPlayerController?.addListener(_videoListener!);
       _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController!,
-        autoPlay: true,
+        autoPlay: widget.autoPlay,
         looping: false,
         showControls: false,
         autoInitialize: true,
       );
-    } catch (e) {
-      debugPrint('Error initializing Chewie: $e');
-    }
+    } catch (e) {}
   }
 
   @override
   void dispose() {
+    _isPlayerDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
     _hideTimer?.cancel();
     _hideTimer = null;
@@ -165,6 +211,8 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
     _videoPlayerController = null;
     _chewieController?.dispose();
     _chewieController = null;
+    _progressCtrl.close();
+    _completedCtrl.close();
     super.dispose();
   }
 
@@ -172,8 +220,24 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
-      player?.pause();
+      if (!_isPlayerDisposed) {
+        player?.pause();
+      }
       _videoPlayerController?.pause();
+    }
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+
+  void _handleVisibilityChanged(VisibilityInfo info) {
+    if (!mounted || _isPlayerDisposed) return;
+    if (info.visibleFraction < 0.6) {
+      if (useMediaKit && !_isPlayerDisposed) {
+        player?.pause();
+      } else {
+        _videoPlayerController?.pause();
+      }
     }
   }
 
@@ -182,46 +246,49 @@ class _MobileVideoPlayerState extends State<MobileVideoPlayer>
     super.build(context);
     return Scaffold(
       backgroundColor: Colors.black,
-      body: isInitialized
-          ? GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                if (showControls) {
-                  setState(() => showControls = false);
-                  _hideTimer?.cancel();
-                } else {
-                  _showControls();
-                }
-              },
-              child: Stack(
-                children: [
-                  useMediaKit
-                      ? Video(controller: mediaKitController!, controls: null)
-                      : _chewieController != null
-                      ? Chewie(controller: _chewieController!)
-                      : const SizedBox.shrink(),
-                  MobileVideoInteractionLayer(
-                    player: player,
-                    useMediaKit: useMediaKit,
-                    chewieController: _chewieController,
-                  ),
-                  AnimatedOpacity(
-                    opacity: showControls ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: MobileVideoControlsOverlay(
+      body: VisibilityDetector(
+        key: Key('mobile-video-player-${widget.videoUrl ?? widget.localPath}'),
+        onVisibilityChanged: _handleVisibilityChanged,
+        child: isInitialized
+            ? GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  if (showControls) {
+                    setState(() => showControls = false);
+                    _hideTimer?.cancel();
+                  } else {
+                    _showControls();
+                  }
+                },
+                child: Stack(
+                  children: [
+                    useMediaKit
+                        ? Video(controller: mediaKitController!, controls: null)
+                        : _chewieController != null
+                        ? Chewie(controller: _chewieController!)
+                        : const SizedBox.shrink(),
+                    MobileVideoInteractionLayer(
                       player: player,
                       useMediaKit: useMediaKit,
                       chewieController: _chewieController,
-                      videoController: _videoPlayerController,
                     ),
-                  ),
-                ],
+                    AnimatedOpacity(
+                      opacity: showControls ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: MobileVideoControlsOverlay(
+                        player: player,
+                        useMediaKit: useMediaKit,
+                        chewieController: _chewieController,
+                        videoController: _videoPlayerController,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : const Center(
+                child: CircularProgressIndicator(color: Colors.white),
               ),
-            )
-          : const Center(child: CircularProgressIndicator(color: Colors.white)),
+      ),
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }

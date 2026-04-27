@@ -185,7 +185,6 @@ class _AudioRecorderWidgetState extends State<AudioRecorderWidget> {
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'monospace',
                 ),
               ),
             ],

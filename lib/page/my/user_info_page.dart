@@ -1,18 +1,14 @@
-// ignore_for_file: use_build_context_synchronously
-
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:live_app/api/api_client.dart';
-import 'package:live_app/api/services/user_service.dart';
-import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/models/userinfo.dart';
-import 'package:live_app/page/home.dart';
+import 'package:live_app/page/vip_list_page.dart';
 import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/current_user_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/utils/toast_util.dart';
 import 'package:live_app/utils/username_formatter.dart';
@@ -24,7 +20,8 @@ import 'package:path/path.dart';
 
 class UserInfoPage extends ConsumerStatefulWidget {
   final UserInfo? user;
-  const UserInfoPage({super.key, required this.user});
+  final bool editMode;
+  const UserInfoPage({super.key, required this.user, this.editMode = false});
 
   @override
   ConsumerState<UserInfoPage> createState() => _UserInfoPageState();
@@ -46,6 +43,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
   @override
   void initState() {
     super.initState();
+    _isEditing = widget.editMode;
     _username = widget.user!.username ?? '';
     _nickname = widget.user!.nickname ?? '';
     _bio = widget.user!.bio ?? '';
@@ -120,43 +118,6 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
     }
   }
 
-  Future<void> getUserInfo() async {
-    final userService = ref.read(userServiceProvider);
-
-    final response = await userService.getInfo();
-    if (response.data != null) {
-      await StorageService.instance.setValue(
-        "user_info",
-        jsonEncode(response.data!.toJson()),
-      );
-    }
-  }
-
-  Future<void> getAppConfig(BuildContext context) async {
-    final appService = ref.read(appServiceProvider);
-
-    try {
-      final appConfig = await appService.appConfig();
-
-      await StorageService.instance.setValue(
-        "app_config",
-        jsonEncode(appConfig.data),
-      );
-
-      Navigator.of(context, rootNavigator: true).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, _, _) => HomePage(config: appConfig.data),
-          transitionDuration: const Duration(milliseconds: 500),
-          transitionsBuilder: (_, animation, _, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      );
-    } catch (e, st) {
-      debugPrintStack(stackTrace: st);
-    }
-  }
-
   Future<void> _saveProfileApi(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -181,71 +142,48 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
       };
 
       if (_avatar != null) {
-        data['avatar'] = await MultipartFile.fromFile(
-          _avatar!.path,
+        final avatarBytes = await _avatar!.readAsBytes();
+        data['avatar'] = MultipartFile.fromBytes(
+          avatarBytes,
           filename: basename(_avatar!.path),
+          contentType: DioMediaType('image', 'jpeg'),
         );
       }
 
       if (_cover != null) {
-        data['cover'] = await MultipartFile.fromFile(
-          _cover!.path,
+        final coverBytes = await _cover!.readAsBytes();
+        data['cover'] = MultipartFile.fromBytes(
+          coverBytes,
           filename: basename(_cover!.path),
+          contentType: DioMediaType('image', 'jpeg'),
         );
       }
 
       final formData = FormData.fromMap(data);
-      final response = await UserService(ApiClient()).updateInfo(formData);
+      final userService = ref.read(userServiceProvider);
+      await userService.updateInfo(formData);
 
       if (!mounted) return;
 
-      if (response.code == 1) {
-        await getUserInfo();
-        getAppConfig(context);
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            content: Text(i18n.translate('profileUpdated')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text("OK", style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
+      await ref.read(currentUserProvider.notifier).refreshUserInfo();
 
-        setState(() {
-          _saving = false;
-          _isEditing = false;
-        });
-        debugPrint("SUCCESS");
-      } else {
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              content: Text(i18n.translate('serverError')),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text(
-                    "OK",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        debugPrint('Erreur serveur: ${response.msg}');
-      }
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      ToastUtil.success(i18n.translate('profileUpdated'));
+
+      setState(() {
+        _saving = false;
+        _isEditing = false;
+      });
+      debugPrint("SUCCESS");
     } catch (e) {
-      if (mounted) {
+      debugPrint('Erreur: $e');
+      if (context.mounted) {
+        ToastUtil.error(e.toString().replaceFirst('Exception: ', ''));
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            content: Text(i18n.translate('networkError')),
+            content: Text(i18n.translate('serverError')),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
@@ -269,142 +207,199 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
   @override
   Widget build(BuildContext context) {
     final i18n = ref.read(i18nNotifierProvider.notifier);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(i18n.translate('userInfo')),
-        actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.visibility : Icons.edit),
-            tooltip: _isEditing ? i18n.translate('show') : i18n.translate('edit'),
-            onPressed: () {
-              setState(() => _isEditing = !_isEditing);
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          widget.user == null
-              ? Center(child: Text(i18n.translate('userInfoPageContent')))
-              : SingleChildScrollView(
-                  padding: EdgeInsets.all(16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        Stack(
-                          clipBehavior: Clip.none,
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(i18n.translate('userInfo')),
+          actions: [
+            IconButton(
+              icon: Icon(_isEditing ? Icons.visibility : Icons.edit),
+              tooltip: _isEditing
+                  ? i18n.translate('show')
+                  : i18n.translate('edit'),
+              onPressed: () {
+                setState(() => _isEditing = !_isEditing);
+              },
+            ),
+          ],
+        ),
+        body: widget.user == null
+            ? Center(child: Text(i18n.translate('userInfoPageContent')))
+            : Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
                           children: [
-                            CoverImagePicker(
-                              cover: _cover,
-                              coverUrl: widget.user!.cover,
-                              isEditing: _isEditing,
-                              onTap: () {
-                                _isEditing
-                                    ? _pickCoverImage(context)
-                                    : showDial(
-                                        context,
-                                        _cover ??
-                                            (_cover != null &&
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                CoverImagePicker(
+                                  cover: _cover,
+                                  coverUrl: widget.user!.cover,
+                                  isEditing: _isEditing,
+                                  onTap: () {
+                                    _isEditing
+                                        ? _pickCoverImage(context)
+                                        : showDial(
+                                            context,
+                                            _cover ??
+                                                (_cover != null &&
+                                                        widget.user!.cover !=
+                                                            null
+                                                    ? _cover
+                                                    : widget.user!.cover),
+                                            _cover != null &&
                                                     widget.user!.cover != null
-                                                ? _cover
-                                                : widget.user!.cover),
-                                        _cover != null &&
-                                                widget.user!.cover != null
-                                            ? true
-                                            : widget.user!.cover != null
-                                            ? false
-                                            : true,
-                                      );
-                              },
-                              user: widget.user,
-                            ),
-                            Positioned(
-                              bottom: -50,
-                              left: MediaQuery.of(context).size.width / 2 - 55,
-                              child: ProfileImagePicker(
-                                avatar: _avatar,
-                                avatarUrl: widget.user!.avatar,
-                                isEditing: _isEditing,
-                                onTap: () {
-                                  _isEditing
-                                      ? _pickAvatarImage(context)
-                                      : showDial(
-                                          context,
-                                          _avatar ??
-                                              (_avatar != null &&
+                                                ? true
+                                                : widget.user!.cover != null
+                                                ? false
+                                                : true,
+                                          );
+                                  },
+                                  user: widget.user,
+                                ),
+                                Positioned(
+                                  bottom: -50,
+                                  left:
+                                      MediaQuery.of(context).size.width / 2 -
+                                      55,
+                                  child: ProfileImagePicker(
+                                    avatar: _avatar,
+                                    avatarUrl: widget.user!.avatar,
+                                    isEditing: _isEditing,
+                                    onTap: () {
+                                      _isEditing
+                                          ? _pickAvatarImage(context)
+                                          : showDial(
+                                              context,
+                                              _avatar ??
+                                                  (_avatar != null &&
+                                                          widget.user!.avatar !=
+                                                              null
+                                                      ? _avatar
+                                                      : widget.user!.avatar),
+                                              _avatar != null &&
                                                       widget.user!.avatar !=
                                                           null
-                                                  ? _avatar
-                                                  : widget.user!.avatar),
-                                          _avatar != null &&
-                                                  widget.user!.avatar != null
-                                              ? true
-                                              : widget.user!.avatar != null
-                                              ? false
-                                              : true,
-                                        );
-                                },
-                                user: widget.user,
+                                                  ? true
+                                                  : widget.user!.avatar != null
+                                                  ? false
+                                                  : true,
+                                            );
+                                    },
+                                    user: widget.user,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 80),
+                            TextFieldWidget(
+                              label: i18n.translate('username'),
+                              icon: Icons.person_outline,
+                              value: _username,
+                              isEditing: _isEditing,
+                              inputFormatters: [UsernameFormatter()],
+                              onSaved: (value) => _username = value ?? '',
+                            ),
+                            const SizedBox(height: 10),
+                            TextFieldWidget(
+                              label: i18n.translate('nickname'),
+                              icon: Icons.tag,
+                              value: _nickname,
+                              isEditing: _isEditing,
+                              onSaved: (value) => _nickname = value ?? '',
+                            ),
+                            const SizedBox(height: 10),
+                            TextFieldWidget(
+                              label: i18n.translate('bio'),
+                              icon: Icons.description,
+                              value: _bio,
+                              isEditing: _isEditing,
+                              onSaved: (value) => _bio = value ?? '',
+                            ),
+                            const SizedBox(height: 10),
+                            TextFieldWidget(
+                              label: i18n.translate('phone'),
+                              icon: Icons.phone,
+                              value: _phone,
+                              isEditing: _isEditing,
+                              keyboardType: TextInputType.number,
+                              onSaved: (value) => _phone = value ?? '',
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              margin: EdgeInsets.zero,
+                              width: double.infinity,
+                              height: 45,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFFD4AF37),
+                                    Color(0xFFFFD700),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const VipListPage(),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.diamond,
+                                      color: Colors.black,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      i18n.translate('upgradePlan'),
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
+                            const SizedBox(height: 20),
+                            if (_isEditing)
+                              SaveButtonEditUser(
+                                onPressed: () => _saveProfileApi(context),
+                              ),
                           ],
                         ),
-                        const SizedBox(height: 80),
-                        TextFieldWidget(
-                          label: i18n.translate('username'),
-                          icon: Icons.person_outline,
-                          value: _username,
-                          isEditing: _isEditing,
-                          inputFormatters: [UsernameFormatter()],
-                          onSaved: (value) => _username = value ?? '',
-                        ),
-                        const SizedBox(height: 16),
-                        TextFieldWidget(
-                          label: i18n.translate('nickname'),
-                          icon: Icons.tag,
-                          value: _nickname,
-                          isEditing: _isEditing,
-                          onSaved: (value) => _nickname = value ?? '',
-                        ),
-                        const SizedBox(height: 16),
-                        TextFieldWidget(
-                          label: i18n.translate('bio'),
-                          icon: Icons.description,
-                          value: _bio,
-                          isEditing: _isEditing,
-                          onSaved: (value) => _bio = value ?? '',
-                        ),
-                        const SizedBox(height: 16),
-                        TextFieldWidget(
-                          label: i18n.translate('phone'),
-                          icon: Icons.phone,
-                          value: _phone,
-                          isEditing: _isEditing,
-                          keyboardType: TextInputType.number,
-                          onSaved: (value) => _phone = value ?? '',
-                        ),
-                        SizedBox(height: 20),
-                        if (_isEditing)
-                          SaveButtonEditUser(
-                            onPressed: () {
-                              _saveProfileApi(context);
-                            },
-                          ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-          if (_saving)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black54,
-                child: const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                ),
+                  if (_saving)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black54,
+                        child: const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-        ],
       ),
     );
   }
@@ -422,17 +417,23 @@ void showDial(BuildContext context, dynamic image, bool isLocalFile) {
         body: SafeArea(
           child: Stack(
             children: [
-              Container(
-                width: double.infinity,
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: isLocalFile == true && image is XFile
-                        ? FileImage(File(image.path))
-                        : NetworkImage(image),
-                    fit: BoxFit.contain,
-                  ),
-                ),
+              FutureBuilder<ImageProvider>(
+                future: _getDialogImageProvider(image, isLocalFile),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: snapshot.data!,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    );
+                  }
+                  return const Center(child: CircularProgressIndicator());
+                },
               ),
               Positioned(
                 top: 16,
@@ -448,4 +449,20 @@ void showDial(BuildContext context, dynamic image, bool isLocalFile) {
       );
     },
   );
+}
+
+Future<ImageProvider> _getDialogImageProvider(
+  dynamic image,
+  bool isLocalFile,
+) async {
+  if (isLocalFile == true && image is XFile) {
+    if (kIsWeb) {
+      final bytes = await image.readAsBytes();
+      return MemoryImage(bytes);
+    } else {
+      return FileImage(File(image.path));
+    }
+  } else {
+    return NetworkImage(image);
+  }
 }

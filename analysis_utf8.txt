@@ -1,0 +1,194 @@
+﻿Analyzing live-app-flu...                                       
+
+warning - The declaration '_showErrorDialog' isn't referenced - lib\api\services\network_error_service.dart:32:16 - unused_element
+warning - The value of the field '_token' isn't used - lib\api\services\notification_service.dart:26:11 - unused_field
+  error - The getter 'claimWatch' isn't defined for the type 'XoAdApi' - lib\api\services\xo_ad_service.dart:247:34 - undefined_getter
+   info - The imported package 'riverpod' isn't a dependency of the importing package - lib\database\app_database.dart:7:8 - depend_on_referenced_packages
+   info - The imported package 'collection' isn't a dependency of the importing package - lib\database\dao\conversation_dao.dart:1:8 - depend_on_referenced_packages
+   info - Parameter 'db' could be a super parameter - lib\database\dao\user_dao.dart:12:3 - use_super_parameters
+warning - The value of the local variable 'size' isn't used - lib\database\offline_repository.dart:116:23 - unused_local_variable
+warning - The declaration '_JsonConverter' isn't referenced - lib\database\tables.dart:63:7 - unused_element
+   info - Unnecessary use of multiple underscores - lib\main.dart:71:18 - unnecessary_underscores
+   info - Unnecessary braces in a string interpolation - lib\models\content_purchase.dart:142:59 - unnecessary_brace_in_string_interps
+warning - The declaration '_$SearchVideoRequestToJson' isn't referenced - lib\models\search_video_request.g.dart:21:22 - unused_element
+warning - Unused import: 'package:live_app/utils/json_utils.dart' - lib\models\user_vip.dart:2:8 - unused_import
+   info - Unnecessary use of multiple underscores - lib\page\TestPage.dart:48:36 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\page\TestPage.dart:48:40 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\page\TestPage.dart:57:54 - unnecessary_underscores
+warning - The value of the local variable 'messageService' isn't used - lib\page\add_group_members_page.dart:52:13 - unused_local_variable
+warning - The value of the local variable 'memberIds' isn't used - lib\page\add_group_members_page.dart:53:13 - unused_local_variable
+   info - The import of 'package:live_app/widgets/xo_ad/placements/xo_chat_bubble_ad.dart' is unnecessary because all of the used elements are also provided by the import of 'package:live_app/widgets/xo_ad/xo_ad_system.dart' - lib\page\chat_detail_page.dart:15:8 - unnecessary_import
+   info - The import of 'package:live_app/widgets/xo_ad/placements/xo_chat_bottom_cta.dart' is unnecessary because all of the used elements are also provided by the import of 'package:live_app/widgets/xo_ad/xo_ad_system.dart' - lib\page\chat_detail_page.dart:21:8 - unnecessary_import
+   info - The import of 'package:live_app/widgets/xo_ad/placements/xo_chat_top_banner.dart' is unnecessary because all of the used elements are also provided by the import of 'package:live_app/widgets/xo_ad/xo_ad_system.dart' - lib\page\chat_detail_page.dart:22:8 - unnecessary_import
+   info - Unnecessary use of multiple underscores - lib\page\chat_detail_page.dart:294:50 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\page\chat_detail_page.dart:343:48 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\chat_detail_page.dart:1008:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\chat_detail_page.dart:1039:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\chat_detail_page.dart:1049:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\chat_detail_page.dart:1065:36 - deprecated_member_use
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - lib\page\creator_detail_page.dart:45:38 - invalid_null_aware_operator
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - lib\page\creator_detail_page.dart:109:49 - invalid_null_aware_operator
+   info - Don't use 'BuildContext's across async gaps - lib\page\download_page.dart:335:48 - use_build_context_synchronously
+warning - Unused import: 'package:live_app/provider/currency_provider.dart' - lib\page\forum_post_detail_page.dart:12:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\group_chat_detail_page.dart:978:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\group_chat_detail_page.dart:1009:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\group_chat_detail_page.dart:1019:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\group_chat_detail_page.dart:1035:36 - deprecated_member_use
+warning - Unused import: 'package:live_app/constants/xo_ad_placements.dart' - lib\page\home_tab\message_page.dart:5:8 - unused_import
+warning - Unused import: 'package:live_app/provider/xo_ad/xo_ad_config_provider.dart' - lib\page\home_tab\message_page.dart:9:8 - unused_import
+warning - Unused import: 'package:live_app/widgets/ad_tile.dart' - lib\page\home_tab\message_page.dart:10:8 - unused_import
+warning - The value of the local variable 'uniqueUsers' isn't used - lib\page\home_tab\message_page.dart:332:19 - unused_local_variable
+   info - The imported package 'fixnum' isn't a dependency of the importing package - lib\page\home_tab\message_page_test.dart:5:8 - depend_on_referenced_packages
+warning - The value of the local variable 'displayBalance' isn't used - lib\page\home_tab\profile_page.dart:117:11 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:141:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:158:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:175:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:195:26 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:206:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:219:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:235:26 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:246:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:259:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:275:26 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:286:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\home_tab\profile_page.dart:299:17 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\payment_order_history_page.dart:217:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\settings_page.dart:286:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\settings_page.dart:312:53 - deprecated_member_use
+   info - 'blue' is deprecated and shouldn't be used. Use (*.b * 255.0).round() & 0xff - lib\page\my\wallet_page.dart:277:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\wallet_page.dart:286:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\wallet_page.dart:317:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\wallet_page.dart:337:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\wallet_page.dart:371:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\wallet_page.dart:479:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\wallet_page.dart:482:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\wallet_page.dart:505:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\wallet_page.dart:506:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\my\wallet_page.dart:681:42 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\page\qrcode_page.dart:81:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\page\qrcode_page.dart:85:30 - use_build_context_synchronously
+warning - The value of the field '_groupLoaded' isn't used - lib\page\search_groups_page.dart:22:8 - unused_field
+warning - The value of the field '_searchUserLoaded' isn't used - lib\page\select_members_page.dart:39:8 - unused_field
+warning - The declaration '_loadMoreSearchUsers' isn't referenced - lib\page\select_members_page.dart:126:8 - unused_element
+   info - Don't use 'BuildContext's across async gaps - lib\page\splash_page.dart:148:44 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:66:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:85:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:115:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:150:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:211:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:230:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:254:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:281:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:309:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_detail_page.dart:339:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_list_page.dart:166:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_list_page.dart:167:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_list_page.dart:195:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_list_page.dart:203:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_list_page.dart:242:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\page\vip_list_page.dart:271:62 - deprecated_member_use
+   info - The imported package 'fixnum' isn't a dependency of the importing package - lib\protos\socket_message.pb.dart:15:8 - depend_on_referenced_packages
+warning - Unused import: 'package:live_app/provider/i18n_provider.dart' - lib\provider\ad_manager_provider.dart:9:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\provider\conversation_provider.dart:404:7 - avoid_print
+   info - Unnecessary use of multiple underscores - lib\provider\i18n_provider.dart:479:18 - unnecessary_underscores
+   info - Don't invoke 'print' in production code - lib\provider\user_follow_provider.dart:54:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\provider\websocket_provider.dart:59:30 - avoid_print
+   info - Don't invoke 'print' in production code - lib\provider\websocket_provider.dart:66:7 - avoid_print
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\repository\image_repository.dart:3:8 - unnecessary_import
+   info - The import of 'package:flutter/foundation.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\services\emoji_file_service.dart:6:8 - unnecessary_import
+   info - Statements in an if should be enclosed in a block - lib\services\emoji_file_service.dart:48:7 - curly_braces_in_flow_control_structures
+warning - Unused import: 'package:flutter/foundation.dart' - lib\services\hls_proxy_server.dart:5:8 - unused_import
+   info - Don't use web-only libraries outside Flutter web plugins - lib\utils\icon_utils_web.dart:2:1 - avoid_web_libraries_in_flutter
+   info - The imported package 'fixnum' isn't a dependency of the importing package - lib\utils\socket_message_util.dart:1:8 - depend_on_referenced_packages
+   info - Don't use 'BuildContext's across async gaps - lib\websocket\handler\notice_handler.dart:51:16 - use_build_context_synchronously
+   info - Import of a library in the 'lib/src' directory of another package - lib\websocket\websocket_manager.dart:5:8 - implementation_imports
+   info - The imported package 'fixnum' isn't a dependency of the importing package - lib\websocket\websocket_manager.dart:5:8 - depend_on_referenced_packages
+   info - The prefix 'IO' isn't a lower_case_with_underscores identifier - lib\websocket\websocket_manager.dart:8:60 - library_prefixes
+warning - Dead code - lib\websocket\websocket_manager.dart:174:9 - dead_code
+   info - Don't invoke 'print' in production code - lib\websocket\websocket_manager.dart:317:5 - avoid_print
+   info - Unnecessary use of multiple underscores - lib\widgets\banner_carousel.dart:55:40 - unnecessary_underscores
+warning - The value of the field '_apiClient' isn't used - lib\widgets\encrypted_image.dart:38:9 - unused_field
+warning - The value of the field '_cacheManager' isn't used - lib\widgets\encrypted_image.dart:39:9 - unused_field
+warning - The declaration '_decrypt' isn't referenced - lib\widgets\encrypted_image.dart:48:21 - unused_element
+   info - Unnecessary use of multiple underscores - lib\widgets\forum\ad_forum_card.dart:17:18 - unnecessary_underscores
+warning - Unused import: 'package:live_app/provider/currency_provider.dart' - lib\widgets\forum\forum_post_card.dart:4:8 - unused_import
+   info - Unnecessary use of multiple underscores - lib\widgets\general_post_tab.dart:55:29 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\general_user_tab.dart:59:29 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\general_video_tab.dart:104:44 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\general_video_tab.dart:104:48 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\general_video_tab.dart:125:62 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\home_tab\short_videos_page.dart:281:40 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\home_tab\video_grid_tab_view.dart:156:46 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\home_tab\video_grid_tab_view.dart:156:50 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\home_tab\video_grid_tab_view.dart:174:64 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\message\audio_message_item.dart:314:66 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\message\audio_recorder_widget.dart:166:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\message\audio_recorder_widget.dart:255:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\message\audio_recorder_widget.dart:300:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\message\audio_recorder_widget.dart:320:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\message\message_item_gif.dart:227:65 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\message\video_message_item.dart:286:67 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\message\video_message_item.dart:303:67 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\payment_channel_tile.dart:54:43 - deprecated_member_use
+   info - Unnecessary use of string interpolation - lib\widgets\payment\recharge_amount_grid.dart:87:29 - unnecessary_string_interpolations
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\recharge_amount_grid.dart:113:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\recharge_amount_grid.dart:144:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\recharge_amount_grid.dart:169:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\recharge_amount_popup.dart:99:48 - deprecated_member_use
+   info - Unnecessary use of string interpolation - lib\widgets\payment\recharge_amount_popup.dart:133:27 - unnecessary_string_interpolations
+   info - Unnecessary use of multiple underscores - lib\widgets\payment\time_package_list.dart:29:29 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\time_package_list.dart:68:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\time_package_list.dart:73:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\time_package_list.dart:80:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\time_package_list.dart:81:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\time_package_list.dart:89:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\time_package_list.dart:90:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\payment\time_package_list.dart:113:55 - deprecated_member_use
+   info - The local variable '_getInputFormatters' starts with an underscore - lib\widgets\text_field_widget.dart:34:31 - no_leading_underscores_for_local_identifiers
+   info - Missing type annotation - lib\widgets\tiktok_scaffold.dart:143:24 - strict_top_level_inference
+   info - Missing type annotation - lib\widgets\tiktok_scaffold.dart:143:27 - strict_top_level_inference
+warning - The value of the local variable 'isFollowed' isn't used - lib\widgets\user_list_item.dart:29:11 - unused_local_variable
+   info - Unnecessary use of multiple underscores - lib\widgets\video\ad_grid_card.dart:31:18 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\video\ad_grid_card.dart:96:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\video\ad_grid_card.dart:169:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\video\ad_video_popup.dart:310:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\video\ad_video_popup.dart:333:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\video\comment_section.dart:98:32 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\widgets\video\mobile_video_controls_overlay.dart:133:29 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\mobile_video_controls_overlay.dart:150:29 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\mobile_video_controls_overlay.dart:189:29 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\mobile_video_controls_overlay.dart:206:29 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\mobile_video_controls_overlay.dart:260:43 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\mobile_video_controls_overlay.dart:339:39 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\short_ad_item.dart:223:33 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\short_ad_item.dart:223:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\video\short_ad_item.dart:256:52 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\widgets\video\short_video_item.dart:482:45 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\short_video_item.dart:482:49 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\user_video_grid.dart:91:44 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\user_video_grid.dart:91:48 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\user_video_grid.dart:107:62 - unnecessary_underscores
+warning - The value of the field '_userInfo' isn't used - lib\widgets\video\video_card.dart:38:13 - unused_field
+   info - Unnecessary use of multiple underscores - lib\widgets\video\video_description_section.dart:114:28 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\video\video_list.dart:75:28 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\video\video_tag_category_overlay.dart:279:56 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\widgets\video\web_video_controls_overlay.dart:55:37 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\video\web_video_player.dart:76:52 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_ad_video_popup.dart:174:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_ad_video_popup.dart:174:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_chat_bottom_cta.dart:18:18 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_chat_bubble_ad.dart:26:18 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\xo_ad\placements\xo_chat_bubble_ad.dart:93:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\xo_ad\placements\xo_chat_bubble_ad.dart:143:47 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_chat_input_recommendation.dart:18:18 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_combined_ad.dart:150:40 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\xo_ad\placements\xo_combined_ad.dart:158:61 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_community_inline_ad.dart:19:18 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\xo_ad\placements\xo_community_inline_ad.dart:120:48 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_community_large_ad.dart:19:18 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_video_banner_ad.dart:20:18 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\placements\xo_video_preroll_ad.dart:165:18 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\system\network_error_ad_dialog.dart:34:18 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\system\xo_loading_ad.dart:21:18 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\widgets\xo_ad\system\xo_offline_ad.dart:43:18 - unnecessary_underscores
+

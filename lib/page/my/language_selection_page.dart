@@ -5,6 +5,8 @@ import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/locale_provider.dart';
 import 'package:live_app/widgets/encrypted_image.dart';
 
+import '../../main.dart';
+
 class LanguageSelectionPage extends ConsumerStatefulWidget {
   const LanguageSelectionPage({super.key});
 
@@ -27,18 +29,12 @@ class _LanguageSelectionPageState extends ConsumerState<LanguageSelectionPage> {
       await ref.read(i18nNotifierProvider.notifier).changeLanguage(language);
 
       ref.invalidate(selectedLanguageProvider);
+      ref.invalidate(localeProvider);
+
+      await Future.delayed(const Duration(milliseconds: 500));
 
       if (mounted) {
-        final i18n = ref.read(i18nNotifierProvider.notifier);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${i18n.translate('language')} changed to ${language.displayName}',
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        await _restartApp();
       }
     } catch (e) {
       if (mounted) {
@@ -69,9 +65,15 @@ class _LanguageSelectionPageState extends ConsumerState<LanguageSelectionPage> {
       });
 
       await ref.read(i18nNotifierProvider.notifier).downloadLanguage(language);
-
       ref.invalidate(downloadedLanguagesProvider);
       ref.invalidate(selectedLanguageProvider);
+      ref.invalidate(localeProvider);
+
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (mounted) {
+        await _restartApp();
+      }
     } catch (e) {
       if (mounted) {
         final i18n = ref.read(i18nNotifierProvider.notifier);
@@ -90,6 +92,17 @@ class _LanguageSelectionPageState extends ConsumerState<LanguageSelectionPage> {
           _downloadingLanguageId = null;
         });
       }
+    }
+  }
+
+  Future<void> _restartApp() async {
+    if (mounted) {
+      ref.invalidate(selectedLanguageProvider);
+      ref.invalidate(downloadedLanguagesProvider);
+      ref.invalidate(availableLanguagesProvider);
+      ref.invalidate(localeProvider);
+
+      restartApp();
     }
   }
 
@@ -124,7 +137,6 @@ class _LanguageSelectionPageState extends ConsumerState<LanguageSelectionPage> {
 
             return selectedLanguageAsync.when(
               data: (selectedLang) {
-                // Use the current locale from the provider to determine the selected language
                 final currentLanguageCode =
                     selectedLang?['language'] ??
                     '${currentLocale.languageCode}_${currentLocale.countryCode ?? 'US'}';
@@ -138,7 +150,13 @@ class _LanguageSelectionPageState extends ConsumerState<LanguageSelectionPage> {
                       return downloadedLanguageKeys.contains(key);
                     }).toList();
 
-                    // Sort downloaded languages: selected language first, then others
+                    final notDownloadedLanguages = availableLanguages.where((
+                      lang,
+                    ) {
+                      final key = '${lang.countryName}_${lang.languageCode}';
+                      return !downloadedLanguageKeys.contains(key);
+                    }).toList();
+
                     downloadedLanguages.sort((a, b) {
                       final aIsSelected = currentLanguageCode == a.languageCode;
                       final bIsSelected = currentLanguageCode == b.languageCode;
@@ -147,13 +165,6 @@ class _LanguageSelectionPageState extends ConsumerState<LanguageSelectionPage> {
                       if (!aIsSelected && bIsSelected) return 1;
                       return a.displayName.compareTo(b.displayName);
                     });
-
-                    final notDownloadedLanguages = availableLanguages.where((
-                      lang,
-                    ) {
-                      final key = '${lang.countryName}_${lang.languageCode}';
-                      return !downloadedLanguageKeys.contains(key);
-                    }).toList();
 
                     return ListView(
                       children: [

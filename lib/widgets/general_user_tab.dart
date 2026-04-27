@@ -13,6 +13,7 @@ class GeneralUserTab extends ConsumerWidget {
   final VoidCallback onRefresh;
   final VoidCallback onLoadMore;
   final bool finished;
+  final String? scrollStorageKey;
   final Function(UserInfo user)? onTap;
   final VoidCallback? onFollowTap;
 
@@ -24,6 +25,7 @@ class GeneralUserTab extends ConsumerWidget {
     required this.onRefresh,
     required this.onLoadMore,
     required this.finished,
+    this.scrollStorageKey,
     this.onTap,
     this.onFollowTap,
   });
@@ -55,8 +57,11 @@ class GeneralUserTab extends ConsumerWidget {
   Widget _buildList(BuildContext context, WidgetRef ref) {
     final i18n = ref.read(i18nNotifierProvider.notifier);
     return ListView.separated(
+      key: scrollStorageKey == null
+          ? null
+          : PageStorageKey<String>(scrollStorageKey!),
       itemCount: results.length + (loading ? 1 : 0) + (finished ? 1 : 0),
-      separatorBuilder: (_, __) => const Divider(color: Colors.white12),
+      separatorBuilder: (_, index) => const Divider(color: Colors.white12),
       itemBuilder: (context, index) {
         if (loading && index == results.length) {
           return _buildLoadMoreIndicator();

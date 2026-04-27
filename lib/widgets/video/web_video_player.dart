@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flick_video_player/flick_video_player.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/video/mobile_video_player.dart';
 import 'package:live_app/widgets/video/web_video_controls_overlay.dart';
 import 'package:live_app/widgets/video/web_video_interaction_layer.dart';
 import 'package:video_player/video_player.dart';
 
 class WebVideoPlayer extends ConsumerStatefulWidget {
   final String videoUrl;
+  final VideoScreenController? controller;
 
-  const WebVideoPlayer({super.key, required this.videoUrl});
+  const WebVideoPlayer({super.key, required this.videoUrl, this.controller});
 
   @override
   ConsumerState<WebVideoPlayer> createState() => _WebVideoPlayerState();
@@ -31,11 +33,11 @@ class _WebVideoPlayerState extends ConsumerState<WebVideoPlayer> {
         .initialize()
         .then((_) {
           flickManager = FlickManager(videoPlayerController: controller);
+          _bindController();
 
           if (mounted) setState(() {});
         })
         .catchError((e) {
-          debugPrint('[WebVideoPlayer] Error initializing controller: $e');
           if (mounted) {
             setState(() {
               _error = e.toString();
@@ -44,8 +46,39 @@ class _WebVideoPlayerState extends ConsumerState<WebVideoPlayer> {
         });
   }
 
+  void _bindController() {
+    final videoController =
+        flickManager?.flickVideoManager?.videoPlayerController;
+    if (widget.controller == null || videoController == null) return;
+
+    widget.controller!.play = () {
+      if (videoController.value.isInitialized) {
+        videoController.play();
+      }
+    };
+    widget.controller!.pause = () {
+      if (videoController.value.isInitialized) {
+        videoController.pause();
+      }
+    };
+    widget.controller!.resume = widget.controller!.play;
+  }
+
+  @override
+  void didUpdateWidget(covariant WebVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _bindController();
+    }
+  }
+
   @override
   void dispose() {
+    if (widget.controller != null) {
+      widget.controller!.play = null;
+      widget.controller!.pause = null;
+      widget.controller!.resume = null;
+    }
     flickManager?.dispose();
     super.dispose();
   }

@@ -98,16 +98,24 @@ class StorageService {
     await _prefs.clear();
   }
 
-  bool get isLoggedIn {
-    final token = getValue<String>('token');
-    return token != null && token.isNotEmpty;
+  String? _sanitizeToken(String? token) {
+    if (token == null) return null;
+    final trimmed = token.trim();
+    if (trimmed.isEmpty || trimmed == 'null' || trimmed == 'undefined') {
+      return null;
+    }
+    return trimmed;
   }
 
-  String? get userToken => getValue<String>('token');
+  bool get isLoggedIn {
+    return userToken != null;
+  }
+
+  String? get userToken => _sanitizeToken(getValue<String>('token'));
 
   String? get userInfoJson => getValue<String>('user_info');
 
-  Future<void> deleteDatabaseForUser(int userId) async {
+  Future<void> deleteDatabaseForUser(String userId) async {
     try {
       final dir = await getApplicationSupportDirectory();
       final dbFile = File('${dir.path}/chat_user_$userId.sqlite');

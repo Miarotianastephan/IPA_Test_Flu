@@ -436,6 +436,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveLoginCredentials => 'Save login credentials';
 
   @override
+  String get saveAccountInfoTitle => 'Please save your account information';
+
+  @override
+  String get saveAccountInfoDescription =>
+      'To avoid losing your account, please save the information below in time.';
+
+  @override
+  String get accountLabel => 'Account';
+
+  @override
+  String get saveAccountInfoButton => 'Save account';
+
+  @override
+  String get accountInfoSavedToAlbum =>
+      'Account information has been saved to the album';
+
+  @override
+  String get saveFailedTryAgainLater => 'Save failed, please try again later';
+
+  @override
+  String get screenshotSaveTitle => 'Please take a screenshot';
+
+  @override
   String get clearHistory => 'Clear history';
 
   @override

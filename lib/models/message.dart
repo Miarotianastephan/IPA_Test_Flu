@@ -1,4 +1,3 @@
-
 import 'package:json_annotation/json_annotation.dart';
 
 import '../utils/json_utils.dart';
@@ -15,8 +14,11 @@ class Message {
   @JsonKey(name: "conversation_id", fromJson: parseInt)
   final int conversationId;
 
-  @JsonKey(name: "sender_id", fromJson: parseInt)
-  final int senderId;
+  @JsonKey(name: "sender_id")
+  final String? senderId;
+
+  @JsonKey(name: "sender_support_id")
+  final String? senderSupportId;
 
   final String content;
 
@@ -53,7 +55,8 @@ class Message {
   Message({
     required this.id,
     required this.conversationId,
-    required this.senderId,
+    this.senderId,
+    this.senderSupportId,
     required this.content,
     required this.messageType,
     required this.isRevoked,
@@ -75,7 +78,8 @@ class Message {
   Message copyWith({
     int? id,
     int? conversationId,
-    int? senderId,
+    String? senderId,
+    String? senderSupportId,
     String? content,
     String? messageType,
     bool? isRevoked,
@@ -91,6 +95,7 @@ class Message {
     id: id ?? this.id,
     conversationId: conversationId ?? this.conversationId,
     senderId: senderId ?? this.senderId,
+    senderSupportId: senderSupportId ?? this.senderSupportId,
     content: content ?? this.content,
     messageType: messageType ?? this.messageType,
     isRevoked: isRevoked ?? this.isRevoked,

@@ -9,9 +9,9 @@ part 'user_dao.g.dart';
 
 @DriftAccessor(tables: [UserInfos])
 class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
-  UserDao(AppDatabase db) : super(db);
+  UserDao(super.db);
 
-  Future<UserInfo?> getUser(int id) async {
+  Future<UserInfo?> getUser(String id) async {
     return await (select(
       userInfos,
     )..where((u) => u.id.equals(id))).getSingleOrNull();

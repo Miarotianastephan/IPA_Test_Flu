@@ -7,9 +7,10 @@ part of 'userinfo.dart';
 // **************************************************************************
 
 UserInfo _$UserInfoFromJson(Map<String, dynamic> json) => UserInfo(
-  id: parseInt(json['id']),
-  displayId: parseInt(json['display_id']),
+  id: json['id'] as String,
+  displayId: json['display_id'] as String,
   username: json['username'] as String?,
+  password: json['password'] as String?,
   credential: json['credential'] as String?,
   isVisitor: parseBool(json['is_visitor']),
   isBindPass: parseBool(json['is_bind_pass']),
@@ -33,12 +34,27 @@ UserInfo _$UserInfoFromJson(Map<String, dynamic> json) => UserInfo(
   isFollowed: json['is_followed'] == null
       ? false
       : parseBool(json['is_followed']),
+  isBot: json['is_bot'] == null ? false : parseBool(json['is_bot']),
+  vipId: parseInt(json['vip_id']),
+  vip: json['vip'] == null
+      ? null
+      : Vip.fromJson(json['vip'] as Map<String, dynamic>),
+  lastDailyWatchDate: json['last_daily_watch_date'] == null
+      ? null
+      : DateTime.parse(json['last_daily_watch_date'] as String),
+  dailyWatchTimeLeft: json['daily_watch_time_left'] == null
+      ? 300
+      : parseInt(json['daily_watch_time_left']),
+  extraWatchTimeLeft: json['extra_watch_time_left'] == null
+      ? 0
+      : parseInt(json['extra_watch_time_left']),
 );
 
 Map<String, dynamic> _$UserInfoToJson(UserInfo instance) => <String, dynamic>{
   'id': instance.id,
   'display_id': instance.displayId,
   'username': instance.username,
+  'password': instance.password,
   'credential': instance.credential,
   'is_visitor': instance.isVisitor,
   'is_bind_pass': instance.isBindPass,
@@ -58,4 +74,10 @@ Map<String, dynamic> _$UserInfoToJson(UserInfo instance) => <String, dynamic>{
   'follow_count': instance.followCount,
   'like_count': instance.likeCount,
   'is_followed': instance.isFollowed,
+  'is_bot': instance.isBot,
+  'vip_id': instance.vipId,
+  'vip': instance.vip?.toJson(),
+  'daily_watch_time_left': instance.dailyWatchTimeLeft,
+  'extra_watch_time_left': instance.extraWatchTimeLeft,
+  'last_daily_watch_date': instance.lastDailyWatchDate?.toIso8601String(),
 };

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/models/audio.dart';
 import 'package:live_app/models/manga.dart';
 import 'package:live_app/models/novel_category.dart';
 import 'package:live_app/models/roman.dart';
 import 'package:live_app/page/novel_grid.dart';
+import 'package:live_app/provider/audio_provider.dart';
 
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/manga_provider.dart';
@@ -50,7 +52,6 @@ class _CategoryOverlayState extends ConsumerState<CategoryOverlay>
     try {
       await widget.loadCategories();
     } catch (e) {
-      debugPrint('加载分类失败: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -335,7 +336,7 @@ class NovelCategoryPage extends ConsumerWidget {
     final provider = switch (type) {
       NovelCategoryType.roman => romanProvider,
       NovelCategoryType.manga => mangaProvider,
-      _ => romanProvider,
+      NovelCategoryType.audio => audioProvider,
     };
     final asyncValue = ref.watch(provider);
     return Scaffold(
@@ -350,6 +351,9 @@ class NovelCategoryPage extends ConsumerWidget {
             if (item is Roman) {
               return item.category.id == id;
             }
+            if (item is Audio) {
+              return item.audioCategory.id == id;
+            }
             return false;
           }).toList();
 
@@ -358,7 +362,7 @@ class NovelCategoryPage extends ConsumerWidget {
           }
           return NovelGrid(
             items: filtered,
-            isAudio: false,
+            isAudio: type == NovelCategoryType.audio,
             showCreatorInfo: true,
           );
         },

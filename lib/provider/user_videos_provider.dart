@@ -7,7 +7,7 @@ import 'notifier/video_list_notifier.dart';
 import 'api_provider.dart';
 
 class UserVideoListNotifier extends BaseVideoListNotifier {
-  final int userId;
+  final String userId;
 
   UserVideoListNotifier(super.ref, this.userId);
 
@@ -23,6 +23,6 @@ class UserVideoListNotifier extends BaseVideoListNotifier {
 }
 
 final userVideoListProvider =
-StateNotifierProvider.family<UserVideoListNotifier, VideoListState, int>(
+StateNotifierProvider.family<UserVideoListNotifier, VideoListState, String>(
       (ref, userId) => UserVideoListNotifier(ref, userId),
     );

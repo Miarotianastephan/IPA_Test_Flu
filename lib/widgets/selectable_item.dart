@@ -30,10 +30,7 @@ class SelectableItem<T> extends StatelessWidget {
         if (onTap != null) onTap!(item);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 6,
-          vertical: 2,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(borderRadius),

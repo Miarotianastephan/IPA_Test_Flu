@@ -6,14 +6,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/dao/conversation_dao.dart';
 import '../database/dao/message_dao.dart';
+import '../models/conversation.dart';
+import '../models/conversation_user.dart';
 import '../models/message.dart';
 import '../models/system_notification.dart';
 import '../models/userinfo.dart';
 import '../protos/socket_message.pb.dart' as proto;
 import '../websocket/websocket_manager.dart';
+import 'api_provider.dart';
 import 'conversation_list_provider.dart';
 import 'conversation_provider.dart';
 import 'current_user_provider.dart';
+import 'domain_provider.dart';
 import 'system_notification_provider.dart';
 
 class WebSocketState {
@@ -66,8 +70,8 @@ class WebSocketNotifier extends StateNotifier<WebSocketState> {
       print("Live batch received : $batch");
     };
 
-    manager.onMessageSent = (message) {
-      _handleMessageReceived(message);
+    manager.onMessageSent = (message, conversation) {
+      _handleMessageReceived(message, conversation);
     };
 
     manager.onSystemNotificationReceived = (data) {
@@ -88,13 +92,22 @@ class WebSocketNotifier extends StateNotifier<WebSocketState> {
     state = state.copyWith(isConnected: false);
   }
 
-  Future<void> _handleMessageReceived(Message message) async {
+  Future<void> _handleMessageReceived(
+    Message message,
+    Conversation? incomingConversation,
+  ) async {
     final userId = ref.read(currentUserIdProvider);
+
     if (userId == null) {
       return;
     }
 
     if (message.senderId == userId) {
+      return;
+    }
+
+    if (message.conversationId == 0) {
+      debugPrint("Skipping message with invalid conversationId: ${message.id}");
       return;
     }
 
@@ -130,10 +143,32 @@ class WebSocketNotifier extends StateNotifier<WebSocketState> {
           );
           controller.addMessageToStateOnly(receivedMessage);
         } else {
-          final chatController = ref.read(
-            chatControllerProvider(message.senderId).notifier,
+          try {
+            final convController = ref.read(
+              conversationProvider(message.conversationId).notifier,
+            );
+            convController.addMessageToStateOnly(receivedMessage);
+          } catch (_) {}
+
+          try {
+            final peerId = message.senderId ?? message.senderSupportId ?? '';
+            final chatController = ref.read(
+              chatControllerProvider(peerId).notifier,
+            );
+            chatController.addMessageToStateOnly(receivedMessage);
+          } catch (_) {}
+        }
+
+        try {
+          final messageService = ref.read(messageServiceProvider);
+          await messageService.markAsRead(
+            messageIDs: [message.id],
+            conversationId: message.conversationId,
+            isGroup: isGroupChat,
           );
-          chatController.addMessageToStateOnly(receivedMessage);
+          await MessageDao(db).updateMessageRead(message.id, true);
+        } catch (e) {
+          debugPrint("Error marking message as read: $e");
         }
       } catch (e) {
         debugPrint("Error adding message to UI: $e");
@@ -161,26 +196,53 @@ class WebSocketNotifier extends StateNotifier<WebSocketState> {
 
         await convListNotifier.upsertConversation(updatedConv);
       } else {
-        await convListNotifier.fetchAllConversationsFromServer();
+        if (incomingConversation != null) {
+          List<ConversationUser> enrichedUsers = incomingConversation.users;
+          if (message.sender != null) {
+            enrichedUsers = incomingConversation.users.map((u) {
+              if (u.userId == message.senderId && u.user == null) {
+                return ConversationUser(
+                  id: u.id,
+                  conversationId: u.conversationId,
+                  userId: u.userId,
+                  agentSupportId: u.agentSupportId,
+                  role: u.role,
+                  joinedAt: u.joinedAt,
+                  user: message.sender,
+                  agentSupport: u.agentSupport,
+                );
+              }
+              return u;
+            }).toList();
+          }
 
-        final updatedConversations = ref
-            .read(conversationListProvider)
-            .conversations;
-        final newConvIndex = updatedConversations.indexWhere(
-          (c) => c.id == message.conversationId,
-        );
-
-        if (newConvIndex >= 0) {
-          final newConv = updatedConversations[newConvIndex];
-          if (currentConvId != message.conversationId &&
-              newConv.unreadCount == 0) {
-            final fixedConv = newConv.copyWith(
-              unreadCount: 1,
-              lastMessage: message,
-              lastMessageId: message.id,
-              updatedAt: message.createdAt,
+          final fixedConv = incomingConversation.copyWith(
+            lastMessage: message,
+            lastMessageId: message.id,
+            updatedAt: message.createdAt,
+            unreadCount: currentConvId == message.conversationId ? 0 : 1,
+            users: enrichedUsers,
+          );
+          await convListNotifier.upsertConversation(fixedConv);
+        } else {
+          try {
+            final messageService = ref.read(messageServiceProvider);
+            final resp = await messageService.getConversationByMessageId(
+              message.id,
             );
-            await convListNotifier.upsertConversation(fixedConv);
+            final serverConv = resp.data;
+
+            if (serverConv != null) {
+              final fixedConv = serverConv.copyWith(
+                lastMessage: message,
+                lastMessageId: message.id,
+                updatedAt: message.createdAt,
+                unreadCount: currentConvId == message.conversationId ? 0 : 1,
+              );
+              await convListNotifier.upsertConversation(fixedConv);
+            }
+          } catch (e) {
+            debugPrint("[WS] ERROR fetching conversation by messageId: $e");
           }
         }
       }
@@ -207,7 +269,9 @@ class WebSocketNotifier extends StateNotifier<WebSocketState> {
 
   // ----- API -----
   Future<void> connect(UserInfo user) async {
-    final baseUrl = dotenv.env['WS_BASE_URL'] ?? '';
+    final baseUrl =
+        ref.read(domainProvider).domain?.back ?? dotenv.env['WS_BASE_URL'];
+
     state.manager.connect(
       userId: user.id,
       token: user.token ?? '',

@@ -39,7 +39,7 @@ class UserDetailNotifier extends StateNotifier<UserDetailState> {
   }
 
   /// 加载用户详情
-  Future<UserInfo?> loadUserDetail(int userId) async {
+  Future<UserInfo?> loadUserDetail(String userId) async {
     state = state.copyWith(loading: true, clearError: true);
 
     try {
@@ -84,7 +84,7 @@ class UserDetailNotifier extends StateNotifier<UserDetailState> {
 
 /// 用户详情 Provider 参数
 class UserDetailProviderParam {
-  final int userId;
+  final String userId;
   final UserInfo? initialUser;
   // 使用唯一的实例 ID，确保每个页面实例都有自己的 provider
   final String instanceId;

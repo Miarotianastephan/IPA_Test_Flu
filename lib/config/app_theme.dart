@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../utils/web_text_font.dart';
 
 class AppTheme {
   final String name;
@@ -54,18 +57,40 @@ class AppTheme {
 
   /// 转换为 ThemeData，方便直接在 MaterialApp 使用
   ThemeData toThemeData() {
+    final baseTypography = Typography.material2021(
+      platform: TargetPlatform.android,
+    );
+    final baseTextTheme =
+        textTheme ??
+        (brightness == Brightness.dark
+            ? baseTypography.white
+            : baseTypography.black);
+    final webFontFamily = kIsWeb ? getEffectiveWebTextFontFamily() : null;
+    final webFontFamilyFallback = webFontFamily == null
+        ? null
+        : <String>[webFontFamily];
+    final effectiveTextTheme = webFontFamily == null
+        ? baseTextTheme
+        : baseTextTheme.apply(
+            fontFamily: webFontFamily,
+            fontFamilyFallback: webFontFamilyFallback,
+          );
+
     return ThemeData(
+      typography: baseTypography,
+      fontFamily: webFontFamily,
+      fontFamilyFallback: webFontFamilyFallback,
       tabBarTheme: TabBarThemeData(dividerColor: Colors.transparent),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: Colors.white,
+      ),
       brightness: brightness,
       primaryColor: primary,
       colorScheme: toColorScheme(),
       scaffoldBackgroundColor: surface,
       shadowColor: shadowColor,
-      textTheme:
-          textTheme ??
-          (brightness == Brightness.dark
-              ? Typography.whiteMountainView
-              : Typography.blackMountainView),
+      textTheme: effectiveTextTheme,
+      primaryTextTheme: effectiveTextTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: primary,
         foregroundColor: onPrimary,

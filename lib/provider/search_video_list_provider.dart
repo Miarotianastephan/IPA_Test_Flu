@@ -22,6 +22,12 @@ class SearchVideoListNotifier extends BaseVideoListNotifier {
   });
 
   @override
+  bool get supportsIncrementalWebAppend => true;
+
+  @override
+  int get incrementalWebAppendChunkSize => 5;
+
+  @override
   Future<PageResponse<VideoInfo>?> loadList({required int page}) async {
     final videoService = ref.read(videoServiceProvider);
 

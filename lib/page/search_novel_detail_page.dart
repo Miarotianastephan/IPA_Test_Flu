@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/audio_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/manga_provider.dart';
 import 'package:live_app/provider/roman_provider.dart';
@@ -106,10 +107,34 @@ class NovelSearchDetailPage extends ConsumerWidget {
         );
 
       case SearchType.audio:
-        return const Center(
-          child: Text(
-            "Recherche audio à implémenter",
-            style: TextStyle(color: Colors.white),
+        final av = ref.watch(audioProvider);
+        return av.when(
+          data: (items) {
+            final filtered = items.where((a) {
+              return a.titles.any(
+                (t) => t.title.toLowerCase().contains(keyword.toLowerCase()),
+              );
+            }).toList();
+            if (filtered.isEmpty) {
+              return Center(
+                child: Text(
+                  translate("noAudioFound"),
+                  style: const TextStyle(color: Colors.white),
+                ),
+              );
+            }
+            return NovelGrid(
+              items: filtered,
+              isAudio: true,
+              showCreatorInfo: true,
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(
+            child: Text(
+              "${translate("error")} : $e",
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         );
     }

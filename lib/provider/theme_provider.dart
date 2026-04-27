@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 
 /* 毛玻璃的颜色 黑夜 */
-const Color glassDarkColor = Color.fromARGB(120, 0, 0, 0);
+const Color glassDarkColor = Color.fromARGB(206, 0, 0, 0);
 
 /* 毛玻璃的颜色 */
 const Color glassColor = Color.fromARGB(100, 255, 255, 255);

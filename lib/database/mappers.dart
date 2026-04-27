@@ -4,6 +4,7 @@ import '../models/conversation.dart';
 import '../models/conversation_user.dart';
 import '../models/message.dart';
 import '../models/userinfo.dart';
+import '../models/agent_support.dart';
 import 'app_database.dart';
 
 extension ConversationMapper on Conversation {
@@ -26,6 +27,7 @@ extension MessageMapper on Message {
       id: Value(id),
       conversationId: Value(conversationId),
       senderId: Value(senderId),
+      senderSupportId: Value(senderSupportId),
       content: Value(content),
       messageType: Value(messageType),
       isRevoked: Value(isRevoked),
@@ -72,8 +74,24 @@ extension ConversationUserMapper on ConversationUser {
       id: Value(id),
       conversationId: Value(conversationId),
       userId: Value(userId),
+      agentSupportId: Value(agentSupportId),
       role: Value(role),
       joinedAt: Value(joinedAt),
+    );
+  }
+}
+
+extension AgentSupportMapper on AgentSupport {
+  AgentSupportsCompanion toCompanion() {
+    return AgentSupportsCompanion(
+      id: Value(id),
+      username: Value(username),
+      loginId: Value(loginId),
+      password: Value(password),
+      role: Value(role),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      avatar: Value(avatar),
     );
   }
 }

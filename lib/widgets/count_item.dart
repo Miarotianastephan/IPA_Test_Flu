@@ -19,10 +19,7 @@ Widget buildCountItem(String label, int count, {VoidCallback? onTap}) {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ],
       ),

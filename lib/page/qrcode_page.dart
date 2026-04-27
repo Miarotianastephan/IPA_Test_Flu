@@ -1,7 +1,10 @@
+/*
+原始二维码页面实现（按需求注释保留）：
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -60,6 +63,7 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
   /// 保存二维码到相册（使用 gallery_saver_plus）
   Future<void> _saveQRCode() async {
     final i18n = ref.read(i18nNotifierProvider.notifier);
+
     try {
       setState(() => _showContent = true);
       await Future.delayed(const Duration(milliseconds: 50));
@@ -78,14 +82,12 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
       final bool? success = await GallerySaver.saveImage(file.path);
 
       if (success == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(i18n.translate('qrCodeSaved'))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(i18n.translate('qrCodeSaved'))));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(i18n.translate('qrCodeSaveFailed')),
-          ),
+          SnackBar(content: Text(i18n.translate('qrCodeSaveFailed'))),
         );
       }
       setState(() => _showContent = false);
@@ -101,9 +103,9 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
     if (_userInfo == null) return;
     final i18n = ref.read(i18nNotifierProvider.notifier);
     Clipboard.setData(ClipboardData(text: _userInfo!.credential.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(i18n.translate('contentCopied'))),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(i18n.translate('contentCopied'))));
   }
 
   @override
@@ -190,17 +192,100 @@ class _QRCodePageState extends ConsumerState<QRCodePage> {
                   icon: Icons.copy,
                 ),
                 const SizedBox(width: 20),
-                AutoScrollButton(
-                  text: translate("saveLoginCredentials"),
-                  onPressed: _saveQRCode,
-                  icon: Icons.save,
-                ),
+                kIsWeb
+                    ? const SizedBox()
+                    : AutoScrollButton(
+                        text: translate("saveLoginCredentials"),
+                        onPressed: _saveQRCode,
+                        icon: Icons.save,
+                      ),
               ],
             ),
+            if (kIsWeb) ...[
+              const SizedBox(height: 32),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const ui.Color.fromARGB(
+                      255,
+                      0,
+                      0,
+                      0,
+                    ).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const ui.Color.fromARGB(255, 255, 255, 255),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const ui.Color.fromARGB(
+                            255,
+                            255,
+                            255,
+                            255,
+                          ).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.info_outline_rounded,
+                          color: ui.Color.fromARGB(255, 255, 255, 255),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          translate("screenshotHint"),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 14,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 40),
           ],
         ),
       ),
-      // ),
+    );
+  }
+}
+*/
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class QRCodePage extends ConsumerStatefulWidget {
+  const QRCodePage({super.key});
+
+  @override
+  ConsumerState<QRCodePage> createState() => _QRCodePageState();
+}
+
+class _QRCodePageState extends ConsumerState<QRCodePage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(title: const Text(''), backgroundColor: Colors.black),
+      body: const Center(
+        child: Text('二维码功能已停用', style: TextStyle(color: Colors.white70)),
+      ),
     );
   }
 }

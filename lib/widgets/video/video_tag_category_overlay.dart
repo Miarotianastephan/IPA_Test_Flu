@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/category_tag_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/video/video_tag_category_wrap.dart';
 
-import '../../provider/category_tag_provider.dart';
+import '../../page/video_tag_category_page.dart';
 
 class VideoTagCategoryOverlay extends ConsumerStatefulWidget {
   final VoidCallback onClose;
@@ -25,6 +26,7 @@ class TagCategoryOverlayPanelState
   );
 
   bool _loading = true;
+  bool _showAllCategories = false;
 
   // 分类
   late final categoryProvider = videoCategoryListProvider(false);
@@ -32,6 +34,11 @@ class TagCategoryOverlayPanelState
 
   // 标签
   late final tagNotifier = ref.read(videoTagListProvider.notifier);
+
+  // 分类特定标签
+  late final categoryTagNotifier = ref.read(
+    videoCategoryTagProvider("0").notifier,
+  );
 
   @override
   void initState() {
@@ -44,12 +51,43 @@ class TagCategoryOverlayPanelState
 
   Future<void> _loadData() async {
     try {
+      // First, load initial page to get total count
       await Future.wait([
         categoryNotifier.fetch(refresh: true, limit: 999),
         tagNotifier.fetch(refresh: true, limit: 999),
       ]);
+
+      while (true) {
+        final categoryState = ref.read(categoryProvider);
+        final tagState = ref.read(videoTagListProvider);
+
+        final categoryFinished =
+            categoryState.finished ||
+            categoryState.list.length >= categoryState.total;
+        final tagFinished =
+            tagState.finished || tagState.list.length >= tagState.total;
+
+        if (categoryFinished && tagFinished) {
+          break;
+        }
+
+        final futures = <Future>[];
+
+        if (!categoryFinished) {
+          futures.add(categoryNotifier.fetch(refresh: false, limit: 999));
+        }
+
+        if (!tagFinished) {
+          futures.add(tagNotifier.fetch(refresh: false, limit: 999));
+        }
+
+        if (futures.isNotEmpty) {
+          await Future.wait(futures);
+        } else {
+          break;
+        }
+      }
     } catch (e) {
-      debugPrint('加载分类或标签失败: $e');
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -66,10 +104,15 @@ class TagCategoryOverlayPanelState
   void _toggleExpand() {
     if (_heightCtrl.value >= 0.999) {
       _heightCtrl.reverse();
+      setState(() {
+        _showAllCategories = false;
+      });
     } else {
       _heightCtrl.forward();
+      setState(() {
+        _showAllCategories = true;
+      });
     }
-    setState(() {});
   }
 
   @override
@@ -77,10 +120,16 @@ class TagCategoryOverlayPanelState
     final i18n = ref.read(i18nNotifierProvider.notifier);
     final categoryState = ref.watch(categoryProvider);
     final tagState = ref.watch(videoTagListProvider);
+
     final size = MediaQuery.of(context).size;
     final full =
         size.height - (MediaQuery.of(context).padding.top + kToolbarHeight);
     final half = 300;
+
+    // Show only 6 categories when not expanded, all when expanded
+    final displayedCategories = _showAllCategories
+        ? categoryState.list
+        : categoryState.list.take(6).toList();
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -164,14 +213,86 @@ class TagCategoryOverlayPanelState
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(12),
-                                  child: VideoTagCategoryWrap(
-                                    tags: [],
-                                    categories: categoryState.list,
-                                    categoryColor: Colors.white,
-                                    fontSize: 15,
-                                    onBeforeNavigate: widget.onClose,
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Wrap(
+                                      alignment: WrapAlignment.start,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.start,
+                                      spacing: 4,
+                                      runSpacing: 10,
+                                      children: [
+                                        // Display categories
+                                        ...displayedCategories.map(
+                                          (category) => GestureDetector(
+                                            onTap: () {
+                                              widget.onClose();
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      VideoTagCategoryPage(
+                                                        title: category.name,
+                                                        type:
+                                                            VideoTagCategoryType
+                                                                .category,
+                                                        id: category.id,
+                                                      ),
+                                                ),
+                                              );
+                                            },
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white24,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                category.name,
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 15,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        if (!_showAllCategories &&
+                                            categoryState.list.length > 6)
+                                          GestureDetector(
+                                            onTap: _toggleExpand,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white24,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                '... +${categoryState.list.length - 6}',
+                                                style: TextStyle(
+                                                  color: Colors.white
+                                                      .withOpacity(0.8),
+                                                  fontSize: 15,
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
+
                                 Padding(
                                   padding: EdgeInsets.all(12),
                                   child: Text(

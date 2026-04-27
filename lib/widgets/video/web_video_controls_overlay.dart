@@ -8,7 +8,8 @@ class WebVideoControlsOverlay extends StatefulWidget {
   const WebVideoControlsOverlay({super.key, required this.flickManager});
 
   @override
-  State<WebVideoControlsOverlay> createState() => _WebVideoControlsOverlayState();
+  State<WebVideoControlsOverlay> createState() =>
+      _WebVideoControlsOverlayState();
 }
 
 class _WebVideoControlsOverlayState extends State<WebVideoControlsOverlay> {

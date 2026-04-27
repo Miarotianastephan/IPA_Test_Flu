@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/utils/text_util.dart';
 import 'package:live_app/widgets/encrypted_image.dart';
-import 'package:live_app/widgets/video_player_screen.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:live_app/models/vip.dart';
+import 'package:live_app/provider/my_user_provider.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import '../video_player_screen.dart';
 
 class ChatVideoMessageItem extends ConsumerStatefulWidget {
   final int messageId;
@@ -16,7 +19,8 @@ class ChatVideoMessageItem extends ConsumerStatefulWidget {
   final bool isSelf;
   final String avatarUrl;
   final String? nickname;
-  final int? userId;
+  final Vip? vip; // Changed from vipLogoUrl to Vip object
+  final String? userId;
   final DateTime createdAt;
   final bool showFailed;
   final bool resending;
@@ -31,6 +35,7 @@ class ChatVideoMessageItem extends ConsumerStatefulWidget {
     required this.avatarUrl,
     required this.messageId,
     this.nickname,
+    this.vip, // Changed from vipLogoUrl to vip
     this.userId,
     required this.createdAt,
     this.showFailed = true,
@@ -108,10 +113,40 @@ class _ChatVideoMessageItemState extends ConsumerState<ChatVideoMessageItem> {
     );
   }
 
+  Widget _buildVideoThumbnail() {
+    if (_thumbnailPath != null) {
+      return Image.file(
+        File(_thumbnailPath!),
+        width: 200,
+        height: 200,
+        fit: BoxFit.cover,
+      );
+    } else if (_isGeneratingThumbnail) {
+      return Container(
+        width: 200,
+        height: 200,
+        color: Colors.grey[800],
+        child: const Center(
+          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+        ),
+      );
+    } else {
+      return Container(
+        width: 200,
+        height: 200,
+        color: Colors.grey[800],
+        child: const Center(
+          child: Icon(Icons.videocam_off, color: Colors.white, size: 40),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final userState = ref.watch(userProvider);
+    final userVip = userState.user?.vip;
     final bubbleColor = const Color.fromARGB(255, 32, 32, 32);
-
     return VisibilityDetector(
       key: Key("video_${widget.videoUrl.hashCode}_${widget.messageId}"),
       onVisibilityChanged: (info) {
@@ -121,8 +156,9 @@ class _ChatVideoMessageItemState extends ConsumerState<ChatVideoMessageItem> {
       },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-            widget.isSelf ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: widget.isSelf
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!widget.isSelf)
             Padding(
@@ -132,6 +168,7 @@ class _ChatVideoMessageItemState extends ConsumerState<ChatVideoMessageItem> {
                 size: 40,
                 userId: widget.isSelf ? null : widget.userId,
                 nickname: widget.nickname,
+                vip: widget.vip,
               ),
             ),
           const SizedBox(width: 8),
@@ -195,12 +232,21 @@ class _ChatVideoMessageItemState extends ConsumerState<ChatVideoMessageItem> {
                         if (!widget.isSelf && widget.nickname != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 4, top: 10),
-                            child: Text(
-                              "@${widget.nickname}",
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 15,
-                              ),
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    "@${widget.nickname}",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 15,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                                VipBadge(vip: widget.vip, size: 15),
+                              ],
                             ),
                           ),
                         Stack(
@@ -226,8 +272,9 @@ class _ChatVideoMessageItemState extends ConsumerState<ChatVideoMessageItem> {
                                       alignment: Alignment.center,
                                       children: [
                                         ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: _buildVideoThumbnail(),
                                         ),
                                         // Play button overlay
@@ -236,8 +283,9 @@ class _ChatVideoMessageItemState extends ConsumerState<ChatVideoMessageItem> {
                                             width: 60,
                                             height: 60,
                                             decoration: BoxDecoration(
-                                              color: Colors.black
-                                                  .withOpacity(0.6),
+                                              color: Colors.black.withOpacity(
+                                                0.6,
+                                              ),
                                               shape: BoxShape.circle,
                                             ),
                                             child: const Icon(
@@ -252,8 +300,9 @@ class _ChatVideoMessageItemState extends ConsumerState<ChatVideoMessageItem> {
                                             width: 200,
                                             height: 200,
                                             decoration: BoxDecoration(
-                                              color: Colors.black
-                                                  .withOpacity(0.5),
+                                              color: Colors.black.withOpacity(
+                                                0.5,
+                                              ),
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
@@ -305,48 +354,10 @@ class _ChatVideoMessageItemState extends ConsumerState<ChatVideoMessageItem> {
             UserAvatar(
               url: widget.avatarUrl,
               nickname: widget.nickname,
+              vip: userVip,
               size: 40,
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildVideoThumbnail() {
-    if (_isGeneratingThumbnail || _thumbnailPath == null) {
-      return Container(
-        width: 200,
-        height: 200,
-        color: Colors.black12,
-        child: const Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Colors.white54,
-          ),
-        ),
-      );
-    }
-
-    final file = File(_thumbnailPath!);
-    if (file.existsSync()) {
-      return Image.file(
-        file,
-        width: 200,
-        height: 200,
-        fit: BoxFit.cover,
-      );
-    }
-
-    return Container(
-      width: 200,
-      height: 200,
-      color: Colors.black12,
-      child: const Center(
-        child: Icon(
-          Icons.videocam_rounded,
-          color: Colors.white54,
-          size: 48,
-        ),
       ),
     );
   }

@@ -15,7 +15,7 @@ enum DownloadStatus {
 }
 
 class Downloads extends Table {
-  IntColumn get id => integer()();
+  TextColumn get id => text()();
   TextColumn get title => text()();
   TextColumn get type => text()();
   IntColumn get durationSeconds => integer().nullable()();
@@ -35,7 +35,17 @@ class AppDatabaseDownload extends _$AppDatabaseDownload {
   AppDatabaseDownload() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.deleteTable('downloads');
+        await migrator.createTable(downloads);
+      }
+    },
+  );
 
   Future<int> insertDownload(DownloadsCompanion entry) =>
       into(downloads).insert(entry);
@@ -45,18 +55,18 @@ class AppDatabaseDownload extends _$AppDatabaseDownload {
   Stream<List<Download>> watchByType(String type) =>
       (select(downloads)..where((t) => t.type.equals(type))).watch();
 
-  Future<Download?> getById(int id) =>
+  Future<Download?> getById(String id) =>
       (select(downloads)..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  Stream<Download?> watchById(int id) =>
+  Stream<Download?> watchById(String id) =>
       (select(downloads)..where((t) => t.id.equals(id))).watchSingleOrNull();
 
   // Mise à jour partielle
-  Future<void> updateFields(int id, DownloadsCompanion entry) async {
+  Future<void> updateFields(String id, DownloadsCompanion entry) async {
     await (update(downloads)..where((t) => t.id.equals(id))).write(entry);
   }
 
-  Future<void> deleteById(int id) async =>
+  Future<void> deleteById(String id) async =>
       (delete(downloads)..where((t) => t.id.equals(id))).go();
 
   Future<List<Download>> all() => select(downloads).get();

@@ -9,7 +9,7 @@ part of 'forum_comment.dart';
 ForumComment _$ForumCommentFromJson(Map<String, dynamic> json) => ForumComment(
   id: parseInt(json['id']),
   postId: parseInt(json['post_id']),
-  userId: parseInt(json['user_id']),
+  userId: json['user_id'] as String,
   parentId: parseInt(json['parent_id']),
   content: json['content'] as String,
   upvoteCount: parseInt(json['upvote_count']),
@@ -60,9 +60,13 @@ Map<String, dynamic> _$ForumCommentToJson(ForumComment instance) =>
     };
 
 CommentUser _$CommentUserFromJson(Map<String, dynamic> json) => CommentUser(
-  id: parseInt(json['id']),
+  id: json['id'] as String,
   nickname: json['nickname'] as String,
   avatar: json['avatar'] as String?,
+  vipId: json['vipId'] as String?,
+  vip: json['vip'] == null
+      ? null
+      : Vip.fromJson(json['vip'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$CommentUserToJson(CommentUser instance) =>
@@ -70,4 +74,6 @@ Map<String, dynamic> _$CommentUserToJson(CommentUser instance) =>
       'id': instance.id,
       'nickname': instance.nickname,
       'avatar': instance.avatar,
+      'vipId': instance.vipId,
+      'vip': instance.vip?.toJson(),
     };

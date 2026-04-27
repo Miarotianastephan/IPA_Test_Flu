@@ -9,7 +9,8 @@ part of 'message.dart';
 Message _$MessageFromJson(Map<String, dynamic> json) => Message(
   id: parseInt(json['id']),
   conversationId: parseInt(json['conversation_id']),
-  senderId: parseInt(json['sender_id']),
+  senderId: json['sender_id'] as String?,
+  senderSupportId: json['sender_support_id'] as String?,
   content: json['content'] as String,
   messageType: json['message_type'] as String,
   isRevoked: json['is_revoked'] as bool,
@@ -30,6 +31,7 @@ Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
   'id': instance.id,
   'conversation_id': instance.conversationId,
   'sender_id': instance.senderId,
+  'sender_support_id': instance.senderSupportId,
   'content': instance.content,
   'message_type': instance.messageType,
   'is_revoked': instance.isRevoked,

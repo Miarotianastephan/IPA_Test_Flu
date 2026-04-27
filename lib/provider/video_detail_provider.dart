@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/models/behavior_trigger_rule.dart';
 import 'package:live_app/models/page_params.dart';
+import 'package:live_app/provider/behavior_tracker_provider.dart';
 
 import '../models/video_info.dart';
 import 'api_provider.dart';
-
-final videoTypeProvider = StateProvider<int>((ref) => 2);
 
 final fullscreenProvider = StateProvider<bool>((ref) => false);
 
@@ -48,7 +48,7 @@ class VideoDetailNotifier extends StateNotifier<VideoDetailState> {
   VideoDetailNotifier(this.ref) : super(VideoDetailState());
 
   /// 加载视频详情
-  Future<void> loadVideoDetail(int videoId) async {
+  Future<void> loadVideoDetail(String videoId) async {
     state = state.copyWith(loading: true, error: null);
 
     try {
@@ -66,7 +66,7 @@ class VideoDetailNotifier extends StateNotifier<VideoDetailState> {
   }
 
   /// 单独加载推荐视频
-  Future<void> getRecommendedVideos(int videoId) async {
+  Future<void> getRecommendedVideos(String videoId) async {
     // 如果已经加载过推荐视频，就不再重复请求
     if (state.recommendedVideos.isNotEmpty) {
       debugPrint('推荐视频已加载，跳过请求');
@@ -141,6 +141,9 @@ class VideoDetailNotifier extends StateNotifier<VideoDetailState> {
     try {
       if (newValue) {
         await videoService.likeVideo(video.id);
+        ref.read(userBehaviorStatsProvider.notifier).incrementEvent(
+              BehaviorEventType.likeCount,
+            );
       } else {
         await videoService.unlikeVideo(video.id);
       }
@@ -205,6 +208,9 @@ class VideoDetailNotifier extends StateNotifier<VideoDetailState> {
 
     try {
       await videoService.shareVideo(video.id);
+      ref.read(userBehaviorStatsProvider.notifier).incrementEvent(
+            BehaviorEventType.shareCount,
+          );
     } catch (e) {
       debugPrint(e.toString());
     }
@@ -230,17 +236,14 @@ class VideoDetailNotifier extends StateNotifier<VideoDetailState> {
     if (video == null) return;
 
     state = state.copyWith(
-      video: video.copyWith(
-        commentCount: video.commentCount + 1,
-      ),
+      video: video.copyWith(commentCount: video.commentCount + 1),
     );
   }
 }
 
 final videoDetailProvider =
-    StateNotifierProvider.family<VideoDetailNotifier, VideoDetailState, int>((
-      ref,
-      videoId,
-    ) {
-      return VideoDetailNotifier(ref);
-    });
+    StateNotifierProvider.family<VideoDetailNotifier, VideoDetailState, String>(
+      (ref, videoId) {
+        return VideoDetailNotifier(ref);
+      },
+    );

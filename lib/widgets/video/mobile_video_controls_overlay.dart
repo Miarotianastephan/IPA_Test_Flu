@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/provider/video_playback_provider.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
@@ -174,8 +175,11 @@ class _MobileVideoControlsOverlayState
               isPlaying ? Icons.pause : Icons.play_arrow,
               color: Colors.white,
             ),
-            onPressed: () =>
-                isPlaying ? widget.player!.pause() : widget.player!.play(),
+            onPressed: () {
+              if (!mounted) return;
+              isPlaying ? widget.player!.pause() : widget.player!.play();
+              ref.read(videoPausedProvider.notifier).state = isPlaying;
+            },
           );
         },
       );
@@ -189,8 +193,11 @@ class _MobileVideoControlsOverlayState
               value.isPlaying ? Icons.pause : Icons.play_arrow,
               color: Colors.white,
             ),
-            onPressed: () =>
-                value.isPlaying ? controller.pause() : controller.play(),
+            onPressed: () {
+              if (!mounted) return;
+              value.isPlaying ? controller.pause() : controller.play();
+              ref.read(videoPausedProvider.notifier).state = value.isPlaying;
+            },
           );
         },
       );
@@ -204,8 +211,11 @@ class _MobileVideoControlsOverlayState
               value.isPlaying ? Icons.pause : Icons.play_arrow,
               color: Colors.white,
             ),
-            onPressed: () =>
-                value.isPlaying ? controller.pause() : controller.play(),
+            onPressed: () {
+              if (!mounted) return;
+              value.isPlaying ? controller.pause() : controller.play();
+              ref.read(videoPausedProvider.notifier).state = value.isPlaying;
+            },
           );
         },
       );

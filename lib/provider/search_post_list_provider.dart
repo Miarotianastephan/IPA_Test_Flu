@@ -11,11 +11,13 @@ class SearchPostListNotifier extends BasePostListNotifier {
   final String keyword;
   final String? sort;
 
-  SearchPostListNotifier(
-      super.ref, {
-        required this.keyword,
-        this.sort,
-      });
+  SearchPostListNotifier(super.ref, {required this.keyword, this.sort});
+
+  @override
+  bool get supportsIncrementalWebAppend => true;
+
+  @override
+  int get incrementalWebAppendChunkSize => 4;
 
   @override
   Future<PageResponse<ForumPost>?> loadList({
@@ -35,27 +37,24 @@ class SearchPostListNotifier extends BasePostListNotifier {
 }
 
 final searchPostListProvider =
-StateNotifierProvider.family<
-    SearchPostListNotifier,
-    BaseListState<ForumPost>,
-    SearchPostQueryParams
->((ref, params) {
-  return SearchPostListNotifier(
-    ref,
-    keyword: params.keyword,
-    sort: params.sort,
-  );
-});
+    StateNotifierProvider.family<
+      SearchPostListNotifier,
+      BaseListState<ForumPost>,
+      SearchPostQueryParams
+    >((ref, params) {
+      return SearchPostListNotifier(
+        ref,
+        keyword: params.keyword,
+        sort: params.sort,
+      );
+    });
 
 /// 搜索参数结构体
 class SearchPostQueryParams {
   final String keyword;
   final String? sort;
 
-  const SearchPostQueryParams({
-    required this.keyword,
-    this.sort,
-  });
+  const SearchPostQueryParams({required this.keyword, this.sort});
 
   @override
   bool operator ==(Object other) {
@@ -69,4 +68,3 @@ class SearchPostQueryParams {
   @override
   int get hashCode => Object.hash(keyword, sort);
 }
-

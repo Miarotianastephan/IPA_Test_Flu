@@ -7,6 +7,8 @@ import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 
+import 'package:live_app/widgets/vip_badge.dart';
+
 import '../models/video_comment.dart';
 import '../provider/api_provider.dart';
 import 'encrypted_image.dart';
@@ -39,6 +41,7 @@ class CommentItem extends ConsumerStatefulWidget {
 
 class _CommentItemState extends ConsumerState<CommentItem> {
   bool isLike = false;
+  bool _isSubmittingLike = false;
   late int likeCount;
 
   @override
@@ -67,7 +70,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
       } else if (widget.comment.vCommentLikes != null &&
           widget.comment.vCommentLikes!.isNotEmpty) {
         userHasLiked = widget.comment.vCommentLikes!.any(
-          (like) => like.userId == currentUser.id.toString(),
+          (like) => like.userId == currentUser.id,
         );
       }
 
@@ -83,10 +86,14 @@ class _CommentItemState extends ConsumerState<CommentItem> {
   }
 
   Future<void> toggleLike() async {
-    try {
-      final previousIsLike = isLike;
+    if (_isSubmittingLike) return;
 
+    final previousIsLike = isLike;
+    final previousLikeCount = likeCount;
+
+    try {
       setState(() {
+        _isSubmittingLike = true;
         if (isLike) {
           likeCount = (likeCount - 1).clamp(0, 999999);
         } else {
@@ -104,6 +111,17 @@ class _CommentItemState extends ConsumerState<CommentItem> {
       }
     } catch (e) {
       debugPrint("toggleLike error: $e");
+      if (!mounted) return;
+      setState(() {
+        isLike = previousIsLike;
+        likeCount = previousLikeCount;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingLike = false;
+        });
+      }
     }
   }
 
@@ -136,6 +154,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                     userId: user?.id,
                     url: user?.avatar,
                     nickname: user?.nickname,
+                    vip: user?.vip,
                     size: 32,
                   ),
                   const SizedBox(width: 8),
@@ -146,13 +165,18 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                         // 用户昵称 + 回复对象
                         Row(
                           children: [
-                            Text(
-                              user?.nickname ?? translate("unknownUser"),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
+                            Flexible(
+                              child: Text(
+                                user?.nickname ?? translate("unknownUser"),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
+                            VipBadge(vip: user?.vip),
                             if (toUser != null && widget.isChild) ...[
                               const SizedBox(width: 4),
                               Icon(
@@ -161,13 +185,17 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                 color: subTextColor,
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                toUser.nickname ?? "",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: replyColor,
+                              Flexible(
+                                child: Text(
+                                  toUser.nickname ?? "",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: replyColor,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              VipBadge(vip: toUser.vip, size: 14),
                             ],
                           ],
                         ),
@@ -216,7 +244,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                 ),
                               ),
                             InkWell(
-                              onTap: toggleLike,
+                              onTap: _isSubmittingLike ? null : toggleLike,
                               borderRadius: BorderRadius.circular(20),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,

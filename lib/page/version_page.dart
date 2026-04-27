@@ -3,8 +3,10 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/api/services/version_component.dart';
+import 'package:live_app/api/services/version_service.dart';
 import 'package:live_app/models/version.dart';
+import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/domain_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -22,8 +24,14 @@ class _VersionPageState extends ConsumerState<VersionPage> {
   @override
   void initState() {
     super.initState();
-    versionFuture = VersionComponent.fetchVersion();
-    currentVersionFuture = VersionComponent.getCurrentVersion();
+    currentVersionFuture = VersionService.getCurrentVersion();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final versionService = ref.read(versionServiceProvider);
+    versionFuture = versionService.fetchVersion();
   }
 
   @override
@@ -63,7 +71,7 @@ class _VersionPageState extends ConsumerState<VersionPage> {
             return Center(child: Text(i18n.translate('noData')));
           }
 
-          final updateAvailable = VersionComponent.isUpdateAvailable(
+          final updateAvailable = VersionService.isUpdateAvailable(
             version.versionNumber,
             currentVersion,
           );
@@ -154,7 +162,7 @@ class InfoField extends StatelessWidget {
   }
 }
 
-class DownloadButton extends StatelessWidget {
+class DownloadButton extends ConsumerWidget {
   final String label;
   final Icon icon;
   final String? url;
@@ -167,7 +175,7 @@ class DownloadButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     return ElevatedButton.icon(
@@ -179,7 +187,7 @@ class DownloadButton extends StatelessWidget {
       ),
       onPressed: () async {
         if (url?.isNotEmpty == true) {
-          final baseUrl = dotenv.env['R2_URL'];
+          final baseUrl = ref.read(domainProvider).domain?.storage;
           final uri = Uri.parse('$baseUrl$url');
 
           if (await canLaunchUrl(uri)) {

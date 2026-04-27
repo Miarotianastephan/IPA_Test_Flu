@@ -7,6 +7,7 @@ import '../api/services/message_service.dart';
 import '../database/app_database.dart';
 import '../database/dao/conversation_dao.dart';
 import '../database/dao/message_dao.dart';
+import '../models/conversation_user.dart';
 import '../models/message.dart';
 import '../models/message_inbox.dart';
 import '../provider/api_provider.dart';
@@ -47,11 +48,18 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     return newMsg.createdAt.isAfter(oldMsg.createdAt) ? newMsg : oldMsg;
   }
 
+  bool _isLoading = false;
+
   ConversationListNotifier(
     this.messageService,
     this.conversationDao,
-    this.messageDao,
-  ) : super(ConversationListState());
+    this.messageDao, {
+    bool autoLoad = false,
+  }) : super(ConversationListState()) {
+    if (autoLoad) {
+      loadConversationsAndHistory();
+    }
+  }
 
   /// 只从本地数据库加载 —— 不触发网络
   Future<bool> _loadFromDbOnly() async {
@@ -67,37 +75,46 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
   }
 
   Future<void> loadConversationsAndHistory({bool isRefresh = false}) async {
-    if (isRefresh) {
-      if (!mounted) return;
-      state = state.copyWith(isLoading: true, error: null);
+    if (_isLoading && !isRefresh) return;
+    if (!mounted) return;
+    _isLoading = true;
+    state = state.copyWith(isLoading: true, error: null);
 
-      try {
+    try {
+      if (isRefresh) {
         await fetchAllConversationsFromServer();
-
         await loadHistory();
-
-        if (!mounted) return;
-        state = state.copyWith(isLoading: false, error: null);
-      } catch (e) {
-        if (!mounted) return;
-        state = state.copyWith(
-          isLoading: false,
-          error: 'Failed to refresh conversations: ${e.toString()}',
-        );
+      } else {
+        // 进入页面 → 优先加载本地 Drift
+        bool hasLocal = false;
+        try {
+          hasLocal = await _loadFromDbOnly().timeout(
+            const Duration(seconds: 3),
+            onTimeout: () => false,
+          );
+        } catch (e) {
+          hasLocal = false;
+        }
+        //如果会本地有记录 就只加载未读数据
+        if (hasLocal) {
+          await loadUnReadHistory();
+        } else {
+          // 如果会没有记录 就加载所有的 会话 和 所有的聊天记录
+          await fetchAllConversationsFromServer();
+          await loadHistory();
+        }
       }
 
-      return;
-    }
-
-    // 进入页面 → 优先加载本地 Drift
-    final hasLocal = await _loadFromDbOnly();
-    //如果会本地有记录 就只加载未读数据
-    if (hasLocal) {
-      await loadUnReadHistory();
-    } else {
-      // 如果会没有记录 就加载所有的 会话 和 所有的聊天记录
-      await fetchAllConversationsFromServer();
-      await loadHistory();
+      if (!mounted) return;
+      _isLoading = false;
+      state = state.copyWith(isLoading: false, error: null);
+    } catch (e) {
+      if (!mounted) return;
+      _isLoading = false;
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to load conversations: ${e.toString()}',
+      );
     }
   }
 
@@ -252,13 +269,34 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
           ? newUpdatedAt
           : old.updatedAt;
 
+      final mergedUsers = conv.users.isNotEmpty
+          ? conv.users.map((newU) {
+              if (newU.user != null) return newU;
+              final oldU = old.users.firstWhere(
+                (o) => o.userId == newU.userId,
+                orElse: () => newU,
+              );
+              if (oldU.user == null) return newU;
+              return ConversationUser(
+                id: newU.id,
+                conversationId: newU.conversationId,
+                userId: newU.userId,
+                agentSupportId: newU.agentSupportId,
+                role: newU.role,
+                joinedAt: newU.joinedAt,
+                user: oldU.user,
+                agentSupport: newU.agentSupport ?? oldU.agentSupport,
+              );
+            }).toList()
+          : old.users;
+
       merged = old.copyWith(
         name: conv.name ?? old.name,
         lastMessage: mergedLastMessage,
         lastMessageId: mergedLastMessage?.id ?? old.lastMessageId,
         unreadCount: conv.unreadCount,
         updatedAt: finalUpdatedAt,
-        users: conv.users.isNotEmpty ? conv.users : old.users,
+        users: mergedUsers,
       );
 
       list.removeAt(index);
@@ -275,11 +313,21 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     await conversationDao.upsertBasic(merged);
   }
 
-  /// 排序逻辑（按最新消息排前面）
+  /// 排序逻辑（支持聊天置顶，然后按最新消息排前面）
   List<Conversation> _sortConversations(List<Conversation> list) {
     final sorted = [...list];
 
     sorted.sort((a, b) {
+      final aIsSupport = a.name?.startsWith('userToSupport') ?? false;
+      final bIsSupport = b.name?.startsWith('userToSupport') ?? false;
+
+      if (aIsSupport && !bIsSupport) {
+        return -1;
+      }
+      if (!aIsSupport && bIsSupport) {
+        return 1;
+      }
+
       final aTime = a.lastMessage?.createdAt ?? a.updatedAt;
       final bTime = b.lastMessage?.createdAt ?? b.updatedAt;
       return bTime.compareTo(aTime);
@@ -313,25 +361,34 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
   }
 }
 
+String? _lastUserId;
+
 final conversationListProvider =
     StateNotifierProvider<ConversationListNotifier, ConversationListState>((
       ref,
     ) {
-      final user = ref.watch(currentUserProvider);
+      final userId = ref.watch(currentUserIdProvider);
+      final isNewUser = userId != _lastUserId;
+      _lastUserId = userId;
 
-      if (user == null) {
-        final service = ref.watch(messageServiceProvider);
-        final tempDb = AppDatabase(userId: 0);
+      if (userId == null) {
+        final service = ref.read(messageServiceProvider);
+        final tempDb = AppDatabase(userId: "");
         final dao = ConversationDao(tempDb);
         final messageDao = MessageDao(tempDb);
         return ConversationListNotifier(service, dao, messageDao);
       }
 
-      final service = ref.watch(messageServiceProvider);
-      final db = ref.watch(currentUserDatabaseProvider);
+      final service = ref.read(messageServiceProvider);
+      final db = ref.read(currentUserDatabaseProvider);
       final dao = ConversationDao(db);
       final messageDao = MessageDao(db);
-      return ConversationListNotifier(service, dao, messageDao);
+      return ConversationListNotifier(
+        service,
+        dao,
+        messageDao,
+        autoLoad: isNewUser,
+      );
     });
 
 final totalUnreadCountProvider = Provider<int>((ref) {

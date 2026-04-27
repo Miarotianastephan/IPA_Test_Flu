@@ -2,9 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/constants/ad_placement.dart';
 import 'package:live_app/page/maintenance_page.dart';
 import 'package:live_app/page/my/my_follow_page.dart';
+import 'package:live_app/provider/ad_provider.dart';
+import 'package:live_app/provider/app_config_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/ad_banner_carousel.dart';
+import 'package:live_app/widgets/ad_conversation_tile.dart';
 import 'package:live_app/widgets/conversation_tile.dart';
 import 'package:live_app/widgets/empty_widget.dart';
 import 'package:live_app/widgets/message/message_popup_menu_route.dart';
@@ -12,10 +17,12 @@ import 'package:live_app/widgets/message/message_popup_menu_route.dart';
 import '../../config/storage_config.dart';
 import '../../models/conversation.dart';
 import '../../models/conversation_user.dart';
+import '../../models/userinfo.dart';
 import '../../provider/conversation_list_provider.dart';
 import '../../provider/current_user_provider.dart';
 import '../../provider/system_notification_provider.dart';
 import '../../provider/websocket_provider.dart';
+import '../../utils/conversation_utils.dart';
 import '../../widgets/system_notification_tile.dart';
 import '../chat_detail_page.dart';
 import '../create_group_page.dart';
@@ -35,7 +42,33 @@ class MessageTabPage extends ConsumerStatefulWidget {
 }
 
 class _MessageTabPageState extends ConsumerState<MessageTabPage> {
-  int? selfUserId;
+  String? selfUserId;
+  final Set<int> _closedAdIds = {};
+  bool _bannerClosed = false;
+
+  bool _isAdSlot(int displayIndex, int adsToInsert, int adsAfter) {
+    if (adsToInsert == 0) return false;
+    if ((displayIndex + 1) % (adsAfter + 1) != 0) return false;
+    final adIndex = (displayIndex + 1) ~/ (adsAfter + 1) - 1;
+    return adIndex < adsToInsert;
+  }
+
+  int _getAdIndex(int displayIndex, int adsAfter) {
+    return (displayIndex + 1) ~/ (adsAfter + 1) - 1;
+  }
+
+  int _getConversationIndex(int displayIndex, int adsAfter, int adsToInsert) {
+    final adsBeforeThis = _isAdSlot(displayIndex, adsToInsert, adsAfter)
+        ? _getAdIndex(displayIndex, adsAfter)
+        : (_getAdIndex(displayIndex, adsAfter) + 1).clamp(0, adsToInsert);
+    return displayIndex - adsBeforeThis;
+  }
+
+  int _getAdsToInsert(int conversationCount, int adCount, int adsAfter) {
+    if (conversationCount == 0 || adCount == 0) return 0;
+    final maxAdsToInsert = conversationCount ~/ adsAfter;
+    return maxAdsToInsert < adCount ? maxAdsToInsert : adCount;
+  }
 
   @override
   void initState() {
@@ -45,41 +78,34 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
     final userRaw = StorageService.instance.getValue<String>("user_info");
     if (userRaw != null) {
       final json = jsonDecode(userRaw);
-      selfUserId = json["id"];
+      selfUserId = json["id"] as String?;
     }
 
-    Future.microtask(() {
-      _initLoad();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(adListProvider(AdPlacement.chatList).notifier)
+          .fetch(refresh: true);
+      ref.read(systemNotificationProvider.notifier).loadNotifications();
     });
-  }
-
-  Future<void> _initLoad() async {
-    await ref
-        .read(conversationListProvider.notifier)
-        .loadConversationsAndHistory();
-
-    await ref.read(systemNotificationProvider.notifier).loadNotifications();
-
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final adState = ref.watch(adListProvider(AdPlacement.chatList));
+    final adsAfter = ref.watch(appConfigProvider).data?.adsAfter ?? 5;
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18n.translate(key);
     final config = widget.appConfig;
     final currentUser = ref.watch(currentUserProvider);
+    final convState = ref.watch(conversationListProvider);
+    final wsState = ref.watch(webSocketProvider);
+
     if (currentUser == null) {
       return Scaffold(
         backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
-
-    final convState = ref.watch(conversationListProvider);
-    final wsState = ref.watch(webSocketProvider);
 
     final conversationsState = convState.conversations;
     final conversations = conversationsState.where((c) {
@@ -88,6 +114,15 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
       }
       return true;
     }).toList();
+
+    final filteredAds = adState.list
+        .where((ad) => !_closedAdIds.contains(ad.id))
+        .toList();
+
+    final int adCount = filteredAds.length;
+    final int adsToInsert = adsAfter > 0
+        ? _getAdsToInsert(conversations.length, adCount, adsAfter)
+        : 0;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -260,36 +295,48 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
         child: ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(), // 允许下拉
           padding: const EdgeInsets.all(10),
-          itemCount: conversations.isEmpty ? 2 : conversations.length + 2,
+          itemCount: conversations.isEmpty
+              ? 2
+              : conversations.length + adsToInsert + 2,
           itemBuilder: (context, index) {
             if (index == 0) {
               final notificationState = ref.watch(systemNotificationProvider);
               final lastNotification = notificationState.lastNotification;
-              return SystemNotificationTile(
-                title: lastNotification?.title,
-                unreadCount: notificationState.unreadCount > 0
-                    ? notificationState.unreadCount
-                    : null,
-                lastNotification: lastNotification?.content,
-                timeStr: lastNotification != null
-                    ? TimeOfDay.fromDateTime(
-                        lastNotification.createdAt.toLocal(),
-                      ).format(context)
-                    : null,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SystemNotificationPage(),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SystemNotificationTile(
+                    title: lastNotification?.title,
+                    unreadCount: notificationState.unreadCount > 0
+                        ? notificationState.unreadCount
+                        : null,
+                    lastNotification: lastNotification?.content,
+                    timeStr: lastNotification != null
+                        ? TimeOfDay.fromDateTime(
+                            lastNotification.createdAt.toLocal(),
+                          ).format(context)
+                        : null,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SystemNotificationPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  if (!_bannerClosed)
+                    AdBannerCarousel(
+                      ads: filteredAds,
+                      onClose: () => setState(() => _bannerClosed = true),
                     ),
-                  );
-                },
+                ],
               );
             }
 
             if (conversations.isEmpty) {
               return SizedBox(
-                height: MediaQuery.of(context).size.height - 300,
+                height: MediaQuery.of(context).size.height - 400,
                 child: EmptyWidget(
                   icon: Icons.chat_bubble_outline_outlined,
                   message: translate("noConversationFound"),
@@ -297,13 +344,40 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
               );
             }
 
-            if (index == conversations.length + 1) {
-              return const SizedBox(height: kToolbarHeight);
+            final displayIndex = index - 1;
+            final totalDisplayCount = conversations.length + adsToInsert;
+
+            if (displayIndex < 0 || displayIndex >= totalDisplayCount) {
+              if (index == totalDisplayCount + 1) {
+                return const SizedBox(height: kToolbarHeight);
+              }
+              return const SizedBox.shrink();
             }
 
-            final Conversation c = conversations[index - 1];
+            if (_isAdSlot(displayIndex, adsToInsert, adsAfter)) {
+              final adIndex = _getAdIndex(displayIndex, adsAfter);
+              if (adIndex < filteredAds.length) {
+                final ad = filteredAds[adIndex];
+                return AdConversationTile(
+                  ad: ad,
+                  onClose: () => setState(() => _closedAdIds.add(ad.id)),
+                );
+              }
+              return const SizedBox.shrink();
+            }
 
-            final uniqueUsers = c.users.where((item) {
+            final actualIndex = _getConversationIndex(
+              displayIndex,
+              adsAfter,
+              adsToInsert,
+            );
+            if (actualIndex < 0 || actualIndex >= conversations.length) {
+              return const SizedBox.shrink();
+            }
+
+            final Conversation c = conversations[actualIndex];
+
+            c.users.where((item) {
               final currentId = item.user?.id;
               return currentId != null &&
                   c.users.indexWhere((i) => i.user?.id == currentId) ==
@@ -311,15 +385,26 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
             }).toList();
             final isGroupChat = c.type == 'group';
 
+            final bool isSupportChat = isSupportConversation(c);
+
             ConversationUser? peer;
             for (final u in c.users) {
-              if (u.userId != selfUserId) {
-                peer = u;
-                break;
+              if (isSupportChat) {
+                if (isSupportAgent(u)) {
+                  peer = u;
+                  break;
+                }
+              } else {
+                if (u.userId != selfUserId) {
+                  peer = u;
+                  break;
+                }
               }
             }
 
-            if (!isGroupChat && (peer == null || peer.user == null)) {
+            if (!isGroupChat &&
+                !isSupportChat &&
+                (peer == null || peer.user == null)) {
               return ListTile(
                 leading: CircleAvatar(backgroundColor: Colors.grey),
                 title: Text(
@@ -341,13 +426,23 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
             String displayTitle;
             if (isGroupChat) {
               displayTitle = c.name ?? translate("groupChat");
+            } else if (isSupportChat) {
+              final agentName = getSupportAgentDisplayName(peer);
+              displayTitle = translate(agentName);
+              if (displayTitle == "customer_service") {
+                displayTitle = "客服白兔";
+              }
             } else {
               displayTitle = peer?.user?.nickname ?? "用户${peer?.userId ?? ''}";
             }
 
             String? avatarUrl;
-            if (!isGroupChat && peer?.user?.avatar != null) {
-              avatarUrl = peer!.user!.avatar;
+            if (!isGroupChat) {
+              if (isSupportChat) {
+                avatarUrl = getSupportAgentAvatar(peer);
+              } else if (peer?.user?.avatar != null) {
+                avatarUrl = peer!.user!.avatar;
+              }
             }
 
             String msgType = "text";
@@ -363,47 +458,66 @@ class _MessageTabPageState extends ConsumerState<MessageTabPage> {
               }
             }
 
-            return ConversationTile(
-              title: displayTitle,
-              lastMessage: content.isEmpty && isGroupChat
-                  ? "Welcome to this new group"
-                  : (msgType == "text" ? content : msgType),
-              timeStr: timeStr,
-              unreadCount: c.unreadCount,
-              avatarUrl: avatarUrl,
-              isGroupChat: isGroupChat,
-              nickname: isGroupChat
-                  ? displayTitle
-                  : c.users
-                      .firstWhere(
-                        (element) => element.userId != selfUserId,
-                        orElse: () => ConversationUser(
-                          userId: 0,
-                          id: 0,
-                          conversationId: 0,
-                          joinedAt: DateTime.now(),
+            return Column(
+              children: [
+                ConversationTile(
+                  title: displayTitle,
+                  lastMessage: content.isEmpty && isGroupChat
+                      ? translate("welcomeToThisNewGroup")
+                      : (msgType == "text" ? content : msgType),
+                  timeStr: timeStr,
+                  unreadCount: c.unreadCount,
+                  avatarUrl: avatarUrl,
+                  isGroupChat: isGroupChat,
+                  nickname: isGroupChat
+                      ? displayTitle
+                      : isSupportChat
+                      ? displayTitle
+                      : c.users
+                            .firstWhere(
+                              (element) => element.userId != selfUserId,
+                              orElse: () => ConversationUser(
+                                id: 0,
+                                conversationId: 0,
+                                joinedAt: DateTime.now(),
+                              ),
+                            )
+                            .user
+                            ?.nickname,
+                  onTap: () {
+                    if (isGroupChat) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => GroupChatDetailPage(conversation: c),
                         ),
-                      )
-                      .user
-                      ?.nickname,
-              onTap: () {
-                if (isGroupChat) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => GroupChatDetailPage(conversation: c),
-                    ),
-                  );
-                } else {
-                  if (peer?.user == null) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatDetailPage(user: peer!.user!),
-                    ),
-                  );
-                }
-              },
+                      );
+                    } else if (isSupportChat) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatDetailPage(
+                            user: UserInfo.placeholder(
+                              id: peer?.agentSupportId ?? '',
+                              nickname: displayTitle,
+                            ),
+                            isSupportChat: true,
+                            conversationId: c.id,
+                          ),
+                        ),
+                      );
+                    } else {
+                      if (peer?.user == null) return;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatDetailPage(user: peer!.user!),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
             );
           },
         ),

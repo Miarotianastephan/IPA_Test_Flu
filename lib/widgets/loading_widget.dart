@@ -28,11 +28,8 @@ class LoadingWidget extends StatelessWidget {
           ),
           if (message != null) ...[
             const SizedBox(height: 12),
-            Text(
-              message!,
-              style: TextStyle(color: color, fontSize: 16),
-            ),
-          ]
+            Text(message!, style: TextStyle(color: color, fontSize: 16)),
+          ],
         ],
       ),
     );

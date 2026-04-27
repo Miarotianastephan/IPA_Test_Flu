@@ -22,10 +22,7 @@ class VideoPlayerScreen extends StatefulWidget {
 }
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
-  // Video Player (for non-Huawei devices)
   VideoPlayerController? _videoPlayerController;
-
-  // MediaKit Player (for Huawei devices)
   Player? _mediaKitPlayer;
   VideoController? _mediaKitVideoController;
 
@@ -38,15 +35,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void initState() {
     super.initState();
     _initializeVideo();
-
-    // Set landscape orientation for video playback
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
       DeviceOrientation.portraitUp,
     ]);
 
-    // Hide status bar for immersive experience
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
@@ -66,7 +60,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         await _initializeVideoPlayer();
       }
     } catch (e) {
-      debugPrint("Error initializing video: $e");
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -99,7 +92,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         }
       });
     } catch (e) {
-      debugPrint("Error initializing MediaKit: $e");
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -135,7 +127,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         }
       });
     } catch (e) {
-      debugPrint("Error initializing VideoPlayer: $e");
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -149,7 +140,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _videoPlayerController?.dispose();
     _mediaKitPlayer?.dispose();
 
-    // Restore orientation and system UI
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.landscapeLeft,
@@ -205,16 +195,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Video player
-            Center(
-              child: _buildVideoPlayer(),
-            ),
-
-            // Controls overlay
-            if (_showControls && _isInitialized)
-              _buildControlsOverlay(),
-
-            // Close button (always visible)
+            Center(child: _buildVideoPlayer()),
+            if (_showControls && _isInitialized) _buildControlsOverlay(),
             Positioned(
               top: MediaQuery.of(context).padding.top + 10,
               left: 10,
@@ -253,18 +235,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     if (!_isInitialized) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: Colors.white,
-          strokeWidth: 3,
-        ),
+        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
       );
     }
 
     if (_useMediaKit && _mediaKitVideoController != null) {
-      return Video(
-        controller: _mediaKitVideoController!,
-        controls: null,
-      );
+      return Video(controller: _mediaKitVideoController!, controls: null);
     }
 
     if (_videoPlayerController != null) {
@@ -307,7 +283,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // Play/Pause button in center
           Expanded(
             child: Center(
               child: GestureDetector(
@@ -327,13 +302,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               ),
             ),
           ),
-
-          // Bottom controls
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // Progress bar
                 if (!_useMediaKit && _videoPlayerController != null)
                   VideoProgressIndicator(
                     _videoPlayerController!,
@@ -345,7 +317,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     ),
                   )
                 else
-                  // Simple progress bar for MediaKit
                   LinearProgressIndicator(
                     value: duration.inMilliseconds > 0
                         ? position.inMilliseconds / duration.inMilliseconds
@@ -354,8 +325,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
                   ),
                 const SizedBox(height: 8),
-
-                // Time display
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

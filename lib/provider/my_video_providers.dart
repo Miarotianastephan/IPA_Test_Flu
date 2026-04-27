@@ -11,12 +11,10 @@ enum UserVideoListType { favorite, history, like }
 
 /// 通用用户视频列表 Notifier
 class UserVideoListNotifier extends BaseVideoListNotifier {
-  final int type;
   final UserVideoListType listType;
 
   UserVideoListNotifier(
     super.ref, {
-    required this.type,
     required this.listType,
   });
 
@@ -27,22 +25,22 @@ class UserVideoListNotifier extends BaseVideoListNotifier {
 
     switch (listType) {
       case UserVideoListType.favorite:
-        return (await service.favoriteList(params, type)).data;
+        return (await service.favoriteList(params)).data;
       case UserVideoListType.history:
-        return (await service.historyList(params, type)).data;
+        return (await service.historyList(params)).data;
       case UserVideoListType.like:
-        return (await service.likeList(params, type)).data;
+        return (await service.likeList(params)).data;
     }
   }
 }
 
-/// Provider family: 支持 type + listType
+/// Provider family: keyed by listType only
 final userVideoListProvider =
     StateNotifierProvider.family<
       UserVideoListNotifier,
       VideoListState,
-      ({int type, UserVideoListType listType})
+      UserVideoListType
     >(
-      (ref, args) =>
-          UserVideoListNotifier(ref, type: args.type, listType: args.listType),
+      (ref, listType) =>
+          UserVideoListNotifier(ref, listType: listType),
     );

@@ -1,15 +1,19 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/page/search_page.dart';
+import 'package:live_app/provider/cumulative_watch_time_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/comment/comment_input_bar.dart';
 
 import '../provider/api_provider.dart';
 import '../provider/video_detail_provider.dart';
+import '../provider/web_video_mute_provider.dart';
 import '../widgets/video/short_video_item.dart';
 import 'user_detail_page.dart';
 
 class ShortVideoPage extends ConsumerStatefulWidget {
-  final int videoId;
+  final String videoId;
   final String? heroTagPrefix;
   final bool isUserDetailPop;
 
@@ -44,6 +48,7 @@ class _VideoPageState extends ConsumerState<ShortVideoPage>
 
   @override
   void dispose() {
+    ref.read(cumulativeWatchTimeProvider.notifier).stopTracking();
     _controller.dispose();
     _commentController.dispose();
     super.dispose();
@@ -96,7 +101,9 @@ class _VideoPageState extends ConsumerState<ShortVideoPage>
                     child: Hero(
                       tag: heroTag,
                       child: ShortVideoItem(
+                        pageKey: "ShortVideoPage",
                         videoInfo: video,
+                        isFirstItem: true,
                         controller: _controller,
                         onUserTap: (_) {
                           if (!widget.isUserDetailPop) {
@@ -154,6 +161,49 @@ class _VideoPageState extends ConsumerState<ShortVideoPage>
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
+                ),
+              ),
+
+            if (!isHideHeader)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 8,
+                right: 8,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (kIsWeb)
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final muteState = ref.watch(webVideoMuteProvider);
+                          if (!muteState.isMuted) {
+                            return const SizedBox.shrink();
+                          }
+                          return GestureDetector(
+                            onTap: () {
+                              ref
+                                  .read(webVideoMuteProvider.notifier)
+                                  .setMuted(false);
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.only(right: 8.0),
+                              child: Icon(
+                                Icons.volume_off_rounded,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.search, color: Colors.white),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SearchPage()),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
           ],

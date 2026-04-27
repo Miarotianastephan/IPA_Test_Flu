@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/provider/i18n_provider.dart';
 
 import '../../models/base_list_state.dart';
 import '../../models/forum_post.dart';
 import '../../models/userinfo.dart';
 import '../../provider/user_post_list_provider.dart';
-import '../empty_retry.dart';
-import '../forum/forum_post_card.dart';
+import '../general_post_tab.dart';
 
 class UserPostList extends ConsumerStatefulWidget {
   final UserInfo user;
@@ -47,59 +45,25 @@ class _UserPostListState extends ConsumerState<UserPostList>
     super.build(context);
 
     final state = ref.watch(provider);
+    final isLoaded =
+        state.loading ||
+        state.finished ||
+        state.list.isNotEmpty ||
+        state.total > 0 ||
+        state.page > 1;
 
-    if (state.total == 0 && !state.loading) {
-      return EmptyWithRetry(onRetry: () => notifier.fetch(refresh: true));
-    }
-
-    return RefreshIndicator(
+    return GeneralPostTab(
+      loading: state.loading,
+      results: state.list,
+      isLoaded: isLoaded,
       onRefresh: () => notifier.fetch(refresh: true),
-      color: Colors.white,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (ScrollNotification scrollInfo) {
-          if (scrollInfo.metrics.pixels >=
-                  scrollInfo.metrics.maxScrollExtent -
-                      scrollInfo.metrics.viewportDimension &&
-              !state.loading &&
-              !state.finished) {
-            notifier.fetch(limit: 20);
-          }
-          return false;
-        },
-        child: CustomScrollView(
-          slivers: [
-            SliverList(
-              delegate: SliverChildBuilderDelegate((_, index) {
-                if (index == state.list.length) {
-                  if (state.finished) {
-                    return Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(
-                        child: Text(
-                          ref
-                              .read(i18nNotifierProvider.notifier)
-                              .translate("noMore"),
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    );
-                  }
-
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-                  );
-                }
-
-                final post = state.list[index];
-                return ForumPostCard(post: post);
-              }, childCount: state.list.length + 1),
-            ),
-          ],
-        ),
-      ),
+      onLoadMore: () {
+        if (state.loading || state.finished) {
+          return;
+        }
+        notifier.fetch(limit: 20);
+      },
+      finished: state.finished,
     );
   }
 }

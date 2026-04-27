@@ -42,21 +42,20 @@ class SearchVideoParams {
   }
 
   @override
-  int get hashCode => Object.hash(
-    typeId,
-    sort,
-    keyword,
-    categoryId,
-    tagId,
-    province,
-    city,
-  );
+  int get hashCode =>
+      Object.hash(typeId, sort, keyword, categoryId, tagId, province, city);
 }
 
 class SearchVideoListNotifier extends BaseVideoListNotifier {
   final SearchVideoParams params;
 
   SearchVideoListNotifier(super.ref, this.params);
+
+  @override
+  bool get supportsIncrementalWebAppend => true;
+
+  @override
+  int get incrementalWebAppendChunkSize => 5;
 
   @override
   Future<PageResponse<VideoInfo>?> loadList({required int page}) async {

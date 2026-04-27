@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/banner_provider.dart';
+import 'package:live_app/provider/category_tag_provider.dart';
+import 'package:live_app/widgets/video/category_specific_tags.dart';
 import 'package:live_app/widgets/video/video_list.dart';
 
 import '../../models/sort_tab.dart';
@@ -13,7 +15,7 @@ class VideoInnerTabSection extends ConsumerStatefulWidget {
   final TabController outerController;
   final Map<int, String> sortTypeByCategory;
   final Function(VideoInfo videoInfo)? onUserTap;
-  final int videoType;
+  final int? videoType;
 
   const VideoInnerTabSection({
     super.key,
@@ -21,7 +23,7 @@ class VideoInnerTabSection extends ConsumerStatefulWidget {
     required this.outerController,
     required this.sortTypeByCategory,
     this.onUserTap,
-    required this.videoType,
+    this.videoType,
   });
 
   @override
@@ -33,14 +35,31 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
   bool _initialFetched = false;
   final Map<String, SearchVideoParams> _paramsCache = {};
   Locale? _lastLocale;
+  TabController? _tabController;
 
-  SearchVideoParams _getParams(int categoryId, String sort, int type) {
+  SearchVideoParams _getParams(int categoryId, String sort, int? type) {
     final key = '$categoryId-$sort-$type';
     return _paramsCache[key] ??= SearchVideoParams(
       categoryId: categoryId,
       sort: sort,
       typeId: type,
     );
+  }
+
+  void _handleTabChange() {
+    final tabController = _tabController;
+    if (tabController == null || tabController.indexIsChanging) return;
+
+    final categoryId = widget.categoryId;
+    final newType = getSortTabs(ref)[tabController.index].type;
+    if (newType == widget.sortTypeByCategory[categoryId]) return;
+
+    setState(() {
+      widget.sortTypeByCategory[categoryId] = newType;
+    });
+
+    final params = _getParams(categoryId, newType, widget.videoType);
+    ref.read(searchVideosProvider(params).notifier).fetch(refresh: true);
   }
 
   @override
@@ -92,6 +111,12 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
   }
 
   @override
+  void dispose() {
+    _tabController?.removeListener(_handleTabChange);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
     final categoryId = widget.categoryId;
@@ -107,6 +132,11 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
       child: Builder(
         builder: (context) {
           final tabController = DefaultTabController.of(context);
+          if (_tabController != tabController) {
+            _tabController?.removeListener(_handleTabChange);
+            _tabController = tabController;
+            _tabController?.addListener(_handleTabChange);
+          }
 
           Future<void> onRefresh() async {
             final params = _getParams(
@@ -118,21 +148,6 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
                 .read(searchVideosProvider(params).notifier)
                 .fetch(refresh: true);
           }
-
-          tabController.addListener(() {
-            if (!tabController.indexIsChanging) {
-              final newType = getSortTabs(ref)[tabController.index].type;
-              if (newType == widget.sortTypeByCategory[categoryId]) return;
-              setState(() {
-                widget.sortTypeByCategory[categoryId] = newType;
-              });
-
-              final params = _getParams(categoryId, newType, widget.videoType);
-              ref
-                  .read(searchVideosProvider(params).notifier)
-                  .fetch(refresh: true);
-            }
-          });
 
           return NestedScrollView(
             headerSliverBuilder: (context, inner) {
@@ -215,7 +230,7 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
                         child: CustomScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           key: PageStorageKey(
-                            'list-$categoryId-${sortTab.type}',
+                            'list-$categoryId-${sortTab.type}-${widget.videoType}',
                           ),
                           slivers: [
                             SliverOverlapInjector(
@@ -224,10 +239,54 @@ class _VideoInnerTabSectionState extends ConsumerState<VideoInnerTabSection>
                                     context,
                                   ),
                             ),
+                            // Category-specific tags section - AFTER tabs
+                            SliverToBoxAdapter(
+                              child: Consumer(
+                                builder: (context, ref, _) {
+                                  final categoryState = ref.read(
+                                    videoCategoryListProvider(true),
+                                  );
+                                  final categories = categoryState.list;
+                                  final currentCategory = categories.isNotEmpty
+                                      ? categories.firstWhere(
+                                          (cat) => cat.id == categoryId,
+                                          orElse: () => categories.first,
+                                        )
+                                      : null;
+
+                                  if (currentCategory == null) {
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  // Preload category tags
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    final categoryTagProvider =
+                                        videoCategoryTagProvider(
+                                          currentCategory.id.toString(),
+                                        );
+                                    ref
+                                        .read(categoryTagProvider.notifier)
+                                        .fetch(refresh: true, limit: 999);
+                                  });
+
+                                  return CategorySpecificTags(
+                                    categoryId: currentCategory.id,
+                                    categoryName: currentCategory.name,
+                                    showTitle: true,
+                                  );
+                                },
+                              ),
+                            ),
                             VideoListSliver(
+                              key: ValueKey(
+                                'video-list-$categoryId-${sortTab.type}-${widget.videoType}',
+                              ),
                               provider: provider,
                               onRefresh: onRefresh,
                               onUserTap: widget.onUserTap,
+                              videoType: widget.videoType,
                             ),
                             SliverToBoxAdapter(
                               child: SizedBox(

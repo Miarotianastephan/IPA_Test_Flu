@@ -338,12 +338,23 @@ class $ConversationUsersTable extends ConversationUsers
   );
   static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
-  late final GeneratedColumn<int> userId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
     'user_id',
     aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _agentSupportIdMeta = const VerificationMeta(
+    'agentSupportId',
+  );
+  @override
+  late final GeneratedColumn<String> agentSupportId = GeneratedColumn<String>(
+    'agent_support_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _roleMeta = const VerificationMeta('role');
   @override
@@ -371,6 +382,7 @@ class $ConversationUsersTable extends ConversationUsers
     id,
     conversationId,
     userId,
+    agentSupportId,
     role,
     joinedAt,
   ];
@@ -405,8 +417,15 @@ class $ConversationUsersTable extends ConversationUsers
         _userIdMeta,
         userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('agent_support_id')) {
+      context.handle(
+        _agentSupportIdMeta,
+        agentSupportId.isAcceptableOrUnknown(
+          data['agent_support_id']!,
+          _agentSupportIdMeta,
+        ),
+      );
     }
     if (data.containsKey('role')) {
       context.handle(
@@ -440,9 +459,13 @@ class $ConversationUsersTable extends ConversationUsers
         data['${effectivePrefix}conversation_id'],
       )!,
       userId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}user_id'],
-      )!,
+      ),
+      agentSupportId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}agent_support_id'],
+      ),
       role: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}role'],
@@ -463,29 +486,32 @@ class $ConversationUsersTable extends ConversationUsers
 class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
   final Value<int> id;
   final Value<int> conversationId;
-  final Value<int> userId;
+  final Value<String?> userId;
+  final Value<String?> agentSupportId;
   final Value<String> role;
   final Value<DateTime> joinedAt;
   const ConversationUsersCompanion({
     this.id = const Value.absent(),
     this.conversationId = const Value.absent(),
     this.userId = const Value.absent(),
+    this.agentSupportId = const Value.absent(),
     this.role = const Value.absent(),
     this.joinedAt = const Value.absent(),
   });
   ConversationUsersCompanion.insert({
     this.id = const Value.absent(),
     required int conversationId,
-    required int userId,
+    this.userId = const Value.absent(),
+    this.agentSupportId = const Value.absent(),
     this.role = const Value.absent(),
     required DateTime joinedAt,
   }) : conversationId = Value(conversationId),
-       userId = Value(userId),
        joinedAt = Value(joinedAt);
   static Insertable<ConversationUser> custom({
     Expression<int>? id,
     Expression<int>? conversationId,
-    Expression<int>? userId,
+    Expression<String>? userId,
+    Expression<String>? agentSupportId,
     Expression<String>? role,
     Expression<DateTime>? joinedAt,
   }) {
@@ -493,6 +519,7 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
       if (id != null) 'id': id,
       if (conversationId != null) 'conversation_id': conversationId,
       if (userId != null) 'user_id': userId,
+      if (agentSupportId != null) 'agent_support_id': agentSupportId,
       if (role != null) 'role': role,
       if (joinedAt != null) 'joined_at': joinedAt,
     });
@@ -501,7 +528,8 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
   ConversationUsersCompanion copyWith({
     Value<int>? id,
     Value<int>? conversationId,
-    Value<int>? userId,
+    Value<String?>? userId,
+    Value<String?>? agentSupportId,
     Value<String>? role,
     Value<DateTime>? joinedAt,
   }) {
@@ -509,6 +537,7 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
       id: id ?? this.id,
       conversationId: conversationId ?? this.conversationId,
       userId: userId ?? this.userId,
+      agentSupportId: agentSupportId ?? this.agentSupportId,
       role: role ?? this.role,
       joinedAt: joinedAt ?? this.joinedAt,
     );
@@ -524,7 +553,10 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
       map['conversation_id'] = Variable<int>(conversationId.value);
     }
     if (userId.present) {
-      map['user_id'] = Variable<int>(userId.value);
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (agentSupportId.present) {
+      map['agent_support_id'] = Variable<String>(agentSupportId.value);
     }
     if (role.present) {
       map['role'] = Variable<String>(role.value);
@@ -541,6 +573,7 @@ class ConversationUsersCompanion extends UpdateCompanion<ConversationUser> {
           ..write('id: $id, ')
           ..write('conversationId: $conversationId, ')
           ..write('userId: $userId, ')
+          ..write('agentSupportId: $agentSupportId, ')
           ..write('role: $role, ')
           ..write('joinedAt: $joinedAt')
           ..write(')'))
@@ -577,12 +610,23 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     'senderId',
   );
   @override
-  late final GeneratedColumn<int> senderId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> senderId = GeneratedColumn<String>(
     'sender_id',
     aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _senderSupportIdMeta = const VerificationMeta(
+    'senderSupportId',
+  );
+  @override
+  late final GeneratedColumn<String> senderSupportId = GeneratedColumn<String>(
+    'sender_support_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _contentMeta = const VerificationMeta(
     'content',
@@ -732,6 +776,7 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     id,
     conversationId,
     senderId,
+    senderSupportId,
     content,
     messageType,
     isRevoked,
@@ -776,8 +821,15 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         _senderIdMeta,
         senderId.isAcceptableOrUnknown(data['sender_id']!, _senderIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_senderIdMeta);
+    }
+    if (data.containsKey('sender_support_id')) {
+      context.handle(
+        _senderSupportIdMeta,
+        senderSupportId.isAcceptableOrUnknown(
+          data['sender_support_id']!,
+          _senderSupportIdMeta,
+        ),
+      );
     }
     if (data.containsKey('content')) {
       context.handle(
@@ -880,9 +932,13 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         data['${effectivePrefix}conversation_id'],
       )!,
       senderId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}sender_id'],
-      )!,
+      ),
+      senderSupportId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sender_support_id'],
+      ),
       content: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}content'],
@@ -927,7 +983,8 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
 class MessagesCompanion extends UpdateCompanion<Message> {
   final Value<int> id;
   final Value<int> conversationId;
-  final Value<int> senderId;
+  final Value<String?> senderId;
+  final Value<String?> senderSupportId;
   final Value<String> content;
   final Value<String> messageType;
   final Value<bool> isRevoked;
@@ -944,6 +1001,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.id = const Value.absent(),
     this.conversationId = const Value.absent(),
     this.senderId = const Value.absent(),
+    this.senderSupportId = const Value.absent(),
     this.content = const Value.absent(),
     this.messageType = const Value.absent(),
     this.isRevoked = const Value.absent(),
@@ -960,7 +1018,8 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   MessagesCompanion.insert({
     this.id = const Value.absent(),
     required int conversationId,
-    required int senderId,
+    this.senderId = const Value.absent(),
+    this.senderSupportId = const Value.absent(),
     required String content,
     required String messageType,
     required bool isRevoked,
@@ -974,7 +1033,6 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.sendFailed = const Value.absent(),
     this.revokedAt = const Value.absent(),
   }) : conversationId = Value(conversationId),
-       senderId = Value(senderId),
        content = Value(content),
        messageType = Value(messageType),
        isRevoked = Value(isRevoked),
@@ -982,7 +1040,8 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   static Insertable<Message> custom({
     Expression<int>? id,
     Expression<int>? conversationId,
-    Expression<int>? senderId,
+    Expression<String>? senderId,
+    Expression<String>? senderSupportId,
     Expression<String>? content,
     Expression<String>? messageType,
     Expression<bool>? isRevoked,
@@ -1000,6 +1059,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       if (id != null) 'id': id,
       if (conversationId != null) 'conversation_id': conversationId,
       if (senderId != null) 'sender_id': senderId,
+      if (senderSupportId != null) 'sender_support_id': senderSupportId,
       if (content != null) 'content': content,
       if (messageType != null) 'message_type': messageType,
       if (isRevoked != null) 'is_revoked': isRevoked,
@@ -1018,7 +1078,8 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   MessagesCompanion copyWith({
     Value<int>? id,
     Value<int>? conversationId,
-    Value<int>? senderId,
+    Value<String?>? senderId,
+    Value<String?>? senderSupportId,
     Value<String>? content,
     Value<String>? messageType,
     Value<bool>? isRevoked,
@@ -1036,6 +1097,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       id: id ?? this.id,
       conversationId: conversationId ?? this.conversationId,
       senderId: senderId ?? this.senderId,
+      senderSupportId: senderSupportId ?? this.senderSupportId,
       content: content ?? this.content,
       messageType: messageType ?? this.messageType,
       isRevoked: isRevoked ?? this.isRevoked,
@@ -1061,7 +1123,10 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       map['conversation_id'] = Variable<int>(conversationId.value);
     }
     if (senderId.present) {
-      map['sender_id'] = Variable<int>(senderId.value);
+      map['sender_id'] = Variable<String>(senderId.value);
+    }
+    if (senderSupportId.present) {
+      map['sender_support_id'] = Variable<String>(senderSupportId.value);
     }
     if (content.present) {
       map['content'] = Variable<String>(content.value);
@@ -1108,6 +1173,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
           ..write('id: $id, ')
           ..write('conversationId: $conversationId, ')
           ..write('senderId: $senderId, ')
+          ..write('senderSupportId: $senderSupportId, ')
           ..write('content: $content, ')
           ..write('messageType: $messageType, ')
           ..write('isRevoked: $isRevoked, ')
@@ -1133,22 +1199,22 @@ class $UserInfosTable extends UserInfos
   $UserInfosTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _displayIdMeta = const VerificationMeta(
     'displayId',
   );
   @override
-  late final GeneratedColumn<int> displayId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> displayId = GeneratedColumn<String>(
     'display_id',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _usernameMeta = const VerificationMeta(
@@ -1396,6 +1462,8 @@ class $UserInfosTable extends UserInfos
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('display_id')) {
       context.handle(
@@ -1547,11 +1615,11 @@ class $UserInfosTable extends UserInfos
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return UserInfo(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       displayId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}display_id'],
       )!,
       username: attachedDatabase.typeMapping.read(
@@ -1640,8 +1708,8 @@ class $UserInfosTable extends UserInfos
 }
 
 class UserInfosCompanion extends UpdateCompanion<UserInfo> {
-  final Value<int> id;
-  final Value<int> displayId;
+  final Value<String> id;
+  final Value<String> displayId;
   final Value<String?> username;
   final Value<String> credential;
   final Value<bool> isVisitor;
@@ -1661,6 +1729,7 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
   final Value<int?> followCount;
   final Value<int?> likeCount;
   final Value<bool> isFollowed;
+  final Value<int> rowid;
   const UserInfosCompanion({
     this.id = const Value.absent(),
     this.displayId = const Value.absent(),
@@ -1683,10 +1752,11 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
     this.followCount = const Value.absent(),
     this.likeCount = const Value.absent(),
     this.isFollowed = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   UserInfosCompanion.insert({
-    this.id = const Value.absent(),
-    required int displayId,
+    required String id,
+    required String displayId,
     this.username = const Value.absent(),
     required String credential,
     required bool isVisitor,
@@ -1706,7 +1776,9 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
     this.followCount = const Value.absent(),
     this.likeCount = const Value.absent(),
     this.isFollowed = const Value.absent(),
-  }) : displayId = Value(displayId),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       displayId = Value(displayId),
        credential = Value(credential),
        isVisitor = Value(isVisitor),
        isBindPass = Value(isBindPass),
@@ -1714,8 +1786,8 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
        inviteCode = Value(inviteCode),
        nickname = Value(nickname);
   static Insertable<UserInfo> custom({
-    Expression<int>? id,
-    Expression<int>? displayId,
+    Expression<String>? id,
+    Expression<String>? displayId,
     Expression<String>? username,
     Expression<String>? credential,
     Expression<bool>? isVisitor,
@@ -1735,6 +1807,7 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
     Expression<int>? followCount,
     Expression<int>? likeCount,
     Expression<bool>? isFollowed,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1758,12 +1831,13 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
       if (followCount != null) 'follow_count': followCount,
       if (likeCount != null) 'like_count': likeCount,
       if (isFollowed != null) 'is_followed': isFollowed,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   UserInfosCompanion copyWith({
-    Value<int>? id,
-    Value<int>? displayId,
+    Value<String>? id,
+    Value<String>? displayId,
     Value<String?>? username,
     Value<String>? credential,
     Value<bool>? isVisitor,
@@ -1783,6 +1857,7 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
     Value<int?>? followCount,
     Value<int?>? likeCount,
     Value<bool>? isFollowed,
+    Value<int>? rowid,
   }) {
     return UserInfosCompanion(
       id: id ?? this.id,
@@ -1806,6 +1881,7 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
       followCount: followCount ?? this.followCount,
       likeCount: likeCount ?? this.likeCount,
       isFollowed: isFollowed ?? this.isFollowed,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -1813,10 +1889,10 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (displayId.present) {
-      map['display_id'] = Variable<int>(displayId.value);
+      map['display_id'] = Variable<String>(displayId.value);
     }
     if (username.present) {
       map['username'] = Variable<String>(username.value);
@@ -1875,6 +1951,9 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
     if (isFollowed.present) {
       map['is_followed'] = Variable<bool>(isFollowed.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -1901,7 +1980,8 @@ class UserInfosCompanion extends UpdateCompanion<UserInfo> {
           ..write('fansCount: $fansCount, ')
           ..write('followCount: $followCount, ')
           ..write('likeCount: $likeCount, ')
-          ..write('isFollowed: $isFollowed')
+          ..write('isFollowed: $isFollowed, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -3063,6 +3143,344 @@ class VideosCompanion extends UpdateCompanion<VideoCache> {
   }
 }
 
+class $AgentSupportsTable extends AgentSupports
+    with TableInfo<$AgentSupportsTable, AgentSupport> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AgentSupportsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _usernameMeta = const VerificationMeta(
+    'username',
+  );
+  @override
+  late final GeneratedColumn<String> username = GeneratedColumn<String>(
+    'username',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _loginIdMeta = const VerificationMeta(
+    'loginId',
+  );
+  @override
+  late final GeneratedColumn<String> loginId = GeneratedColumn<String>(
+    'login_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _passwordMeta = const VerificationMeta(
+    'password',
+  );
+  @override
+  late final GeneratedColumn<String> password = GeneratedColumn<String>(
+    'password',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+    'role',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _avatarMeta = const VerificationMeta('avatar');
+  @override
+  late final GeneratedColumn<String> avatar = GeneratedColumn<String>(
+    'avatar',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    username,
+    loginId,
+    password,
+    role,
+    createdAt,
+    updatedAt,
+    avatar,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'agent_supports';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AgentSupport> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('username')) {
+      context.handle(
+        _usernameMeta,
+        username.isAcceptableOrUnknown(data['username']!, _usernameMeta),
+      );
+    }
+    if (data.containsKey('login_id')) {
+      context.handle(
+        _loginIdMeta,
+        loginId.isAcceptableOrUnknown(data['login_id']!, _loginIdMeta),
+      );
+    }
+    if (data.containsKey('password')) {
+      context.handle(
+        _passwordMeta,
+        password.isAcceptableOrUnknown(data['password']!, _passwordMeta),
+      );
+    }
+    if (data.containsKey('role')) {
+      context.handle(
+        _roleMeta,
+        role.isAcceptableOrUnknown(data['role']!, _roleMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('avatar')) {
+      context.handle(
+        _avatarMeta,
+        avatar.isAcceptableOrUnknown(data['avatar']!, _avatarMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AgentSupport map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AgentSupport(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      username: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}username'],
+      ),
+      loginId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}login_id'],
+      ),
+      password: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}password'],
+      ),
+      role: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}role'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
+      avatar: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}avatar'],
+      ),
+    );
+  }
+
+  @override
+  $AgentSupportsTable createAlias(String alias) {
+    return $AgentSupportsTable(attachedDatabase, alias);
+  }
+}
+
+class AgentSupportsCompanion extends UpdateCompanion<AgentSupport> {
+  final Value<String> id;
+  final Value<String?> username;
+  final Value<String?> loginId;
+  final Value<String?> password;
+  final Value<String?> role;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<String?> avatar;
+  final Value<int> rowid;
+  const AgentSupportsCompanion({
+    this.id = const Value.absent(),
+    this.username = const Value.absent(),
+    this.loginId = const Value.absent(),
+    this.password = const Value.absent(),
+    this.role = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.avatar = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AgentSupportsCompanion.insert({
+    required String id,
+    this.username = const Value.absent(),
+    this.loginId = const Value.absent(),
+    this.password = const Value.absent(),
+    this.role = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.avatar = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id);
+  static Insertable<AgentSupport> custom({
+    Expression<String>? id,
+    Expression<String>? username,
+    Expression<String>? loginId,
+    Expression<String>? password,
+    Expression<String>? role,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? avatar,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (username != null) 'username': username,
+      if (loginId != null) 'login_id': loginId,
+      if (password != null) 'password': password,
+      if (role != null) 'role': role,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (avatar != null) 'avatar': avatar,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AgentSupportsCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? username,
+    Value<String?>? loginId,
+    Value<String?>? password,
+    Value<String?>? role,
+    Value<DateTime?>? createdAt,
+    Value<DateTime?>? updatedAt,
+    Value<String?>? avatar,
+    Value<int>? rowid,
+  }) {
+    return AgentSupportsCompanion(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      loginId: loginId ?? this.loginId,
+      password: password ?? this.password,
+      role: role ?? this.role,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      avatar: avatar ?? this.avatar,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (username.present) {
+      map['username'] = Variable<String>(username.value);
+    }
+    if (loginId.present) {
+      map['login_id'] = Variable<String>(loginId.value);
+    }
+    if (password.present) {
+      map['password'] = Variable<String>(password.value);
+    }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (avatar.present) {
+      map['avatar'] = Variable<String>(avatar.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AgentSupportsCompanion(')
+          ..write('id: $id, ')
+          ..write('username: $username, ')
+          ..write('loginId: $loginId, ')
+          ..write('password: $password, ')
+          ..write('role: $role, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('avatar: $avatar, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3077,6 +3495,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ImagesTable images = $ImagesTable(this);
   late final $AudiosTable audios = $AudiosTable(this);
   late final $VideosTable videos = $VideosTable(this);
+  late final $AgentSupportsTable agentSupports = $AgentSupportsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3091,6 +3510,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     images,
     audios,
     videos,
+    agentSupports,
   ];
 }
 
@@ -3334,7 +3754,8 @@ typedef $$ConversationUsersTableCreateCompanionBuilder =
     ConversationUsersCompanion Function({
       Value<int> id,
       required int conversationId,
-      required int userId,
+      Value<String?> userId,
+      Value<String?> agentSupportId,
       Value<String> role,
       required DateTime joinedAt,
     });
@@ -3342,7 +3763,8 @@ typedef $$ConversationUsersTableUpdateCompanionBuilder =
     ConversationUsersCompanion Function({
       Value<int> id,
       Value<int> conversationId,
-      Value<int> userId,
+      Value<String?> userId,
+      Value<String?> agentSupportId,
       Value<String> role,
       Value<DateTime> joinedAt,
     });
@@ -3366,8 +3788,13 @@ class $$ConversationUsersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get userId => $composableBuilder(
+  ColumnFilters<String> get userId => $composableBuilder(
     column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get agentSupportId => $composableBuilder(
+    column: $table.agentSupportId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3401,8 +3828,13 @@ class $$ConversationUsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get userId => $composableBuilder(
+  ColumnOrderings<String> get userId => $composableBuilder(
     column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get agentSupportId => $composableBuilder(
+    column: $table.agentSupportId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3434,8 +3866,13 @@ class $$ConversationUsersTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get userId =>
+  GeneratedColumn<String> get userId =>
       $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get agentSupportId => $composableBuilder(
+    column: $table.agentSupportId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get role =>
       $composableBuilder(column: $table.role, builder: (column) => column);
@@ -3486,13 +3923,15 @@ class $$ConversationUsersTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> conversationId = const Value.absent(),
-                Value<int> userId = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<String?> agentSupportId = const Value.absent(),
                 Value<String> role = const Value.absent(),
                 Value<DateTime> joinedAt = const Value.absent(),
               }) => ConversationUsersCompanion(
                 id: id,
                 conversationId: conversationId,
                 userId: userId,
+                agentSupportId: agentSupportId,
                 role: role,
                 joinedAt: joinedAt,
               ),
@@ -3500,13 +3939,15 @@ class $$ConversationUsersTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required int conversationId,
-                required int userId,
+                Value<String?> userId = const Value.absent(),
+                Value<String?> agentSupportId = const Value.absent(),
                 Value<String> role = const Value.absent(),
                 required DateTime joinedAt,
               }) => ConversationUsersCompanion.insert(
                 id: id,
                 conversationId: conversationId,
                 userId: userId,
+                agentSupportId: agentSupportId,
                 role: role,
                 joinedAt: joinedAt,
               ),
@@ -3543,7 +3984,8 @@ typedef $$MessagesTableCreateCompanionBuilder =
     MessagesCompanion Function({
       Value<int> id,
       required int conversationId,
-      required int senderId,
+      Value<String?> senderId,
+      Value<String?> senderSupportId,
       required String content,
       required String messageType,
       required bool isRevoked,
@@ -3561,7 +4003,8 @@ typedef $$MessagesTableUpdateCompanionBuilder =
     MessagesCompanion Function({
       Value<int> id,
       Value<int> conversationId,
-      Value<int> senderId,
+      Value<String?> senderId,
+      Value<String?> senderSupportId,
       Value<String> content,
       Value<String> messageType,
       Value<bool> isRevoked,
@@ -3595,8 +4038,13 @@ class $$MessagesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get senderId => $composableBuilder(
+  ColumnFilters<String> get senderId => $composableBuilder(
     column: $table.senderId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get senderSupportId => $composableBuilder(
+    column: $table.senderSupportId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3680,8 +4128,13 @@ class $$MessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get senderId => $composableBuilder(
+  ColumnOrderings<String> get senderId => $composableBuilder(
     column: $table.senderId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get senderSupportId => $composableBuilder(
+    column: $table.senderSupportId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3763,8 +4216,13 @@ class $$MessagesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get senderId =>
+  GeneratedColumn<String> get senderId =>
       $composableBuilder(column: $table.senderId, builder: (column) => column);
+
+  GeneratedColumn<String> get senderSupportId => $composableBuilder(
+    column: $table.senderSupportId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
@@ -3837,7 +4295,8 @@ class $$MessagesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> conversationId = const Value.absent(),
-                Value<int> senderId = const Value.absent(),
+                Value<String?> senderId = const Value.absent(),
+                Value<String?> senderSupportId = const Value.absent(),
                 Value<String> content = const Value.absent(),
                 Value<String> messageType = const Value.absent(),
                 Value<bool> isRevoked = const Value.absent(),
@@ -3854,6 +4313,7 @@ class $$MessagesTableTableManager
                 id: id,
                 conversationId: conversationId,
                 senderId: senderId,
+                senderSupportId: senderSupportId,
                 content: content,
                 messageType: messageType,
                 isRevoked: isRevoked,
@@ -3871,7 +4331,8 @@ class $$MessagesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required int conversationId,
-                required int senderId,
+                Value<String?> senderId = const Value.absent(),
+                Value<String?> senderSupportId = const Value.absent(),
                 required String content,
                 required String messageType,
                 required bool isRevoked,
@@ -3888,6 +4349,7 @@ class $$MessagesTableTableManager
                 id: id,
                 conversationId: conversationId,
                 senderId: senderId,
+                senderSupportId: senderSupportId,
                 content: content,
                 messageType: messageType,
                 isRevoked: isRevoked,
@@ -3925,8 +4387,8 @@ typedef $$MessagesTableProcessedTableManager =
     >;
 typedef $$UserInfosTableCreateCompanionBuilder =
     UserInfosCompanion Function({
-      Value<int> id,
-      required int displayId,
+      required String id,
+      required String displayId,
       Value<String?> username,
       required String credential,
       required bool isVisitor,
@@ -3946,11 +4408,12 @@ typedef $$UserInfosTableCreateCompanionBuilder =
       Value<int?> followCount,
       Value<int?> likeCount,
       Value<bool> isFollowed,
+      Value<int> rowid,
     });
 typedef $$UserInfosTableUpdateCompanionBuilder =
     UserInfosCompanion Function({
-      Value<int> id,
-      Value<int> displayId,
+      Value<String> id,
+      Value<String> displayId,
       Value<String?> username,
       Value<String> credential,
       Value<bool> isVisitor,
@@ -3970,6 +4433,7 @@ typedef $$UserInfosTableUpdateCompanionBuilder =
       Value<int?> followCount,
       Value<int?> likeCount,
       Value<bool> isFollowed,
+      Value<int> rowid,
     });
 
 class $$UserInfosTableFilterComposer
@@ -3981,12 +4445,12 @@ class $$UserInfosTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get displayId => $composableBuilder(
+  ColumnFilters<String> get displayId => $composableBuilder(
     column: $table.displayId,
     builder: (column) => ColumnFilters(column),
   );
@@ -4096,12 +4560,12 @@ class $$UserInfosTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get displayId => $composableBuilder(
+  ColumnOrderings<String> get displayId => $composableBuilder(
     column: $table.displayId,
     builder: (column) => ColumnOrderings(column),
   );
@@ -4211,10 +4675,10 @@ class $$UserInfosTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<int> get displayId =>
+  GeneratedColumn<String> get displayId =>
       $composableBuilder(column: $table.displayId, builder: (column) => column);
 
   GeneratedColumn<String> get username =>
@@ -4313,8 +4777,8 @@ class $$UserInfosTableTableManager
               $$UserInfosTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
-                Value<int> displayId = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> displayId = const Value.absent(),
                 Value<String?> username = const Value.absent(),
                 Value<String> credential = const Value.absent(),
                 Value<bool> isVisitor = const Value.absent(),
@@ -4334,6 +4798,7 @@ class $$UserInfosTableTableManager
                 Value<int?> followCount = const Value.absent(),
                 Value<int?> likeCount = const Value.absent(),
                 Value<bool> isFollowed = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => UserInfosCompanion(
                 id: id,
                 displayId: displayId,
@@ -4356,11 +4821,12 @@ class $$UserInfosTableTableManager
                 followCount: followCount,
                 likeCount: likeCount,
                 isFollowed: isFollowed,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
-                required int displayId,
+                required String id,
+                required String displayId,
                 Value<String?> username = const Value.absent(),
                 required String credential,
                 required bool isVisitor,
@@ -4380,6 +4846,7 @@ class $$UserInfosTableTableManager
                 Value<int?> followCount = const Value.absent(),
                 Value<int?> likeCount = const Value.absent(),
                 Value<bool> isFollowed = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => UserInfosCompanion.insert(
                 id: id,
                 displayId: displayId,
@@ -4402,6 +4869,7 @@ class $$UserInfosTableTableManager
                 followCount: followCount,
                 likeCount: likeCount,
                 isFollowed: isFollowed,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5361,6 +5829,263 @@ typedef $$VideosTableProcessedTableManager =
       VideoCache,
       PrefetchHooks Function()
     >;
+typedef $$AgentSupportsTableCreateCompanionBuilder =
+    AgentSupportsCompanion Function({
+      required String id,
+      Value<String?> username,
+      Value<String?> loginId,
+      Value<String?> password,
+      Value<String?> role,
+      Value<DateTime?> createdAt,
+      Value<DateTime?> updatedAt,
+      Value<String?> avatar,
+      Value<int> rowid,
+    });
+typedef $$AgentSupportsTableUpdateCompanionBuilder =
+    AgentSupportsCompanion Function({
+      Value<String> id,
+      Value<String?> username,
+      Value<String?> loginId,
+      Value<String?> password,
+      Value<String?> role,
+      Value<DateTime?> createdAt,
+      Value<DateTime?> updatedAt,
+      Value<String?> avatar,
+      Value<int> rowid,
+    });
+
+class $$AgentSupportsTableFilterComposer
+    extends Composer<_$AppDatabase, $AgentSupportsTable> {
+  $$AgentSupportsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get loginId => $composableBuilder(
+    column: $table.loginId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get password => $composableBuilder(
+    column: $table.password,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get avatar => $composableBuilder(
+    column: $table.avatar,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AgentSupportsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AgentSupportsTable> {
+  $$AgentSupportsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get loginId => $composableBuilder(
+    column: $table.loginId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get password => $composableBuilder(
+    column: $table.password,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get avatar => $composableBuilder(
+    column: $table.avatar,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AgentSupportsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AgentSupportsTable> {
+  $$AgentSupportsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get username =>
+      $composableBuilder(column: $table.username, builder: (column) => column);
+
+  GeneratedColumn<String> get loginId =>
+      $composableBuilder(column: $table.loginId, builder: (column) => column);
+
+  GeneratedColumn<String> get password =>
+      $composableBuilder(column: $table.password, builder: (column) => column);
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get avatar =>
+      $composableBuilder(column: $table.avatar, builder: (column) => column);
+}
+
+class $$AgentSupportsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AgentSupportsTable,
+          AgentSupport,
+          $$AgentSupportsTableFilterComposer,
+          $$AgentSupportsTableOrderingComposer,
+          $$AgentSupportsTableAnnotationComposer,
+          $$AgentSupportsTableCreateCompanionBuilder,
+          $$AgentSupportsTableUpdateCompanionBuilder,
+          (
+            AgentSupport,
+            BaseReferences<_$AppDatabase, $AgentSupportsTable, AgentSupport>,
+          ),
+          AgentSupport,
+          PrefetchHooks Function()
+        > {
+  $$AgentSupportsTableTableManager(_$AppDatabase db, $AgentSupportsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AgentSupportsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AgentSupportsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AgentSupportsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> username = const Value.absent(),
+                Value<String?> loginId = const Value.absent(),
+                Value<String?> password = const Value.absent(),
+                Value<String?> role = const Value.absent(),
+                Value<DateTime?> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<String?> avatar = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentSupportsCompanion(
+                id: id,
+                username: username,
+                loginId: loginId,
+                password: password,
+                role: role,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                avatar: avatar,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> username = const Value.absent(),
+                Value<String?> loginId = const Value.absent(),
+                Value<String?> password = const Value.absent(),
+                Value<String?> role = const Value.absent(),
+                Value<DateTime?> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<String?> avatar = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentSupportsCompanion.insert(
+                id: id,
+                username: username,
+                loginId: loginId,
+                password: password,
+                role: role,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                avatar: avatar,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AgentSupportsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AgentSupportsTable,
+      AgentSupport,
+      $$AgentSupportsTableFilterComposer,
+      $$AgentSupportsTableOrderingComposer,
+      $$AgentSupportsTableAnnotationComposer,
+      $$AgentSupportsTableCreateCompanionBuilder,
+      $$AgentSupportsTableUpdateCompanionBuilder,
+      (
+        AgentSupport,
+        BaseReferences<_$AppDatabase, $AgentSupportsTable, AgentSupport>,
+      ),
+      AgentSupport,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5383,4 +6108,6 @@ class $AppDatabaseManager {
       $$AudiosTableTableManager(_db, _db.audios);
   $$VideosTableTableManager get videos =>
       $$VideosTableTableManager(_db, _db.videos);
+  $$AgentSupportsTableTableManager get agentSupports =>
+      $$AgentSupportsTableTableManager(_db, _db.agentSupports);
 }

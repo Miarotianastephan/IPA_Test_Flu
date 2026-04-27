@@ -3,12 +3,14 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/models/vip.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../provider/emoji_provider.dart';
 import '../utils/text_util.dart';
 import 'encrypted_image.dart';
+import 'vip_badge.dart';
 
 class GroupMessageItem extends ConsumerStatefulWidget {
   final int messageId;
@@ -16,7 +18,8 @@ class GroupMessageItem extends ConsumerStatefulWidget {
   final bool isSelf;
   final String avatarUrl;
   final String? nickname;
-  final int? userId;
+  final Vip? vip;
+  final String? userId;
   final DateTime createdAt;
   final bool showFailed;
   final bool resending;
@@ -31,6 +34,7 @@ class GroupMessageItem extends ConsumerStatefulWidget {
     required this.avatarUrl,
     required this.messageId,
     this.nickname,
+    this.vip,
     this.userId,
     required this.createdAt,
     this.showFailed = true,
@@ -48,15 +52,13 @@ class _GroupMessageItemState extends ConsumerState<GroupMessageItem> {
   Widget buildMessageContent(String messageContent) {
     final regex = RegExp(r'\^\*#\*([\w]+)\*#\*\^');
     final matches = regex.allMatches(messageContent);
+    final messageStyle = TextStyle(
+      color: widget.isSelf ? Colors.black : Colors.white,
+      fontSize: 16,
+    );
 
     if (matches.isEmpty) {
-      return Text(
-        messageContent,
-        style: TextStyle(
-          color: widget.isSelf ? Colors.black : Colors.white,
-          fontSize: 16,
-        ),
-      );
+      return Text(messageContent, style: messageStyle);
     }
 
     final emojiState = ref.watch(emojiProvider(1));
@@ -69,10 +71,7 @@ class _GroupMessageItemState extends ConsumerState<GroupMessageItem> {
         children.add(
           TextSpan(
             text: messageContent.substring(lastEnd, match.start),
-            style: TextStyle(
-              color: widget.isSelf ? Colors.black : Colors.white,
-              fontSize: 16,
-            ),
+            style: messageStyle,
           ),
         );
       }
@@ -94,15 +93,7 @@ class _GroupMessageItemState extends ConsumerState<GroupMessageItem> {
           ),
         );
       } catch (e) {
-        children.add(
-          TextSpan(
-            text: code,
-            style: TextStyle(
-              color: widget.isSelf ? Colors.black : Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        );
+        children.add(TextSpan(text: code, style: messageStyle));
       }
 
       lastEnd = match.end;
@@ -110,17 +101,11 @@ class _GroupMessageItemState extends ConsumerState<GroupMessageItem> {
 
     if (lastEnd < messageContent.length) {
       children.add(
-        TextSpan(
-          text: messageContent.substring(lastEnd),
-          style: TextStyle(
-            color: widget.isSelf ? Colors.black : Colors.white,
-            fontSize: 16,
-          ),
-        ),
+        TextSpan(text: messageContent.substring(lastEnd), style: messageStyle),
       );
     }
 
-    return RichText(text: TextSpan(children: children));
+    return Text.rich(TextSpan(style: messageStyle, children: children));
   }
 
   @override
@@ -152,6 +137,7 @@ class _GroupMessageItemState extends ConsumerState<GroupMessageItem> {
                   size: 40,
                   userId: widget.userId,
                   nickname: widget.nickname,
+                  vip: widget.vip,
                 ),
               ),
             const SizedBox(width: 8),
@@ -220,15 +206,25 @@ class _GroupMessageItemState extends ConsumerState<GroupMessageItem> {
                                 left: 4,
                                 right: 4,
                               ),
-                              child: Text(
-                                widget.isSelf ? "Vous" : widget.nickname!,
-                                style: TextStyle(
-                                  color: widget.isSelf
-                                      ? Colors.blue[300]
-                                      : Colors.white70,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      widget.isSelf ? "Vous" : widget.nickname!,
+                                      style: TextStyle(
+                                        color: widget.isSelf
+                                            ? Colors.blue[300]
+                                            : Colors.white70,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                  VipBadge(vip: widget.vip, size: 13),
+                                ],
                               ),
                             ),
                           Stack(
@@ -292,6 +288,7 @@ class _GroupMessageItemState extends ConsumerState<GroupMessageItem> {
                 child: UserAvatar(
                   url: widget.avatarUrl,
                   nickname: widget.nickname,
+                  vip: widget.vip,
                   size: 40,
                 ),
               ),

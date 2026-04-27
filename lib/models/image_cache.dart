@@ -1,15 +1,15 @@
+import 'dart:typed_data';
+
 class ImageCache {
   final String url;
-  final String? localPath;
+  String? localPath;
+  Uint8List? bytes;
 
-  const ImageCache({required this.url, this.localPath});
+  ImageCache({
+    required this.url,
+    this.localPath,
+    this.bytes,
+  });
 
   bool get isDownloaded => localPath != null;
-
-  ImageCache copyWith({String? url, String? localPath}) {
-    return ImageCache(
-      url: url ?? this.url,
-      localPath: localPath ?? this.localPath,
-    );
-  }
 }

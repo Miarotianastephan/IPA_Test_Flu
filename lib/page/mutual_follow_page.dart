@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/html_text_field.dart';
 
 import '../models/api_response.dart';
 import '../models/page_response.dart';
@@ -84,7 +85,7 @@ class _MutualFollowPageState extends ConsumerState<MutualFollowPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextField(
+            child: HtmlTextField(
               cursorColor: Colors.white,
               decoration: InputDecoration(
                 hintText: translate("pleaseEnterYourUsernameOrId"),

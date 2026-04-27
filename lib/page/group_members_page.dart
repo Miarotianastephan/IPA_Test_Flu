@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/models/conversation.dart';
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 class GroupMembersPage extends ConsumerStatefulWidget {
   final Conversation conversation;
@@ -86,9 +87,20 @@ class _GroupMembersPageState extends ConsumerState<GroupMembersPage> {
               title: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      user.nickname ?? "User ${user.id}",
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            user.nickname ?? "User ${user.id}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        VipBadge(vip: member.user?.vip),
+                      ],
                     ),
                   ),
                   if (isOwner)
@@ -180,7 +192,7 @@ class _GroupMembersPageState extends ConsumerState<GroupMembersPage> {
     );
   }
 
-  void _showRemoveMemberDialog(int userId, String userName) {
+  void _showRemoveMemberDialog(String userId, String userName) {
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18n.translate(key);
 
@@ -216,7 +228,7 @@ class _GroupMembersPageState extends ConsumerState<GroupMembersPage> {
     );
   }
 
-  void _showTransferOwnershipDialog(int userId, String userName) {
+  void _showTransferOwnershipDialog(String userId, String userName) {
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18n.translate(key);
 
@@ -252,7 +264,7 @@ class _GroupMembersPageState extends ConsumerState<GroupMembersPage> {
     );
   }
 
-  Future<void> _removeMember(int userId) async {
+  Future<void> _removeMember(String userId) async {
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18n.translate(key);
 
@@ -273,7 +285,7 @@ class _GroupMembersPageState extends ConsumerState<GroupMembersPage> {
     );
   }
 
-  Future<void> _transferOwnership(int userId) async {
+  Future<void> _transferOwnership(String userId) async {
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18n.translate(key);
 

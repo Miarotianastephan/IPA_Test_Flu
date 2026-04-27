@@ -11,8 +11,8 @@ class MessageInbox {
   @JsonKey(name: "id", fromJson: parseInt)
   final int id;
 
-  @JsonKey(name: "user_id", fromJson: parseInt)
-  final int userId;
+  @JsonKey(name: "user_id")
+  final String userId;
 
   @JsonKey(name: "message_id", fromJson: parseInt)
   final int messageId;

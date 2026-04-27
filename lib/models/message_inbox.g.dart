@@ -8,7 +8,7 @@ part of 'message_inbox.dart';
 
 MessageInbox _$MessageInboxFromJson(Map<String, dynamic> json) => MessageInbox(
   id: parseInt(json['id']),
-  userId: parseInt(json['user_id']),
+  userId: json['user_id'] as String,
   messageId: parseInt(json['message_id']),
   conversationId: parseInt(json['conversation_id']),
   isRead: parseBool(json['is_read']),

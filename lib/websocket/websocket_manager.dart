@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:fixnum/src/int64.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:live_app/models/message.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 import '../api/services/notification_service.dart';
+import '../models/conversation.dart';
 import '../protos/socket_message.pb.dart';
 import 'ack_manager.dart';
 
@@ -21,13 +21,13 @@ class WebSocketManager {
   );
 
   factory WebSocketManager({
-    required int userId,
+    required String userId,
     required String token,
     required String baseUrl,
     Function(String)? onLog,
     Function(SocketEnvelope)? onMessageReceived,
     Function(List<dynamic>)? onLiveBatch,
-    Function(Message)? onMessageSent,
+    Function(Message, Conversation?)? onMessageSent,
     Function(Map<String, dynamic>)? onSystemNotificationReceived,
   }) {
     final inst = instance;
@@ -42,7 +42,7 @@ class WebSocketManager {
     return inst;
   }
 
-  int userId = 0;
+  String userId = "";
   String token = "";
   String baseUrl = "";
 
@@ -51,7 +51,7 @@ class WebSocketManager {
   Function(String)? onLog;
   Function(SocketEnvelope)? onMessageReceived;
   Function(List<dynamic>)? onLiveBatch;
-  Function(Message)? onMessageSent;
+  Function(Message, Conversation?)? onMessageSent;
   Function(Map<String, dynamic>)? onSystemNotificationReceived;
 
   Function()? onConnectCallback;
@@ -62,14 +62,10 @@ class WebSocketManager {
 
   bool get isConnected => _socket?.connected ?? false;
 
-  void connect({int? userId, String? token, String? baseUrl}) {
+  void connect({String? userId, String? token, String? baseUrl}) {
     if (userId != null) this.userId = userId;
     if (token != null) this.token = token;
     if (baseUrl != null) this.baseUrl = baseUrl;
-
-    if (this.baseUrl.isEmpty) {
-      this.baseUrl = dotenv.env['WS_BASE_URL'] ?? '';
-    }
 
     if (this.baseUrl.isEmpty) {
       return;
@@ -150,7 +146,16 @@ class WebSocketManager {
           imageUrl: message.sender?.avatar,
         );
 
-        onMessageSent?.call(message);
+        Conversation? conversation;
+        if (data['conversation'] != null) {
+          try {
+            conversation = Conversation.fromJson(data['conversation']);
+          } catch (e) {
+            log(":envelope: [messageSent] Failed to parse conversation: $e");
+          }
+        }
+
+        onMessageSent?.call(message, conversation);
       } catch (e) {
         log("Erreur parsing messageSent: $e");
       }
@@ -171,7 +176,25 @@ class WebSocketManager {
         log(":white_check_mark: ACK reçu pour ${ack.ackId} - ${ack.reason}");
         return;
 
-        onMessageReceived?.call(envelope);
+        // onMessageReceived?.call(envelope);
+      } else {
+        log(":warning: Unknown message type: $data");
+      }
+    });
+
+    _socket!.on("userWhoLiked", (data) {
+      if (data) {
+        log("user who liked");
+        return;
+      } else {
+        log(":warning: Unknown message type: $data");
+      }
+    });
+
+    _socket!.on("newComment", (data) {
+      if (data) {
+        log("new comment");
+        return;
       } else {
         log(":warning: Unknown message type: $data");
       }
@@ -260,7 +283,7 @@ class WebSocketManager {
 
     final env = SocketEnvelope()
       ..meta = (MessageMeta()
-        ..fromUser = Int64(userId)
+        ..fromUser = Int64(int.parse(userId))
         ..messageId = "hb_${DateTime.now().millisecondsSinceEpoch}"
         ..timestamp = Int64(DateTime.now().millisecondsSinceEpoch)
         ..category = MessageCategory.CATEGORY_CONTROL)
@@ -286,7 +309,7 @@ class WebSocketManager {
         ..messageId = msgId
         ..timestamp = Int64(DateTime.now().millisecondsSinceEpoch)
         ..category = MessageCategory.CATEGORY_BUSINESS
-        ..fromUser = Int64(userId)
+        ..fromUser = Int64(int.parse(userId))
         ..toTarget = Int64(targetUserId))
       ..body = (MessageBody()..business = (BusinessBody()..im = im));
 

@@ -72,7 +72,7 @@ class CommentsState {
 
 class CommentsNotifier extends StateNotifier<CommentsState> {
   final Ref ref;
-  final int videoId;
+  final String videoId;
   late final VideoService videoService;
 
   CommentsNotifier(this.ref, this.videoId) : super(CommentsState()) {
@@ -269,7 +269,7 @@ class CommentsNotifier extends StateNotifier<CommentsState> {
 }
 
 final commentsProvider =
-    StateNotifierProvider.family<CommentsNotifier, CommentsState, int>((
+    StateNotifierProvider.family<CommentsNotifier, CommentsState, String>((
       ref,
       videoId,
     ) {

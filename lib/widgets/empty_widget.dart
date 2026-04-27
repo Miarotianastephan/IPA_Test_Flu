@@ -18,7 +18,7 @@ class EmptyWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final i18n = ref.read(i18nNotifierProvider.notifier);
 
-    final localMessage = message ?? i18n.translate('noData');
+    final localMessage = message ?? i18n.translate('thereSNothing');
 
     return Center(
       child: Column(

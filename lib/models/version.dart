@@ -22,6 +22,9 @@ class Version {
   @JsonKey(name: 'url_ios')
   final String? urlIos;
 
+  @JsonKey(name: 'force_install', defaultValue: false)
+  final bool forceInstall;
+
   Version({
     required this.id,
     required this.versionNumber,
@@ -29,9 +32,11 @@ class Version {
     this.description,
     this.urlAndroid,
     this.urlIos,
+    this.forceInstall = false,
   });
 
-  factory Version.fromJson(Map<String, dynamic> json) => _$VersionFromJson(json);
+  factory Version.fromJson(Map<String, dynamic> json) =>
+      _$VersionFromJson(json);
 
   Map<String, dynamic> toJson() => _$VersionToJson(this);
 }

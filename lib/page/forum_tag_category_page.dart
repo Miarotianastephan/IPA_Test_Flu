@@ -1,13 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/provider/i18n_provider.dart';
 
-import '../../models/api_response.dart';
 import '../../models/forum_post.dart';
 import '../../models/page_params.dart';
 import '../provider/api_provider.dart';
-import '../widgets/empty_retry.dart';
-import '../widgets/forum/forum_post_card.dart';
+import '../widgets/general_post_tab.dart';
 
 class ForumTagCategoryPage extends ConsumerStatefulWidget {
   final String title;
@@ -27,50 +26,52 @@ class ForumTagCategoryPage extends ConsumerStatefulWidget {
 }
 
 class _ForumTagCategoryPageState extends ConsumerState<ForumTagCategoryPage> {
-  final ScrollController _scrollController = ScrollController();
   List<ForumPost> _posts = [];
   int _page = 1;
   bool _isLoading = false;
+  bool _isLoaded = false;
   bool _hasMore = true;
   int _total = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadData().then((_) {
-      if (mounted) setState(() {});
-    });
-    _scrollController.addListener(_onScroll);
+    unawaited(_loadData());
   }
 
-  Future<ApiResponse<dynamic>> _loadData() async {
+  Future<void> _loadData() async {
     final forumService = ref.read(forumServiceProvider);
     final params = PageParams(page: _page);
 
-    final res = widget.type == "tag"
-        ? await forumService.forums(pageParams: params, tagId: widget.id)
-        : await forumService.forums(pageParams: params, categoryId: widget.id);
-
-    final newItems = (res.data?.list ?? []);
-
-    if (_page == 1) {
-      _posts = newItems;
-    } else {
-      _posts.addAll(newItems);
+    _isLoading = true;
+    if (mounted) {
+      setState(() {});
     }
 
-    _total = res.data?.total ?? 0;
-    _hasMore = _posts.length < _total && newItems.isNotEmpty;
+    try {
+      final res = widget.type == "tag"
+          ? await forumService.forums(pageParams: params, tagId: widget.id)
+          : await forumService.forums(
+              pageParams: params,
+              categoryId: widget.id,
+            );
 
-    return res;
-  }
+      final newItems = (res.data?.list ?? []);
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
-        !_isLoading &&
-        _hasMore) {
-      _loadMore();
+      if (_page == 1) {
+        _posts = newItems;
+      } else {
+        _posts.addAll(newItems);
+      }
+
+      _total = res.data?.total ?? 0;
+      _hasMore = _posts.length < _total && newItems.isNotEmpty;
+    } finally {
+      _isLoading = false;
+      _isLoaded = true;
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -79,67 +80,28 @@ class _ForumTagCategoryPageState extends ConsumerState<ForumTagCategoryPage> {
     _hasMore = true;
     _posts.clear();
     await _loadData();
-    if (mounted) setState(() {});
   }
 
   Future<void> _loadMore() async {
     if (_isLoading || !_hasMore) return;
-    _isLoading = true;
     _page++;
     await _loadData();
-    _isLoading = false;
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final i18n = ref.read(i18nNotifierProvider.notifier);
-    String translate(String key) => i18n.translate(key);
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(title: Text(widget.title), backgroundColor: Colors.black),
-      body: RefreshIndicator(
-        color: Colors.white,
+      body: GeneralPostTab(
+        loading: _isLoading,
+        results: _posts,
+        isLoaded: _isLoaded,
         onRefresh: _refresh,
-        child: (_total == 0 && !_isLoading)
-            ? EmptyWithRetry(onRetry: _refresh)
-            : ListView.builder(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: _posts.length + 1,
-                itemBuilder: (_, index) {
-                  if (index == _posts.length) {
-                    if (!_hasMore) {
-                      return Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(
-                          child: Text(
-                            translate("noMore"),
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(
-                        child: CircularProgressIndicator(color: Colors.white),
-                      ),
-                    );
-                  }
-
-                  final post = _posts[index];
-                  return ForumPostCard(post: post);
-                },
-              ),
+        onLoadMore: () {
+          unawaited(_loadMore());
+        },
+        finished: !_hasMore,
       ),
     );
   }

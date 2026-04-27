@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:live_app/widgets/html_text_field.dart';
 
 class TextSegment {
   final String content;
@@ -284,7 +285,7 @@ class _EmojiTextFieldState extends State<EmojiTextField> {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return HtmlTextField(
       controller: widget.controller,
       focusNode: _effectiveFocusNode,
       maxLines: null,

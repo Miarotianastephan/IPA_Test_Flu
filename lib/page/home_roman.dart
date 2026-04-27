@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/models/roman.dart';
-
 import 'package:live_app/page/base_home.dart';
 import 'package:live_app/page/home_tab/message_page.dart';
 import 'package:live_app/page/home_tab/profile_page.dart';
@@ -25,10 +24,14 @@ class HomeRomanPage extends ConsumerWidget {
     ];
 
     final navItems = [
-      {"icon": Icons.home, "label": "Home"},
+      {"icon": Icons.home, "label": translate("home")},
       if (config?['chat_enable'] == true)
-        {"icon": Icons.bubble_chart, "label": "Message", "key": "message"},
-      {"icon": Icons.person, "label": "Profile"},
+        {
+          "icon": Icons.bubble_chart,
+          "label": translate("message"),
+          "key": "message",
+        },
+      {"icon": Icons.person, "label": translate("profile")},
     ];
 
     return BaseHome(

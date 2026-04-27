@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/page/search_novel_detail_page.dart';
 
 import 'package:live_app/provider/i18n_provider.dart';
+import 'package:live_app/widgets/html_text_field.dart';
 
 import '../config/storage_config.dart';
 import '../widgets/empty_widget.dart';
@@ -108,7 +109,7 @@ class _NovelSearchPageState extends ConsumerState<NovelSearchPage> {
     return Row(
       children: [
         Expanded(
-          child: TextField(
+          child: HtmlTextField(
             controller: _controller,
             autofocus: true,
             textInputAction: TextInputAction.search,

@@ -5,11 +5,13 @@ import 'package:live_app/api/services/forum_service.dart';
 import 'package:live_app/models/forum_comment.dart';
 import 'package:live_app/models/page_params.dart';
 import 'package:live_app/provider/api_provider.dart';
+import 'package:live_app/provider/behavior_tracker_provider.dart';
 import 'package:live_app/provider/forum_comments_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/comment/comment_input_bar.dart';
 import 'package:live_app/widgets/encrypted_image.dart';
 import 'package:live_app/widgets/forum/forum_comment_item.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 class CommentForumDetailPage extends ConsumerStatefulWidget {
   final ForumComment parentComment;
@@ -107,6 +109,10 @@ class _CommentForumDetailPageState
         parentId: _replyingTo?.id ?? widget.parentComment.id,
       );
 
+      if (resp.data != null) {
+        ref.trackComment();
+      }
+
       final newComment = resp.data;
 
       setState(() {
@@ -156,13 +162,17 @@ class _CommentForumDetailPageState
               children: [
                 Row(
                   children: [
-                    Text(
-                      user?.nickname ?? i18n.translate('unknownUser'),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    Flexible(
+                      child: Text(
+                        user?.nickname ?? i18n.translate('unknownUser'),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    VipBadge(vip: user?.vip, vipId: user?.vipId),
                     if (toUser != null) ...[
                       const SizedBox(width: 4),
                       Icon(
@@ -178,6 +188,7 @@ class _CommentForumDetailPageState
                           color: Colors.lightBlueAccent,
                         ),
                       ),
+                      VipBadge(vip: toUser.vip, vipId: toUser.vipId, size: 14),
                     ],
                   ],
                 ),

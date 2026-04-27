@@ -1,66 +1,45 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:ui_web' as ui_web;
-
 import 'package:flutter/material.dart';
+import 'package:flutter/src/foundation/change_notifier.dart';
+import 'package:live_app/utils/hls_video_utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web/web.dart' as web;
-
-import '../../api/services/video_service.dart';
 import 'short_video_item_stub.dart';
-
 export 'short_video_item_stub.dart' show PlatformVideoPlayer;
 
-@JS('Hls')
-extension type HlsJS._(JSObject _) implements JSObject {
-  external factory HlsJS();
-  external static bool isSupported();
-  external void loadSource(String src);
-  external void attachMedia(web.HTMLVideoElement video);
-  external void destroy();
-  external void on(String event, JSFunction callback);
-}
-
-@JS('JSON.stringify')
-external String _jsonStringify(JSAny? obj);
-
 class WebPlatformVideoPlayer implements PlatformVideoPlayer {
-  final VideoService videoService;
-  final VoidCallback onStateChanged;
-
+  final VoidCallback onLoaded;
+  final VoidCallback onPlay;
+  final VoidCallback onPause;
+  final VoidCallback onMute;
   final String _viewId = 'hls-short-video-${const Uuid().v4()}';
   HlsJS? _hls;
   web.HTMLVideoElement? _videoElement;
   String? _blobUrl;
+  final Function(int watchDuration, int videoDuration)? onWatchPercentReached;
 
-  bool _isInitialized = false;
-  bool _isBuffering = true;
-  bool _isPlaying = false;
   Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
 
-  Timer? _positionTimer;
+  final ValueNotifier<Duration> _positionNotifier = ValueNotifier(
+    Duration.zero,
+  );
+  final ValueNotifier<bool> _playingNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _initializedNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _bufferingNotifier = ValueNotifier(true);
+  final ValueNotifier<bool> _mutedNotifier = ValueNotifier(true);
+
   bool _viewFactoryRegistered = false;
 
   WebPlatformVideoPlayer({
-    required this.videoService,
-    required this.onStateChanged,
+    required this.onLoaded,
+    required this.onPlay,
+    required this.onPause,
+    required this.onMute,
+    this.onWatchPercentReached,
   });
-
-  @override
-  bool get isInitialized => _isInitialized;
-
-  @override
-  bool get isPlaying => _isPlaying;
-
-  @override
-  bool get isBuffering => _isBuffering;
-
-  @override
-  Duration get position => _position;
-
-  @override
-  Duration get duration => _duration;
 
   void _registerViewFactory() {
     if (_viewFactoryRegistered) return;
@@ -71,98 +50,109 @@ class WebPlatformVideoPlayer implements PlatformVideoPlayer {
         ..id = 'video-$_viewId'
         ..style.width = '100%'
         ..style.height = '100%'
-        ..style.backgroundColor = 'black'
+        ..style.backgroundColor = 'transparent'
         ..style.objectFit = 'cover'
+        ..preload = "auto"
+        ..crossOrigin = "anonymous"
         ..controls = false
-        ..autoplay = false
-        ..playsInline = true;
+        ..playsInline = true
+        ..loop = true
+        ..muted = _mutedNotifier.value;
 
       _videoElement = video;
 
+
       video.onPlay.listen((_) {
-        _isPlaying = true;
-        onStateChanged();
+        _playingNotifier.value = true;
+        onPlay();
       });
 
       video.onPause.listen((_) {
-        _isPlaying = false;
-        onStateChanged();
+        _playingNotifier.value = false;
+        onPause();
       });
 
       video.onWaiting.listen((_) {
-        _isBuffering = true;
-        onStateChanged();
+        _bufferingNotifier.value = true;
       });
 
       video.onPlaying.listen((_) {
-        _isBuffering = false;
-        onStateChanged();
+        _bufferingNotifier.value = false;
       });
 
       video.onCanPlay.listen((_) {
-        _isBuffering = false;
-        onStateChanged();
+        _bufferingNotifier.value = false;
+        onLoaded();
       });
 
-      video.onLoadedMetadata.listen((_) {
-        _duration = Duration(milliseconds: (video.duration * 1000).toInt());
-        onStateChanged();
+      video.onError.listen((_) {
+        final error = video.error;
+        if (error != null) {
+          debugPrint(
+            '[DebugPlayer] Video error: code=${error.code}, message=${error.message}',
+          );
+        }
+        _bufferingNotifier.value = false;
       });
 
-      video.onDurationChange.listen((_) {
-        if (!video.duration.isNaN && !video.duration.isInfinite) {
-          _duration = Duration(milliseconds: (video.duration * 1000).toInt());
-          onStateChanged();
+
+
+      // 使用 onTimeUpdate 回调更新进度，不触发 onStateChanged
+      video.onTimeUpdate.listen((_) {
+        final newPosition = Duration(
+          milliseconds: (video.currentTime * 1000).toInt(),
+        );
+        if (newPosition != _position) {
+          _position = newPosition;
+          _positionNotifier.value = newPosition;
         }
       });
 
-      _startPositionTimer();
-
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _initializeHls();
-      });
-
+      _initializeHls();
       return video;
     });
   }
 
-  void _startPositionTimer() {
-    _positionTimer?.cancel();
-    _positionTimer = Timer.periodic(const Duration(milliseconds: 250), (_) {
-      if (_videoElement != null) {
-        final newPosition = Duration(
-          milliseconds: (_videoElement!.currentTime * 1000).toInt(),
-        );
-        if (newPosition != _position) {
-          _position = newPosition;
-          onStateChanged();
-        }
-      }
-    });
-  }
-
   @override
-  Future<void> initialize(String videoUrl, String encryptionKey) async {
+  Future<void> initialize(
+    String m3u8Content,
+    String videoUrl,
+    String encryptionKey, {
+    String? videoId,
+  }) async {
     try {
-      final playbackInfo = await videoService.playVideo(
-        videoUrl: videoUrl,
-        key: encryptionKey,
-      );
+      final rewrittenM3u8 = rewriteM3u8WithAbsoluteUrls(m3u8Content, videoUrl);
 
-      final blob = web.Blob(
-        [playbackInfo.m3u8Content.toJS].toJS,
-        web.BlobPropertyBag(type: 'application/x-mpegURL'),
-      );
-      _blobUrl = web.URL.createObjectURL(blob);
+      if (isIOS() || supportsNativeHls()) {
+        final base64Content = base64Encode(utf8.encode(rewrittenM3u8));
+        _blobUrl = 'data:application/x-mpegURL;base64,$base64Content';
+      } else {
+        final blob = web.Blob(
+          [rewrittenM3u8.toJS].toJS,
+          web.BlobPropertyBag(type: 'application/x-mpegURL'),
+        );
+        _blobUrl = web.URL.createObjectURL(blob);
+      }
 
       _registerViewFactory();
 
-      _isInitialized = true;
-      onStateChanged();
-    } catch (e, stack) {
-      debugPrint('[WebPlatformVideoPlayer] Error initializing playback: $e');
-      debugPrint('[WebPlatformVideoPlayer] Stack trace: $stack');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializedNotifier.value = true;
+      });
+    } catch (e) {
+      debugPrint('[DebugPlayer] Error initializing video: $e');
     }
+  }
+
+  @override
+  Future<void> initializeDirect(String videoUrl) async {
+    try {
+      _blobUrl = videoUrl;
+      _registerViewFactory();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializedNotifier.value = true;
+      });
+    } catch (e) {}
   }
 
   void _initializeHls() {
@@ -171,38 +161,52 @@ class WebPlatformVideoPlayer implements PlatformVideoPlayer {
     }
 
     try {
-      if (HlsJS.isSupported()) {
+      final hlsSupported = HlsJS.isSupported();
+      if (hlsSupported) {
         _hls = HlsJS();
 
         _hls!.on(
           'hlsError',
           ((JSAny event, JSAny data) {
-            final errorDetails = _jsonStringify(data);
-            debugPrint('[WebPlatformVideoPlayer] HLS Error: $errorDetails');
+            debugPrint('[DebugPlayer] HLS.js error occurred');
           }).toJS,
         );
 
         _hls!.loadSource(_blobUrl!);
         _hls!.attachMedia(_videoElement!);
+      } else if (supportsNativeHls()) {
+        _videoElement!.src = _blobUrl!;
+
+        _videoElement!.load();
       } else {
         _videoElement!.src = _blobUrl!;
       }
 
-      _isBuffering = false;
-      onStateChanged();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _bufferingNotifier.value = false;
+      });
     } catch (e) {
-      debugPrint('[WebPlatformVideoPlayer] Error initializing HLS: $e');
+      debugPrint('[DebugPlayer] Error initializing HLS: $e');
     }
   }
 
+
+
   @override
   void play() {
-    _videoElement?.play();
+    _videoElement!.play().toDart.catchError((error){
+      if (isIOS()) {
+        setMuted(true);
+        onMute();
+      }
+      _videoElement!.play().toDart.ignore();
+    });
   }
 
   @override
   void pause() {
     _videoElement?.pause();
+    _playingNotifier.value = false;
   }
 
   @override
@@ -210,19 +214,24 @@ class WebPlatformVideoPlayer implements PlatformVideoPlayer {
     if (_videoElement != null) {
       _videoElement!.currentTime = position.inMilliseconds / 1000.0;
       _position = position;
-      onStateChanged();
+      _positionNotifier.value = position;
     }
   }
 
   @override
+  void setMuted(bool muted) {
+    _mutedNotifier.value = muted;
+    _videoElement?.muted = muted;
+  }
+
+  @override
   void dispose() {
-    _positionTimer?.cancel();
     _hls?.destroy();
     _hls = null;
-    if (_blobUrl != null) {
+    if (_blobUrl != null && _blobUrl!.startsWith('blob:')) {
       web.URL.revokeObjectURL(_blobUrl!);
-      _blobUrl = null;
     }
+    _blobUrl = null;
     _videoElement = null;
   }
 
@@ -237,14 +246,35 @@ class WebPlatformVideoPlayer implements PlatformVideoPlayer {
   }
 
   web.HTMLVideoElement? get videoElement => _videoElement;
+
+  @override
+  ValueListenable<Duration> get positionListenable => _positionNotifier;
+
+  @override
+  ValueListenable<bool> get isInitializedListenable => _initializedNotifier;
+
+  @override
+  ValueListenable<bool> get isPlayingListenable => _playingNotifier;
+
+  @override
+  ValueListenable<bool> get isBufferingListenable => _bufferingNotifier;
+
+  @override
+  ValueListenable<bool> get isMutedListenable => _mutedNotifier;
 }
 
 PlatformVideoPlayer createPlatformVideoPlayer({
-  required VideoService videoService,
-  required VoidCallback onStateChanged,
+  required VoidCallback onLoaded,
+  required VoidCallback onPlay,
+  required VoidCallback onPause,
+  required VoidCallback onMute,
+  Function(int watchDuration, int videoDuration)? onWatchPercentReached,
 }) {
   return WebPlatformVideoPlayer(
-    videoService: videoService,
-    onStateChanged: onStateChanged,
+    onLoaded: onLoaded,
+    onPlay: onPlay,
+    onPause: onPause,
+    onMute: onMute,
+    onWatchPercentReached: onWatchPercentReached,
   );
 }

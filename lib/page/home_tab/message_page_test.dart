@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/widgets/html_text_field.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import '../../config/storage_config.dart';
@@ -37,7 +38,6 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
     _targetUserController.dispose();
     super.dispose();
   }
-
 
   void _sendPrivateMessage() {
     final toText = _targetUserController.text.trim();
@@ -75,7 +75,7 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
     final envelope = SocketEnvelope()
       ..meta = (MessageMeta()
         ..messageId = "pm-$nowMs"
-        ..fromUser = Int64(_userInfo!.id)
+        ..fromUser = Int64(int.parse(_userInfo!.id))
         ..toTarget = Int64(toId)
         ..scope = TargetScope.SCOPE_USER
         ..timestamp = Int64(nowMs)
@@ -87,6 +87,7 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
     channel!.sink.add(Uint8List.fromList(envelope.writeToBuffer()));
     debugPrint("📤 已发送私信给 userId $toId（type=chat）");
   }
+
   // -------------------------------
   // WebSocket 连接与断开
   // -------------------------------
@@ -115,7 +116,9 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
     _userInfo = UserInfo.fromJson(map);
     try {
       channel = WebSocketChannel.connect(
-        Uri.parse('ws://192.168.31.117:1999/api/user/ws?user_id=${_userInfo!.id}'),
+        Uri.parse(
+          'ws://192.168.31.117:1999/api/user/ws?user_id=${_userInfo!.id}',
+        ),
       );
 
       _broadcastStream = channel!.stream.asBroadcastStream();
@@ -124,16 +127,22 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
       _startHeartbeat();
 
       _broadcastStream.listen(
-            (message) {
+        (message) {
           try {
             if (message is List<int>) {
               final env = SocketEnvelope.fromBuffer(message);
-              debugPrint("📩 收到 Envelope: category=${env.meta.category} scope=${env.meta.scope} from=${env.meta.fromUser} to=${env.meta.toTarget}");
+              debugPrint(
+                "📩 收到 Envelope: category=${env.meta.category} scope=${env.meta.scope} from=${env.meta.fromUser} to=${env.meta.toTarget}",
+              );
               // 仅示例：根据业务体打印内容
-              if (env.body.hasBusiness() && env.body.business.hasIm() && env.body.business.im.hasChat()) {
+              if (env.body.hasBusiness() &&
+                  env.body.business.hasIm() &&
+                  env.body.business.im.hasChat()) {
                 debugPrint("💬 Chat: ${env.body.business.im.chat.text}");
               } else if (env.body.hasControl() && env.body.control.hasAck()) {
-                debugPrint("✅ Ack: ${env.body.control.ack.ackId} success=${env.body.control.ack.success}");
+                debugPrint(
+                  "✅ Ack: ${env.body.control.ack.ackId} success=${env.body.control.ack.success}",
+                );
               }
               // 新增：收到业务消息时发送ACK，跳过ACK消息本身
               if (env.meta.category == MessageCategory.CATEGORY_BUSINESS) {
@@ -142,7 +151,9 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
               }
             } else if (message is Uint8List) {
               final env = SocketEnvelope.fromBuffer(message);
-              debugPrint("📩 收到 Envelope(typed): category=${env.meta.category} scope=${env.meta.scope}");
+              debugPrint(
+                "📩 收到 Envelope(typed): category=${env.meta.category} scope=${env.meta.scope}",
+              );
               if (env.meta.category == MessageCategory.CATEGORY_BUSINESS) {
                 _sendAck(env.meta.messageId, true);
               }
@@ -210,14 +221,13 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
     final envelope = SocketEnvelope()
       ..meta = (MessageMeta()
         ..messageId = "ack-$ackId"
-        ..fromUser = Int64(_userInfo!.id)
+        ..fromUser = Int64(int.parse(_userInfo!.id))
         ..toTarget = Int64(0)
         ..scope = TargetScope.SCOPE_USER
         ..timestamp = Int64(nowMs)
         ..traceId = "trace-$nowMs"
         ..version = 1
-        ..category = MessageCategory.CATEGORY_CONTROL
-      )
+        ..category = MessageCategory.CATEGORY_CONTROL)
       ..body = (MessageBody()
         ..control = (ControlBody()
           ..ack = (Ack()
@@ -258,13 +268,16 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
     final envelope = SocketEnvelope()
       ..meta = (MessageMeta()
         ..messageId = "handshake-$nowMs"
-        ..fromUser = Int64(_userInfo!.id)
+        ..fromUser = Int64(int.parse(_userInfo!.id))
         ..toTarget = Int64(0)
         ..scope = TargetScope.SCOPE_USER
-        ..nodeId = ""               // 如有需要可填
-        ..timestamp = Int64(nowMs)  // 若后端按“秒”，改为 Int64(nowMs ~/ 1000)
+        ..nodeId =
+            "" // 如有需要可填
+        ..timestamp =
+            Int64(nowMs) // 若后端按“秒”，改为 Int64(nowMs ~/ 1000)
         ..traceId = "trace-$nowMs"
-        ..version = 1               // 建议维护一个协议版本号
+        ..version =
+            1 // 建议维护一个协议版本号
         ..category = MessageCategory.CATEGORY_CONTROL)
       ..body = (MessageBody()
         ..control = (ControlBody()
@@ -294,10 +307,11 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
     final envelope = SocketEnvelope()
       ..meta = (MessageMeta()
         ..messageId = "hb-$nowMs"
-        ..fromUser = Int64(_userInfo!.id)
+        ..fromUser = Int64(int.parse(_userInfo!.id))
         ..toTarget = Int64(0)
         ..scope = TargetScope.SCOPE_USER
-        ..timestamp = Int64(nowMs) // 若后端按“秒”，改为 Int64(nowMs ~/ 1000)
+        ..timestamp =
+            Int64(nowMs) // 若后端按“秒”，改为 Int64(nowMs ~/ 1000)
         ..traceId = "trace-$nowMs"
         ..version = 1
         ..category = MessageCategory.CATEGORY_CONTROL)
@@ -346,7 +360,9 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
                   onPressed: _connectSocket,
                   icon: const Icon(Icons.power_settings_new),
                   label: const Text("连接服务器"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
@@ -364,12 +380,10 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
             Row(
               children: [
                 Expanded(
-                  child: TextField(
+                  child: HtmlTextField(
                     controller: _targetUserController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "目标用户ID",
-                    ),
+                    decoration: const InputDecoration(labelText: "目标用户ID"),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -388,9 +402,7 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
                   stream: _broadcastStream,
                   builder: (context, snapshot) {
                     return Text(
-                      snapshot.hasData
-                          ? '📨 收到消息：${snapshot.data}'
-                          : '等待消息...',
+                      snapshot.hasData ? '📨 收到消息：${snapshot.data}' : '等待消息...',
                     );
                   },
                 ),

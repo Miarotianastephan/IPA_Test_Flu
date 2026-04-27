@@ -22,7 +22,7 @@ class ShortVideoGridPage extends ConsumerStatefulWidget {
 
 //精选
 class ShortVideoGridPageState extends ConsumerState<ShortVideoGridPage>
-    with AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final List<int> items = List.generate(20, (i) => i);
   bool _loaded = false;
   late TabController _tabController;
@@ -36,10 +36,7 @@ class ShortVideoGridPageState extends ConsumerState<ShortVideoGridPage>
     await notifier.fetch(refresh: true);
   }
 
-  @override
-  bool get wantKeepAlive => true;
-
-  late List<FilterTab> _filterTabs;
+    late List<FilterTab> _filterTabs;
 
   @override
   void didChangeDependencies() {
@@ -59,7 +56,6 @@ class ShortVideoGridPageState extends ConsumerState<ShortVideoGridPage>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final padding = MediaQuery.of(context).padding;
 
     return DefaultTabController(

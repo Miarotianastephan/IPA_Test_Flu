@@ -19,6 +19,6 @@ class ApiResponse<T> {
   Map<String, dynamic> toJson(Object? Function(T value) toJsonT) =>
       _$ApiResponseToJson(this, toJsonT);
 
-  bool get success => code == 200; 
+  bool get success => code == 1 || code == 200;
   bool get hasData => data != null;
 }

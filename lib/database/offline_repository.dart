@@ -20,9 +20,10 @@ class OfflineRepository {
 
   final int storageAlertThresholdBytes;
 
-  final Map<int, CancelToken> cancelTokens = {};
-  final Map<int, Future<Session>> ffmpegSessions = {};
-  final Map<int, bool> paused = {};
+  final Map<String, CancelToken> cancelTokens = {};
+  final Map<String, Future<Session>> ffmpegSessions = {};
+  final Map<String, bool> paused = {};
+  final Map<String, String> activeSavePaths = {};
   OfflineRepository(
     this.db, {
     Dio? dio,
@@ -33,7 +34,7 @@ class OfflineRepository {
       _dio = Dio(),
       storageAlertThresholdBytes = 500 * 1024 * 1024;
   Future<int> addResource({
-    required int id,
+    required String id,
     required String title,
     required String type,
     required String url,
@@ -53,8 +54,51 @@ class OfflineRepository {
     );
   }
 
+  Future<String> _defaultSavePath(String id) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    return p.join(appDir.path, 'downloads', "video_$id.mp4");
+  }
+
+  Future<void> _deletePathIfExists(String path) async {
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _cleanupDownloadFiles(String id, {Download? item}) async {
+    final candidates = <String>{};
+    final localPath = item?.localPath;
+    if (localPath != null && localPath.isNotEmpty) {
+      candidates.add(localPath);
+    }
+
+    final activePath = activeSavePaths[id];
+    if (activePath != null && activePath.isNotEmpty) {
+      candidates.add(activePath);
+    }
+
+    candidates.add(await _defaultSavePath(id));
+
+    for (final path in candidates) {
+      await _deletePathIfExists(path);
+    }
+
+    activeSavePaths.remove(id);
+  }
+
+  String _formatNotificationWithTitle(String template, String title) {
+    final placeholderPattern = RegExp(r'\{\s*title\s*\}');
+    if (placeholderPattern.hasMatch(template)) {
+      return template.replaceAll(placeholderPattern, title);
+    }
+    return '$template : $title';
+  }
+
   Future<void> downloadResource({
-    required int id,
+    required String id,
     required String filename,
     required String Function(String key) translate,
   }) async {
@@ -65,6 +109,7 @@ class OfflineRepository {
 
     final appDir = await getApplicationDocumentsDirectory();
     final savePath = p.join(appDir.path, 'downloads', filename);
+    activeSavePaths[id] = savePath;
     final dir = Directory(p.dirname(savePath));
     if (!await dir.exists()) {
       await dir.create(recursive: true);
@@ -113,7 +158,6 @@ class OfflineRepository {
                   }
                 }
               } else {
-                final size = await file.length();
                 await db.updateFields(
                   id,
                   DownloadsCompanion(status: const Value("downloading")),
@@ -148,11 +192,16 @@ class OfflineRepository {
                     progress: const Value(100),
                   ),
                 );
-                final safeId = id % 2147483647;
+                activeSavePaths.remove(id);
+                final safeId = id.hashCode.abs() % 2147483647;
                 await NotificationService.localNotifications.cancel(safeId);
+                final completedBody = _formatNotificationWithTitle(
+                  translate("videoReady"),
+                  item.title,
+                );
                 NotificationService.showCustomLocalNotification(
                   translate("downloadComplete"),
-                  "${translate("videoReady")} : ${item.title}",
+                  completedBody,
                   "route:/video?path=$savePath",
                 );
               }
@@ -205,7 +254,7 @@ class OfflineRepository {
                       now.difference(lastNotifUpdate!).inSeconds >= 3) {
                     lastNotifUpdate = now;
 
-                    final safeId = id % 2147483647;
+                    final safeId = id.hashCode.abs() % 2147483647;
                     NotificationService.showDownloadProgressNotification(
                       notifId: safeId,
                       title: translate("downloadInProgress"),
@@ -257,13 +306,12 @@ class OfflineRepository {
                   now.difference(lastNotifUpdate!).inSeconds >= 3) {
                 lastNotifUpdate = now;
 
-                final safeId = id % 2147483647;
+                final safeId = id.hashCode.abs() % 2147483647;
 
                 NotificationService.showDownloadProgressNotification(
                   notifId: safeId,
                   title: translate("downloadInProgress"),
                   body: item.title,
-
                   payload: "route:/DownloadsPage?id=$id",
                 );
               }
@@ -287,6 +335,7 @@ class OfflineRepository {
               progress: const Value(100),
             ),
           );
+          activeSavePaths.remove(id);
         } else {
           await db.updateFields(
             id,
@@ -298,6 +347,7 @@ class OfflineRepository {
             ),
           );
           await file.delete();
+          activeSavePaths.remove(id);
         }
       }
     } catch (e) {
@@ -325,7 +375,7 @@ class OfflineRepository {
     }
   }
 
-  Future<void> cancelDownload(int id) async {
+  Future<void> cancelDownload(String id) async {
     try {
       if (cancelTokens.containsKey(id)) {
         cancelTokens[id]?.cancel("cancelled");
@@ -340,8 +390,7 @@ class OfflineRepository {
         ffmpegSessions.remove(id);
       }
       await deleteResource(id);
-      await resetResource(id);
-      final safeId = id % 2147483647;
+      final safeId = id.hashCode.abs() % 2147483647;
       await NotificationService.localNotifications.cancel(safeId);
 
       debugPrint("Téléchargement $id annulé avec succès");
@@ -353,29 +402,17 @@ class OfflineRepository {
   Stream<List<Download>> watchAll() => db.watchAll();
   Stream<List<Download>> watchByType(String type) => db.watchByType(type);
 
-  Future<void> deleteResource(int id) async {
+  Future<void> deleteResource(String id) async {
     final item = await db.getById(id);
-
-    if (item?.localPath != null) {
-      final file = File(item!.localPath!);
-      if (await file.exists()) {
-        await file.delete();
-      }
-    }
+    await _cleanupDownloadFiles(id, item: item);
     await db.deleteById(id);
     cancelTokens.remove(id);
     ffmpegSessions.remove(id);
+    paused.remove(id);
   }
 
   Future<void> deleteAll() async {
     final items = await db.all();
-    for (final item in items) {
-      if (item.localPath != null) {
-        final file = File(item.localPath!);
-        if (await file.exists()) await file.delete();
-      }
-    }
-    await db.deleteAll();
     for (final token in cancelTokens.values) {
       token.cancel("deleteAll");
     }
@@ -386,9 +423,16 @@ class OfflineRepository {
       await session.cancel();
     }
     ffmpegSessions.clear();
+
+    for (final item in items) {
+      await _cleanupDownloadFiles(item.id, item: item);
+    }
+    await db.deleteAll();
+    paused.clear();
+    activeSavePaths.clear();
   }
 
-  Future<void> pauseDownload(int id) async {
+  Future<void> pauseDownload(String id) async {
     final item = await db.getById(id);
     if (item == null) return;
     if (cancelTokens.containsKey(id)) {
@@ -411,7 +455,7 @@ class OfflineRepository {
   }
 
   Future<void> resumeDownload({
-    required int id,
+    required String id,
     required String Function(String key) translate,
   }) async {
     final item = await db.getById(id);
@@ -439,6 +483,7 @@ class OfflineRepository {
       if (await file.exists()) {
         existingBytes = await file.length();
       }
+      activeSavePaths[id] = savePath;
 
       final token = CancelToken();
       cancelTokens[id] = token;
@@ -477,7 +522,7 @@ class OfflineRepository {
     }
   }
 
-  Future<void> resetResource(int id) async {
+  Future<void> resetResource(String id) async {
     await db.updateFields(
       id,
       DownloadsCompanion(

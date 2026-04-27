@@ -11,12 +11,16 @@ part 'forum_post.g.dart';
 class ForumPost {
   @JsonKey(fromJson: parseInt)
   final int id;
-  @JsonKey(name: 'user_id', fromJson: parseInt)
-  final int userId;
+  @JsonKey(name: 'user_id')
+  final String userId;
   @JsonKey(name: 'category_id', fromJson: parseInt)
   final int categoryId;
+  @JsonKey(defaultValue: '')
   final String title;
+  @JsonKey(defaultValue: '')
   final String content;
+  @JsonKey(defaultValue: '')
+  final String description;
   @JsonKey(name: 'is_pinned', fromJson: parseBool)
   final bool isPinned;
   @JsonKey(name: 'is_featured', fromJson: parseBool)
@@ -25,15 +29,15 @@ class ForumPost {
   final int status;
   @JsonKey(fromJson: parseDouble)
   final double price;
-  @JsonKey(name: 'favorite_count')
+  @JsonKey(name: 'favorite_count', fromJson: parseInt)
   final int favoriteCount;
-  @JsonKey(name: 'like_count')
+  @JsonKey(name: 'like_count', fromJson: parseInt)
   final int likeCount;
-  @JsonKey(name: 'dislike_count')
+  @JsonKey(name: 'dislike_count', fromJson: parseInt)
   final int dislikeCount;
-  @JsonKey(name: 'view_count')
+  @JsonKey(name: 'view_count', fromJson: parseInt)
   final int viewCount;
-  @JsonKey(name: 'comment_count')
+  @JsonKey(name: 'comment_count', fromJson: parseInt)
   final int commentCount;
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
@@ -41,15 +45,17 @@ class ForumPost {
   final DateTime updatedAt;
   @JsonKey(name: 'deleted_at')
   final DateTime? deletedAt;
+  @JsonKey(name: 'buyed', defaultValue: false, fromJson: parseBool)
+  final bool isBought;
 
   final ForumCategory? category;
   final List<ForumAttachment>? attachments;
 
-  @JsonKey(name: 'is_liked', fromJson: parseBool)
+  @JsonKey(name: 'is_liked', defaultValue: false, fromJson: parseBool)
   final bool isLiked;
-  @JsonKey(name: 'is_favorited', fromJson: parseBool)
+  @JsonKey(name: 'is_favorited', defaultValue: false, fromJson: parseBool)
   final bool isFavorited;
-  @JsonKey(name: 'is_downvoted', fromJson: parseBool)
+  @JsonKey(name: 'is_downvoted', defaultValue: false, fromJson: parseBool)
   final bool? isDownvoted;
 
   @JsonKey(name: 'user')
@@ -64,6 +70,7 @@ class ForumPost {
     required this.categoryId,
     required this.title,
     required this.content,
+    required this.description,
     required this.isPinned,
     required this.isFeatured,
     required this.status,
@@ -83,6 +90,7 @@ class ForumPost {
     this.isDownvoted,
     this.user,
     this.tags,
+    this.isBought = false,
   });
 
   factory ForumPost.fromJson(Map<String, dynamic> json) =>
@@ -92,10 +100,11 @@ class ForumPost {
 
   ForumPost copyWith({
     int? id,
-    int? userId,
+    String? userId,
     int? categoryId,
     String? title,
     String? content,
+    String? description,
     bool? isPinned,
     bool? isFeatured,
     int? status,
@@ -113,6 +122,7 @@ class ForumPost {
     bool? isLiked,
     bool? isFavorited,
     bool? isDownvoted,
+    bool? isBought,
     SimpleUser? user,
     List<ForumTag>? tags,
   }) {
@@ -122,6 +132,7 @@ class ForumPost {
       categoryId: categoryId ?? this.categoryId,
       title: title ?? this.title,
       content: content ?? this.content,
+      description: description ?? this.description,
       isPinned: isPinned ?? this.isPinned,
       isFeatured: isFeatured ?? this.isFeatured,
       status: status ?? this.status,
@@ -137,6 +148,7 @@ class ForumPost {
       category: category ?? this.category,
       attachments: attachments ?? this.attachments,
       isLiked: isLiked ?? this.isLiked,
+      isBought: isBought ?? this.isBought,
       isFavorited: isFavorited ?? this.isFavorited,
       isDownvoted: isDownvoted ?? this.isDownvoted,
       user: user ?? this.user,

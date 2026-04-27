@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/provider/video_detail_provider.dart';
-
-import 'package:live_app/widgets/video_type_toggle_button.dart';
+import 'package:live_app/provider/i18n_provider.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+
 import '../../models/video_category.dart';
 import '../../provider/category_tag_provider.dart';
 import '../../provider/cureent_video_user_provider.dart';
-import '../../widgets/video/video_tag_category_overlay.dart';
 import '../../widgets/empty_retry.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/tiktok_scaffold.dart';
 import '../../widgets/video/video_inner_tab_section.dart';
+import '../../widgets/video/video_tag_category_overlay.dart';
 import '../search_page.dart';
 
 class VideoTabPage extends ConsumerStatefulWidget {
@@ -28,27 +27,41 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
   List<VideoCategory> _categories = [];
   bool _hasLoaded = false;
   final Map<int, String> _sortTypeByCategory = {};
+  bool _isShortVideoCategoryAt(int index) {
+    if (_categories.isEmpty || index >= _categories.length) {
+      return false;
+    }
+    final i18n = ref.read(i18nNotifierProvider.notifier);
+    final categoryName = _categories[index].name.toLowerCase();
+    final shortTranslation = i18n.translate('short').toLowerCase();
+    return categoryName.contains(shortTranslation);
+  }
 
   Future<void> _loadHomeTags() async {
     if (_hasLoaded) {
       return;
     }
     final notifier = ref.read(videoCategoryListProvider(true).notifier);
-    await notifier.fetch(refresh: true, limit: 4);
 
-    final state = ref.read(videoCategoryListProvider(true));
+    await notifier.fetch(refresh: true, limit: 999);
+
+    while (true) {
+      var state = ref.read(videoCategoryListProvider(true));
+
+      if (state.finished || state.list.length >= state.total) {
+        break;
+      }
+
+      await notifier.fetch(refresh: false, limit: 999);
+    }
+
     if (mounted) {
+      final state = ref.read(videoCategoryListProvider(true));
       setState(() {
         _categories = state.list;
         _hasLoaded = true;
       });
     }
-  }
-
-  void _toggleVideoType() {
-    final current = ref.read(videoTypeProvider);
-
-    ref.read(videoTypeProvider.notifier).state = current == 1 ? 2 : 1;
   }
 
   @override
@@ -95,6 +108,10 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
             if (TagCategoryOverlay.isShown) {
               TagCategoryOverlay.hide();
             }
+            if (!outerController.indexIsChanging) {
+              ref.read(selectedCategoryIdProvider.notifier).state =
+                  _categories[outerController.index].id;
+            }
           });
           return Scaffold(
             backgroundColor: Colors.black,
@@ -111,12 +128,12 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
                       indicatorSize: TabBarIndicatorSize.label,
                       indicator: const BoxDecoration(),
                       labelColor: Colors.white,
-                      labelStyle: const TextStyle(
-                        fontSize: 11,
+                      labelStyle: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
-                      unselectedLabelStyle: const TextStyle(
-                        fontSize: 11,
+                      unselectedLabelStyle: TextStyle(
+                        fontSize: 14,
                         color: Color.fromRGBO(255, 255, 255, 0.8),
                       ),
                     ),
@@ -146,11 +163,6 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
                       );
                     },
                   ),
-                  VideoTypeToggleButton(
-                    isLongVideo: ref.watch(videoTypeProvider) == 2,
-                    onToggle: _toggleVideoType,
-                    withText: false,
-                  ),
                 ],
               ),
             ),
@@ -169,7 +181,7 @@ class _VideoTabPageState extends ConsumerState<VideoTabPage>
                   categoryId: _categories[index].id,
                   outerController: outerController,
                   sortTypeByCategory: _sortTypeByCategory,
-                  videoType: ref.watch(videoTypeProvider),
+                  videoType: _isShortVideoCategoryAt(index) ? 1 : null,
                 ),
               ),
             ),

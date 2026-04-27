@@ -44,5 +44,8 @@ class MessageApi {
   static const String notificationDelete = "$base/notification/remove";
 
   static const String sendMessage = "$base/send";
+  static const String sendToSupportMessage = "$base/sendToSupport";
   static const String conversationByMessageId = "$base/conversation/message_id";
+
+  static const String sendDeviceInfo = "$base/create_user_session";
 }

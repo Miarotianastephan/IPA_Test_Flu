@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
-import 'package:live_app/provider/video_detail_provider.dart';
 
+import '../models/forum_post.dart';
+import '../models/userinfo.dart';
+import '../models/video_info.dart';
 import '../provider/search_post_list_provider.dart';
 import '../provider/search_user_list_provider.dart';
 import '../provider/search_video_list_provider.dart';
 import '../widgets/general_post_tab.dart';
 import '../widgets/general_user_tab.dart';
 import '../widgets/general_video_tab.dart';
-import '../widgets/video_type_toggle_button.dart';
 
 class SearchDetailPage extends ConsumerStatefulWidget {
   final String keyword;
@@ -23,12 +24,15 @@ class SearchDetailPage extends ConsumerStatefulWidget {
 class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _videoLoaded = false;
-  bool _postLoaded = false;
-  bool _userLoaded = false;
+  bool _videoRequested = false;
+  bool _postRequested = false;
+  bool _userRequested = false;
 
   SearchPostQueryParams get _postParams =>
       SearchPostQueryParams(keyword: widget.keyword);
+
+  ({String keyword, String? sort, int? type}) get _videoParams =>
+      (keyword: widget.keyword, sort: null, type: null);
 
   @override
   void initState() {
@@ -36,19 +40,20 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
 
     _tabController = TabController(length: 3, vsync: this);
 
-    // 统一 tab 加载规则
     _tabController.addListener(() {
-      if (_tabController.indexIsChanging) return;
-
-      // rebuild for title alignment / actions visibility
-      setState(() {});
+      if (_tabController.indexIsChanging) {
+        return;
+      }
 
       switch (_tabController.index) {
+        case 0:
+          _fetchVideosIfNeeded();
+          break;
         case 1:
-          _fetchPosts();
+          _fetchPostsIfNeeded();
           break;
         case 2:
-          _fetchUser();
+          _fetchUsersIfNeeded();
           break;
       }
     });
@@ -56,41 +61,68 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
     // 初次加载视频
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 350));
-      _fetchVideos();
+      _fetchVideosIfNeeded();
     });
   }
 
-  bool get _isVideoTab => _tabController.index == 0;
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
-  /// 视频数据加载
+  void _markVideoRequested() {
+    if (_videoRequested) {
+      return;
+    }
+    setState(() {
+      _videoRequested = true;
+    });
+  }
+
+  void _markPostRequested() {
+    if (_postRequested) {
+      return;
+    }
+    setState(() {
+      _postRequested = true;
+    });
+  }
+
+  void _markUserRequested() {
+    if (_userRequested) {
+      return;
+    }
+    setState(() {
+      _userRequested = true;
+    });
+  }
+
+  void _fetchVideosIfNeeded() {
+    _markVideoRequested();
+    _fetchVideos();
+  }
+
+  void _fetchPostsIfNeeded() {
+    _markPostRequested();
+    _fetchPosts();
+  }
+
+  void _fetchUsersIfNeeded() {
+    _markUserRequested();
+    _fetchUser();
+  }
+
   void _fetchVideos() {
     ref
-        .read(
-          searchVideoListProvider((
-            keyword: widget.keyword,
-            sort: null,
-            type: ref.watch(videoTypeProvider),
-          )).notifier,
-        )
+        .read(searchVideoListProvider(_videoParams).notifier)
         .fetch(refresh: true);
   }
 
   void _loadMoreVideos() {
-    final notifier = ref.read(
-      searchVideoListProvider((
-        keyword: widget.keyword,
-        sort: null,
-        type: ref.watch(videoTypeProvider),
-      )).notifier,
-    );
+    final notifier = ref.read(searchVideoListProvider(_videoParams).notifier);
 
-    final state = ref.read(
-      searchVideoListProvider((
-        keyword: widget.keyword,
-        sort: null,
-        type: ref.watch(videoTypeProvider),
-      )),
-    );
+    final state = ref.read(searchVideoListProvider(_videoParams));
 
     // 如果正在加载 或 已加载完所有数据，则不再继续
     if (state.loading || state.finished) return;
@@ -128,61 +160,12 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
     notifier.fetch(refresh: false);
   }
 
-  /// 切换短/长视频
-  void _toggleVideoType() {
-    final current = ref.read(videoTypeProvider);
-    ref.read(videoTypeProvider.notifier).state = current == 1 ? 2 : 1;
-    setState(() {
-      _videoLoaded = false;
-    });
-    _fetchVideos();
-  }
-
   @override
   Widget build(BuildContext context) {
     const background = Colors.black;
-    final videoType = ref.watch(videoTypeProvider);
 
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18n.translate(key);
-
-    final isLongVideo = videoType == 2;
-    ref.listen(
-      searchVideoListProvider((
-        keyword: widget.keyword,
-        sort: null,
-        type: videoType,
-      )),
-      (prev, next) {
-        if (prev?.loading == true && next.loading == false) {
-          setState(() => _videoLoaded = true);
-        }
-      },
-    );
-
-    ref.listen(searchPostListProvider(_postParams), (prev, next) {
-      if (next.loading == false) {
-        setState(() => _postLoaded = true);
-      }
-    });
-
-    ref.listen(searchUserListProvider(widget.keyword), (prev, next) {
-      if (next.loading == false) {
-        setState(() => _userLoaded = true);
-      }
-    });
-
-    final videoState = ref.watch(
-      searchVideoListProvider((
-        keyword: widget.keyword,
-        sort: null,
-        type: videoType,
-      )),
-    );
-
-    final postState = ref.watch(searchPostListProvider(_postParams));
-
-    final userState = ref.watch(searchUserListProvider(widget.keyword));
 
     return Scaffold(
       backgroundColor: background,
@@ -190,29 +173,10 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
         backgroundColor: background,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: AnimatedPadding(
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeInOut,
-          padding: EdgeInsets.only(right: _isVideoTab ? 0 : 56),
-          child: AnimatedAlign(
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeInOut,
-            alignment: _isVideoTab ? Alignment.centerLeft : Alignment.center,
-            child: Text(
-              "\"${widget.keyword}\"",
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
+        title: Text(
+          "\"${widget.keyword}\"",
+          style: const TextStyle(color: Colors.white),
         ),
-        centerTitle: !_isVideoTab,
-        actions: [
-          if (_isVideoTab)
-            VideoTypeToggleButton(
-              isLongVideo: isLongVideo,
-              onToggle: _toggleVideoType,
-              withText: true,
-            ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -227,44 +191,190 @@ class _SearchDetailPageState extends ConsumerState<SearchDetailPage>
       ),
       body: TabBarView(
         controller: _tabController,
+        physics: const ClampingScrollPhysics(),
         children: [
-          /// 视频 tab
-          GeneralVideoTab(
-            finished: videoState.finished,
-            onRefresh: _fetchVideos,
-            onLoadMore: _loadMoreVideos,
-            isLoaded: _videoLoaded,
-            loading: videoState.loading,
-            results: videoState.list,
-            isLongVideo: isLongVideo,
-            provider: searchVideoListProvider((
-              keyword: widget.keyword,
-              sort: null,
-              type: videoType,
-            )),
+          RepaintBoundary(
+            child: _SearchVideoTabBody(
+              provider: searchVideoListProvider(_videoParams),
+              isRequested: _videoRequested,
+              onRefresh: _fetchVideosIfNeeded,
+              onLoadMore: _loadMoreVideos,
+              scrollStorageKey: 'search-detail-video-${widget.keyword}',
+            ),
           ),
-
-          /// 帖子 tab
-          GeneralPostTab(
-            finished: postState.finished,
-            onRefresh: _fetchPosts,
-            onLoadMore: _loadMorePosts,
-            isLoaded: _postLoaded,
-            loading: postState.loading,
-            results: postState.list,
+          RepaintBoundary(
+            child: _SearchPostTabBody(
+              provider: searchPostListProvider(_postParams),
+              isRequested: _postRequested,
+              onRefresh: _fetchPostsIfNeeded,
+              onLoadMore: _loadMorePosts,
+              showSeparators: false,
+              scrollStorageKey: 'search-detail-post-${widget.keyword}',
+            ),
           ),
-
-          /// 用户 tab
-          GeneralUserTab(
-            finished: userState.finished,
-            onRefresh: _fetchUser,
-            onLoadMore: _loadMoreUsers,
-            isLoaded: _userLoaded,
-            loading: userState.loading,
-            results: userState.list,
+          RepaintBoundary(
+            child: _SearchUserTabBody(
+              provider: searchUserListProvider(widget.keyword),
+              isRequested: _userRequested,
+              onRefresh: _fetchUsersIfNeeded,
+              onLoadMore: _loadMoreUsers,
+              scrollStorageKey: 'search-detail-user-${widget.keyword}',
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SearchVideoTabBody extends ConsumerStatefulWidget {
+  const _SearchVideoTabBody({
+    required this.provider,
+    required this.isRequested,
+    required this.onRefresh,
+    required this.onLoadMore,
+    required this.scrollStorageKey,
+  });
+
+  final dynamic provider;
+  final bool isRequested;
+  final VoidCallback onRefresh;
+  final VoidCallback onLoadMore;
+  final String scrollStorageKey;
+
+  @override
+  ConsumerState<_SearchVideoTabBody> createState() =>
+      _SearchVideoTabBodyState();
+}
+
+class _SearchVideoTabBodyState extends ConsumerState<_SearchVideoTabBody>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final loading = ref.watch(
+      widget.provider.select((state) => state.loading as bool),
+    );
+    final finished = ref.watch(
+      widget.provider.select((state) => state.finished as bool),
+    );
+    final results = ref.watch(
+      widget.provider.select((state) => state.list as List<dynamic>),
+    );
+
+    return GeneralVideoTab(
+      finished: finished,
+      onRefresh: widget.onRefresh,
+      onLoadMore: widget.onLoadMore,
+      isLoaded: widget.isRequested,
+      loading: loading,
+      results: results.cast<VideoInfo>(),
+      provider: widget.provider,
+      scrollStorageKey: widget.scrollStorageKey,
+    );
+  }
+}
+
+class _SearchPostTabBody extends ConsumerStatefulWidget {
+  const _SearchPostTabBody({
+    required this.provider,
+    required this.isRequested,
+    required this.onRefresh,
+    required this.onLoadMore,
+    required this.showSeparators,
+    required this.scrollStorageKey,
+  });
+
+  final dynamic provider;
+  final bool isRequested;
+  final VoidCallback onRefresh;
+  final VoidCallback onLoadMore;
+  final bool showSeparators;
+  final String scrollStorageKey;
+
+  @override
+  ConsumerState<_SearchPostTabBody> createState() => _SearchPostTabBodyState();
+}
+
+class _SearchPostTabBodyState extends ConsumerState<_SearchPostTabBody>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final loading = ref.watch(
+      widget.provider.select((state) => state.loading as bool),
+    );
+    final finished = ref.watch(
+      widget.provider.select((state) => state.finished as bool),
+    );
+    final results = ref.watch(
+      widget.provider.select((state) => state.list as List<dynamic>),
+    );
+
+    return GeneralPostTab(
+      finished: finished,
+      onRefresh: widget.onRefresh,
+      onLoadMore: widget.onLoadMore,
+      isLoaded: widget.isRequested,
+      loading: loading,
+      results: results.cast<ForumPost>(),
+      scrollStorageKey: widget.scrollStorageKey,
+      showSeparators: widget.showSeparators,
+    );
+  }
+}
+
+class _SearchUserTabBody extends ConsumerStatefulWidget {
+  const _SearchUserTabBody({
+    required this.provider,
+    required this.isRequested,
+    required this.onRefresh,
+    required this.onLoadMore,
+    required this.scrollStorageKey,
+  });
+
+  final dynamic provider;
+  final bool isRequested;
+  final VoidCallback onRefresh;
+  final VoidCallback onLoadMore;
+  final String scrollStorageKey;
+
+  @override
+  ConsumerState<_SearchUserTabBody> createState() => _SearchUserTabBodyState();
+}
+
+class _SearchUserTabBodyState extends ConsumerState<_SearchUserTabBody>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final loading = ref.watch(
+      widget.provider.select((state) => state.loading as bool),
+    );
+    final finished = ref.watch(
+      widget.provider.select((state) => state.finished as bool),
+    );
+    final results = ref.watch(
+      widget.provider.select((state) => state.list as List<dynamic>),
+    );
+
+    return GeneralUserTab(
+      finished: finished,
+      onRefresh: widget.onRefresh,
+      onLoadMore: widget.onLoadMore,
+      isLoaded: widget.isRequested,
+      loading: loading,
+      results: results.cast<UserInfo>(),
+      scrollStorageKey: widget.scrollStorageKey,
     );
   }
 }

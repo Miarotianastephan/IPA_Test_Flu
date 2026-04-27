@@ -26,8 +26,10 @@ class NovelGrid extends StatelessWidget {
       itemCount: items.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: isAudio
-            ? 1.0
+        childAspectRatio: isAudio == true
+            ? showCreatorInfo
+                  ? 0.68
+                  : 0.8
             : showCreatorInfo
             ? 0.5
             : 0.55,
@@ -35,10 +37,17 @@ class NovelGrid extends StatelessWidget {
         mainAxisSpacing: 8,
       ),
       itemBuilder: (context, index) {
-        if (isAudio) {
-          return AudioNovelCard(item: items[index]);
+        if (isAudio == true) {
+          return AudioNovelCard(
+            item: items[index],
+            showCreatorInfo: showCreatorInfo,
+          );
+        } else {
+          return NovelCard(
+            item: items[index],
+            showCreatorInfo: showCreatorInfo,
+          );
         }
-        return NovelCard(item: items[index], showCreatorInfo: showCreatorInfo);
       },
     );
   }

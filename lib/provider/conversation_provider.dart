@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/services/message_service.dart';
 import '../config/storage_config.dart';
 import '../database/dao/conversation_dao.dart';
 import '../database/dao/message_dao.dart';
+import '../models/api_response.dart';
 import '../models/conversation.dart';
 import '../models/conversation_user.dart';
 import '../models/message.dart';
@@ -45,13 +47,15 @@ class ChatController extends StateNotifier<ChatState> {
   final ConversationDao conversationDao;
   final MessageDao messageDao;
 
-  final int? peerUserId;
+  final String? peerUserId;
 
   final int? initialConversationId;
 
-  int? selfUserId;
+  String? selfUserId;
   int? conversationId;
   bool isGroupChat = false;
+
+  final Completer<void> initDone = Completer<void>();
 
   ChatController(
     this.ref,
@@ -61,7 +65,9 @@ class ChatController extends StateNotifier<ChatState> {
     this.peerUserId,
   ) : initialConversationId = null,
       super(ChatState()) {
-    _init();
+    _init().whenComplete(() {
+      if (!initDone.isCompleted) initDone.complete();
+    });
   }
 
   ChatController.fromConversationId(
@@ -72,7 +78,9 @@ class ChatController extends StateNotifier<ChatState> {
     this.initialConversationId,
   ) : peerUserId = null,
       super(ChatState()) {
-    _initFromConversationId();
+    _initFromConversationId().whenComplete(() {
+      if (!initDone.isCompleted) initDone.complete();
+    });
   }
 
   Future<void> _init() async {
@@ -86,23 +94,22 @@ class ChatController extends StateNotifier<ChatState> {
     }
 
     if (peerUserId == null) {
-      state = state.copyWith(loading: false);
+      if (mounted) {
+        state = state.copyWith(loading: false);
+      }
       return;
     }
 
-    // 从本地数据库取完整会话
-    Conversation? conv = await conversationDao.getFullByPeerUser(peerUserId!);
+    // 始终请求服务器以确保会话存在（get-or-create）
+    final resp = await service.getConversationBetween(peerUserId!);
 
-    // 如果本地没有 → 请求服务器
-    if (conv == null) {
-      final resp = await service.getConversationBetween(peerUserId!);
+    Conversation? conv;
 
-      if (resp.data == null) {
-        state = state.copyWith(loading: false);
-        return;
-      }
-
+    if (resp.data != null) {
       final serverConv = resp.data!;
+
+      conversationId = serverConv.id;
+      isGroupChat = serverConv.type == 'group';
 
       final enrichedConv = serverConv.copyWith(
         users: [
@@ -122,10 +129,24 @@ class ChatController extends StateNotifier<ChatState> {
           ),
         ],
       );
+      try {
+        await conversationDao.upsertFull(enrichedConv);
+        conv =
+            await conversationDao.getFullById(enrichedConv.id) ?? enrichedConv;
+      } catch (e) {
+        conv = enrichedConv;
+      }
+    } else {
+      try {
+        conv = await conversationDao.getFullByPeerUser(peerUserId!);
+      } catch (e) {
+        debugPrint('[_init] local DB fallback error: $e');
+      }
+    }
 
-      await conversationDao.upsertFull(enrichedConv);
-      conv = await conversationDao.getFullById(enrichedConv.id);
-      conv ??= enrichedConv;
+    if (conv == null) {
+      if (mounted) state = state.copyWith(loading: false);
+      return;
     }
 
     conversationId = conv.id;
@@ -134,16 +155,59 @@ class ChatController extends StateNotifier<ChatState> {
     ref.read(currentConversationIdProvider.notifier).state = conversationId;
 
     // 通知会话列表
-    ref.read(conversationListProvider.notifier).upsertConversation(conv);
+    try {
+      ref.read(conversationListProvider.notifier).upsertConversation(conv);
+    } catch (e) {
+      debugPrint('[_init] upsertConversation error: $e');
+    }
 
-    // 加载本地消息
-    final msgList = await messageDao.getMessages(conv.id);
+    // 先用本地缓存展示（web DB may be unavailable）
+    List<Message> localMsgs = [];
+    try {
+      localMsgs = await messageDao.getMessages(conv.id);
+    } catch (e) {
+      debugPrint('[_init] getMessages (local) error: $e');
+    }
 
+    if (!mounted) {
+      debugPrint(
+        '[_init] DROPPED — provider was disposed before state could be set',
+      );
+      return;
+    }
     state = state.copyWith(
       conversation: conv,
-      messages: msgList,
+      messages: localMsgs,
       loading: false,
     );
+
+    // 从服务器拉取历史消息
+    try {
+      final histResp = await service.getHistory(
+        conversationId: conv.id,
+        page: 1,
+        limit: 50,
+      );
+      final serverMsgs = histResp.data?.list ?? [];
+      if (serverMsgs.isNotEmpty) {
+        try {
+          for (final m in serverMsgs) {
+            await messageDao.insertMessage(m);
+          }
+          final updatedMsgs = await messageDao.getMessages(conv.id);
+          if (!mounted) return;
+          state = state.copyWith(messages: updatedMsgs);
+        } catch (e) {
+          debugPrint('[_init] DB insert error (non-fatal): $e');
+          if (!mounted) return;
+          state = state.copyWith(messages: serverMsgs);
+        }
+      }
+    } catch (e) {
+      debugPrint('[_init] getHistory error: $e');
+    }
+
+    _markAllAsRead();
   }
 
   Future<void> _initFromConversationId() async {
@@ -156,7 +220,9 @@ class ChatController extends StateNotifier<ChatState> {
     }
 
     if (initialConversationId == null) {
-      state = state.copyWith(loading: false);
+      if (mounted) {
+        state = state.copyWith(loading: false);
+      }
       return;
     }
 
@@ -165,7 +231,9 @@ class ChatController extends StateNotifier<ChatState> {
     );
 
     if (conv == null) {
-      state = state.copyWith(loading: false);
+      if (mounted) {
+        state = state.copyWith(loading: false);
+      }
       return;
     }
 
@@ -178,32 +246,84 @@ class ChatController extends StateNotifier<ChatState> {
 
     final msgList = await messageDao.getMessages(conversationId!);
 
+    if (!mounted) return;
     state = state.copyWith(
       conversation: conv,
       messages: msgList,
       loading: false,
     );
+
+    _markAllAsRead();
   }
 
-  /// Refresh conversation data from database (e.g., after roles are updated)
+  Future<void> _markAllAsRead() async {
+    if (conversationId == null || selfUserId == null) return;
+
+    final unreadMessages = state.messages
+        .where((m) => !m.isSelf && !m.isRead)
+        .toList();
+
+    if (unreadMessages.isEmpty) return;
+
+    final unreadIds = unreadMessages.map((m) => m.id).toList();
+
+    try {
+      await service.markAsRead(
+        messageIDs: unreadIds,
+        conversationId: conversationId!,
+        isGroup: isGroupChat,
+      );
+    } catch (_) {}
+
+    for (final id in unreadIds) {
+      await messageDao.updateMessageRead(id, true);
+    }
+
+    if (!mounted) return;
+
+    final newList = state.messages.map((m) {
+      if (unreadIds.contains(m.id)) {
+        return m.copyWith(isRead: true);
+      }
+      return m;
+    }).toList();
+
+    state = state.copyWith(messages: newList);
+
+    final conv = state.conversation;
+    if (conv != null && conv.unreadCount > 0) {
+      final newConv = conv.copyWith(unreadCount: 0);
+      await conversationDao.upsertBasic(newConv);
+
+      if (!mounted) return;
+      state = state.copyWith(conversation: newConv);
+
+      ref
+          .read(conversationListProvider.notifier)
+          .markConversationAsRead(conversationId!);
+    }
+  }
+
   Future<void> refreshConversation() async {
     if (conversationId == null) return;
 
     final conv = await conversationDao.getFullById(conversationId!);
-    if (conv != null) {
+    if (conv != null && mounted) {
       state = state.copyWith(conversation: conv);
 
-      // Also update the conversation list provider
       ref.read(conversationListProvider.notifier).upsertConversation(conv);
     }
   }
 
-  Future<void> sendMessage(String text) async {
-    if (conversationId == null || text.trim().isEmpty) return;
-    if (selfUserId == null) return;
+  Future<void> sendMessage(String text, {String messageType = "text"}) async {
+    if (conversationId == null || text.trim().isEmpty) {
+      return;
+    }
+    if (selfUserId == null) {
+      return;
+    }
 
     final conv = state.conversation;
-    if (conv == null) return;
 
     // 创建临时本地消息
     final tempId = DateTime.now().millisecondsSinceEpoch;
@@ -212,7 +332,7 @@ class ChatController extends StateNotifier<ChatState> {
       conversationId: conversationId!,
       senderId: selfUserId!,
       content: text,
-      messageType: "text",
+      messageType: messageType,
       isRevoked: false,
       isSelf: true,
       isRead: true,
@@ -226,13 +346,29 @@ class ChatController extends StateNotifier<ChatState> {
 
     //  HTTP 请求发送消息
     try {
-      final resp = await service.sendMessage(
-        conversationId: conversationId!,
-        toUserId: isGroupChat ? "" : (peerUserId?.toString() ?? ""),
-        content: text,
-        messageType: "text",
-        isGroup: isGroupChat,
-      );
+      final supportAgentId = conv?.users
+          .where((u) => u.isSupportAgent)
+          .map((u) => u.agentSupportId)
+          .firstOrNull;
+
+      final ApiResponse<Message> resp;
+      if (supportAgentId != null) {
+        resp = await service.sendToSupportMessage(
+          conversationId: conversationId!,
+          agentSupportId: supportAgentId,
+          content: text,
+          messageType: messageType,
+          isGroup: false,
+        );
+      } else {
+        resp = await service.sendMessage(
+          conversationId: conversationId!,
+          toUserId: isGroupChat ? "" : (peerUserId?.toString() ?? ""),
+          content: text,
+          messageType: messageType,
+          isGroup: isGroupChat,
+        );
+      }
 
       //  覆盖临时消息，更新为真实 ID（保持 isSelf=true）
       final serverMsg = resp.data!.copyWith(isSelf: true, isRead: true);
@@ -246,20 +382,41 @@ class ChatController extends StateNotifier<ChatState> {
         return m;
       }).toList();
 
+      if (!mounted) return;
       state = state.copyWith(messages: newList);
 
-      final updatedConv = conv.copyWith(
+      final updatedConv = conv?.copyWith(
         lastMessageId: serverMsg.id,
         lastMessage: serverMsg,
         updatedAt: serverMsg.createdAt,
       );
-      await conversationDao.upsertBasic(updatedConv);
-      state = state.copyWith(conversation: updatedConv);
+      if (updatedConv != null) {
+        await conversationDao.upsertBasic(updatedConv);
+        if (!mounted) return;
+        state = state.copyWith(conversation: updatedConv);
+      }
 
-      ref
-          .read(conversationListProvider.notifier)
-          .upsertConversation(updatedConv);
-    } catch (e) {
+      if (updatedConv != null) {
+        Future.microtask(() {
+          if (mounted) {
+            final notifier = ref.read(conversationListProvider.notifier);
+            final currentList = [...notifier.state.conversations];
+            final index = currentList.indexWhere((c) => c.id == updatedConv.id);
+            if (index >= 0) {
+              final tempList = [...currentList];
+              tempList.removeAt(index);
+              notifier.state = notifier.state.copyWith(conversations: tempList);
+            }
+            notifier.upsertConversation(updatedConv);
+          }
+        });
+
+        debugPrint(
+          "Conversation updated after sending message: ${updatedConv.lastMessage?.content}",
+        );
+      }
+    } catch (e, st) {
+      debugPrint('[sendMessage] EXCEPTION: $e\n$st');
       //  发送失败，更新失败状态
       final newList = state.messages.map((m) {
         if (m.id == tempId) {
@@ -268,6 +425,7 @@ class ChatController extends StateNotifier<ChatState> {
         return m;
       }).toList();
       await messageDao.updateMessageSendState(tempId, sendFailed: true);
+      if (!mounted) return;
       state = state.copyWith(messages: newList);
     }
   }
@@ -276,6 +434,7 @@ class ChatController extends StateNotifier<ChatState> {
   void addMessage(Message msg) async {
     // 更新 UI
     final updated = [...state.messages, msg];
+    if (!mounted) return;
     state = state.copyWith(messages: updated);
 
     // 写入数据库 message 表
@@ -293,6 +452,7 @@ class ChatController extends StateNotifier<ChatState> {
       // 更新 DB（只更新 conversation 表）
       await conversationDao.upsertBasic(newConv);
 
+      if (!mounted) return;
       state = state.copyWith(conversation: newConv);
 
       // 通知列表
@@ -304,6 +464,7 @@ class ChatController extends StateNotifier<ChatState> {
   void addMessageToStateOnly(Message msg) {
     // 更新 UI 消息列表
     final updated = [...state.messages, msg];
+    if (!mounted) return;
     state = state.copyWith(messages: updated);
 
     // 更新会话的 lastMessage（但不写入数据库）
@@ -395,6 +556,7 @@ class ChatController extends StateNotifier<ChatState> {
         await conversationDao.upsertBasic(newConv);
 
         // 更新状态
+        if (!mounted) return;
         state = state.copyWith(conversation: newConv, messages: []);
 
         // 通知会话列表刷新
@@ -415,17 +577,36 @@ class ChatController extends StateNotifier<ChatState> {
       }
       return m;
     }).toList();
+    if (!mounted) return;
     state = state.copyWith(messages: sendingList);
 
     try {
       //调用发送消息的 HTTP 接口
-      final resp = await service.sendMessage(
-        conversationId: conversationId!,
-        toUserId: isGroupChat ? "" : (peerUserId?.toString() ?? ""),
-        content: msg.content,
-        messageType: msg.messageType,
-        isGroup: isGroupChat,
-      );
+      final conv = state.conversation;
+      debugPrint("conv id : ${conv!.id}");
+      final supportAgentId = conv?.users
+          .where((u) => u.isSupportAgent)
+          .map((u) => u.agentSupportId)
+          .firstOrNull;
+
+      final ApiResponse<Message> resp;
+      if (supportAgentId != null) {
+        resp = await service.sendToSupportMessage(
+          conversationId: conversationId!,
+          agentSupportId: supportAgentId,
+          content: msg.content,
+          messageType: msg.messageType,
+          isGroup: false,
+        );
+      } else {
+        resp = await service.sendMessage(
+          conversationId: conversationId!,
+          toUserId: isGroupChat ? "" : (peerUserId?.toString() ?? ""),
+          content: msg.content,
+          messageType: msg.messageType,
+          isGroup: isGroupChat,
+        );
+      }
 
       //覆盖本地消息（用服务器返回的消息，保持 isSelf=true）
       final serverMsg = resp.data!.copyWith(isSelf: true, isRead: true);
@@ -439,7 +620,36 @@ class ChatController extends StateNotifier<ChatState> {
         return m;
       }).toList();
 
+      if (!mounted) return;
       state = state.copyWith(messages: updatedList);
+
+      // Update conversation last message for resent messages
+      final conversation = state.conversation;
+      if (conversation != null) {
+        final updatedConv = conversation.copyWith(
+          lastMessageId: serverMsg.id,
+          lastMessage: serverMsg,
+          updatedAt: serverMsg.createdAt,
+        );
+        await conversationDao.upsertBasic(updatedConv);
+        if (!mounted) return;
+        state = state.copyWith(conversation: updatedConv);
+
+        // Force update conversation list
+        Future.microtask(() {
+          if (mounted) {
+            final notifier = ref.read(conversationListProvider.notifier);
+            final currentList = [...notifier.state.conversations];
+            final index = currentList.indexWhere((c) => c.id == updatedConv.id);
+            if (index >= 0) {
+              final tempList = [...currentList];
+              tempList.removeAt(index);
+              notifier.state = notifier.state.copyWith(conversations: tempList);
+            }
+            notifier.upsertConversation(updatedConv);
+          }
+        });
+      }
     } catch (e) {
       //重发失败 → UI标记失败
       final updatedList = state.messages.map((m) {
@@ -449,6 +659,7 @@ class ChatController extends StateNotifier<ChatState> {
         return m;
       }).toList();
 
+      if (!mounted) return;
       state = state.copyWith(messages: updatedList);
 
       //更新 DB（只需要更新 sendFailed）
@@ -478,13 +689,13 @@ class ChatController extends StateNotifier<ChatState> {
     }
   }
 
-  Future<int> kickMember(int targetUserId) async {
+  Future<int> kickMember(String targetUserId) async {
     if (!isGroupChat || conversationId == null) return 0;
 
     try {
       final response = await service.kickUser(
         conversationId: conversationId!,
-        targetUserId: targetUserId.toString(),
+        targetUserId: targetUserId,
       );
       return response.code;
     } catch (e) {
@@ -532,7 +743,7 @@ class ChatController extends StateNotifier<ChatState> {
   }
 
   /// Remove a member from the conversation (update local state and database)
-  Future<void> removeMemberFromConversation(int userId) async {
+  Future<void> removeMemberFromConversation(String userId) async {
     final conv = state.conversation;
     if (conv == null || conversationId == null) return;
     // Remove the member from the database first
@@ -542,6 +753,7 @@ class ChatController extends StateNotifier<ChatState> {
     final updatedUsers = conv.users.where((u) => u.userId != userId).toList();
     final updatedConv = conv.copyWith(users: updatedUsers);
     // Update the state
+    if (!mounted) return;
     state = state.copyWith(conversation: updatedConv);
 
     // Also update the conversation list provider
@@ -550,7 +762,10 @@ class ChatController extends StateNotifier<ChatState> {
 }
 
 final chatControllerProvider = StateNotifierProvider.autoDispose
-    .family<ChatController, ChatState, int>((ref, peerUserId) {
+    .family<ChatController, ChatState, String>((ref, peerUserId) {
+      // Keep alive until _init finishes so autoDispose doesn't kill it mid-flight
+      final keepAlive = ref.keepAlive();
+
       final service = ref.watch(messageServiceProvider);
 
       final db = ref.watch(currentUserDatabaseProvider);
@@ -565,8 +780,14 @@ final chatControllerProvider = StateNotifierProvider.autoDispose
         peerUserId,
       );
 
+      // Release keepAlive once init completes
+      controller.initDone.future.then((_) => keepAlive.close());
+
       // 离开聊天页面自动取消当前会话 ID
       ref.onDispose(() {
+        debugPrint(
+          '[chatControllerProvider] DISPOSED for peerUserId=$peerUserId',
+        );
         ref.read(currentConversationIdProvider.notifier).state = null;
       });
 
@@ -575,6 +796,8 @@ final chatControllerProvider = StateNotifierProvider.autoDispose
 
 final conversationProvider = StateNotifierProvider.autoDispose
     .family<ChatController, ChatState, int>((ref, conversationId) {
+      final keepAlive = ref.keepAlive();
+
       final service = ref.watch(messageServiceProvider);
 
       final db = ref.watch(currentUserDatabaseProvider);
@@ -588,6 +811,8 @@ final conversationProvider = StateNotifierProvider.autoDispose
         messageDao,
         conversationId,
       );
+
+      controller.initDone.future.then((_) => keepAlive.close());
 
       ref.onDispose(() {
         ref.read(currentConversationIdProvider.notifier).state = null;

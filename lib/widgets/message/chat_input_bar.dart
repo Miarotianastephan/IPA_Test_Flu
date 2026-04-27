@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/message/emoji_text_input.dart';
 
@@ -39,7 +40,10 @@ class ChatInputBar extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (isMenuExpanded) ...[
-            _buildIconButton(Icons.emoji_emotions, onTap: onToggleActionPanel),
+            _buildIconButton(
+              Icons.emoji_emotions,
+              onTap: onToggleActionPanel,
+            ),
             _buildIconButton(Icons.image, onTap: onGalleryTap),
             _buildIconButton(Icons.camera_alt, onTap: onCameraTap),
             _buildIconButton(Icons.mic, onTap: onMicTap),
@@ -48,7 +52,10 @@ class ChatInputBar extends ConsumerWidget {
 
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
               decoration: BoxDecoration(
                 color: const Color(0xFF2A2A2A),
                 borderRadius: BorderRadius.circular(25),

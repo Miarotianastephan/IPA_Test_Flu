@@ -1,15 +1,17 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/models/vip.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-
-import '../../provider/emoji_provider.dart';
+import 'package:live_app/provider/emoji_provider.dart';
+import 'package:live_app/provider/my_user_provider.dart';
 import '../../utils/text_util.dart';
 import '../encrypted_image.dart';
+import '../vip_badge.dart';
 
 class ChatMessageItem extends ConsumerStatefulWidget {
   final int messageId;
@@ -17,7 +19,8 @@ class ChatMessageItem extends ConsumerStatefulWidget {
   final bool isSelf;
   final String avatarUrl;
   final String? nickname;
-  final int? userId;
+  final Vip? vip;
+  final String? userId;
   final DateTime createdAt;
   final bool showFailed;
   final bool resending;
@@ -33,6 +36,7 @@ class ChatMessageItem extends ConsumerStatefulWidget {
     required this.avatarUrl,
     required this.messageId,
     this.nickname,
+    this.vip,
     this.userId,
     required this.createdAt,
     this.showFailed = true,
@@ -50,15 +54,13 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
   Widget buildMessageContent(String messageContent) {
     final regex = RegExp(r'\^\*#\*([\w]+)\*#\*\^');
     final matches = regex.allMatches(messageContent);
+    final messageStyle = TextStyle(
+      color: widget.isSelf ? Colors.black : Colors.white,
+      fontSize: 16,
+    );
 
     if (matches.isEmpty) {
-      return Text(
-        messageContent,
-        style: TextStyle(
-          color: widget.isSelf ? Colors.black : Colors.white,
-          fontSize: 16,
-        ),
-      );
+      return Text(messageContent, style: messageStyle);
     }
 
     final emojiState = ref.watch(emojiProvider(1));
@@ -71,10 +73,7 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
         children.add(
           TextSpan(
             text: messageContent.substring(lastEnd, match.start),
-            style: TextStyle(
-              color: widget.isSelf ? Colors.black : Colors.white,
-              fontSize: 16,
-            ),
+            style: messageStyle,
           ),
         );
       }
@@ -96,15 +95,7 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
           ),
         );
       } catch (e) {
-        children.add(
-          TextSpan(
-            text: code,
-            style: TextStyle(
-              color: widget.isSelf ? Colors.black : Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        );
+        children.add(TextSpan(text: code, style: messageStyle));
       }
 
       lastEnd = match.end;
@@ -112,24 +103,18 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
 
     if (lastEnd < messageContent.length) {
       children.add(
-        TextSpan(
-          text: messageContent.substring(lastEnd),
-          style: TextStyle(
-            color: widget.isSelf ? Colors.black : Colors.white,
-            fontSize: 16,
-          ),
-        ),
+        TextSpan(text: messageContent.substring(lastEnd), style: messageStyle),
       );
     }
 
-    return RichText(text: TextSpan(children: children));
+    return Text.rich(TextSpan(style: messageStyle, children: children));
   }
 
   @override
   Widget build(BuildContext context) {
-    final bubbleColor = widget.isSelf
-        ? const Color(0xFFFFFFFF)
-        : const Color(0xFF333333);
+    final userState = ref.watch(userProvider);
+    final userVip = userState.user?.vip;
+    final bubbleColor = widget.isSelf ? Colors.white : Colors.grey.shade800;
 
     return VisibilityDetector(
       key: Key("msg_${widget.message.hashCode}_${widget.messageId}"),
@@ -214,12 +199,21 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
                         if (!widget.isSelf && widget.nickname != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 4, top: 10),
-                            child: Text(
-                              "@${widget.nickname}",
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 15,
-                              ),
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    "@${widget.nickname}",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 15,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                                VipBadge(vip: widget.vip, size: 16),
+                              ],
                             ),
                           ),
                         Stack(
@@ -281,6 +275,7 @@ class _ChatMessageItemState extends ConsumerState<ChatMessageItem> {
             UserAvatar(
               url: widget.avatarUrl,
               nickname: widget.nickname,
+              vip: userVip,
               size: 40,
             ),
         ],

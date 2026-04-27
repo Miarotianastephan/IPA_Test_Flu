@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/models/video_comment.dart';
+import 'package:live_app/models/vip.dart';
+import 'package:live_app/provider/behavior_tracker_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/comment_item_replies.dart';
 import 'package:live_app/widgets/empty_widget.dart';
@@ -14,7 +16,7 @@ class CommentsModal extends ConsumerStatefulWidget {
   final VoidCallback onComment;
   final AnimationController transitionController;
   final double height;
-  final int videoId;
+  final String videoId;
   final Function(VideoComment)? onCommentTap;
 
   const CommentsModal({
@@ -36,6 +38,7 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
   final TextEditingController _commentController = TextEditingController();
   VideoComment? _replyingTo;
   String? _replyingToName;
+  Vip? _replyingToVip;
 
   @override
   void initState() {
@@ -55,6 +58,7 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
       setState(() {
         _replyingTo = comment;
         _replyingToName = comment.commentUser?.nickname;
+        _replyingToVip = comment.commentUser?.vip;
       });
       FocusScope.of(context).requestFocus(FocusNode());
     }
@@ -294,10 +298,12 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
                   child: CommentInputBar(
                     controller: _commentController,
                     replyingToName: _replyingToName,
+                    replyingToVip: _replyingToVip,
                     onCancelReply: () {
                       setState(() {
                         _replyingTo = null;
                         _replyingToName = null;
+                        _replyingToVip = null;
                       });
                     },
                     darkStyle: true,
@@ -313,9 +319,14 @@ class _CommentsModalState extends ConsumerState<CommentsModal> {
                             parentId: parentId,
                           );
 
+                      if (response.data != null) {
+                        ref.trackComment();
+                      }
+
                       setState(() {
                         _replyingTo = null;
                         _replyingToName = null;
+                        _replyingToVip = null;
                       });
 
                       if (response.data != null) {

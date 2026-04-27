@@ -7,8 +7,8 @@ part of 'video_info.dart';
 // **************************************************************************
 
 VideoInfo _$VideoInfoFromJson(Map<String, dynamic> json) => VideoInfo(
-  id: parseInt(json['id']),
-  userId: parseInt(json['user_id']),
+  id: json['id'] as String,
+  userId: json['user_id'] as String,
   title: json['title'] as String,
   description: json['description'] as String,
   type: (json['type'] as num).toInt(),
@@ -31,6 +31,7 @@ VideoInfo _$VideoInfoFromJson(Map<String, dynamic> json) => VideoInfo(
   favoriteCount: (json['favorite_count'] as num?)?.toInt() ?? 0,
   viewCount: (json['view_count'] as num?)?.toInt() ?? 0,
   needVip: json['need_vip'] == null ? false : parseBool(json['need_vip']),
+  isBought: json['buyed'] == null ? false : parseBool(json['buyed']),
   encryptionKey: json['v_key'] as String? ?? 'fsjkey',
   tags:
       (json['tags'] as List<dynamic>?)
@@ -66,6 +67,7 @@ Map<String, dynamic> _$VideoInfoToJson(VideoInfo instance) => <String, dynamic>{
   'favorite_count': instance.favoriteCount,
   'view_count': instance.viewCount,
   'need_vip': instance.needVip,
+  'buyed': instance.isBought,
   'v_key': instance.encryptionKey,
   'tags': instance.tags.map((e) => e.toJson()).toList(),
   'categories': instance.categories.map((e) => e.toJson()).toList(),

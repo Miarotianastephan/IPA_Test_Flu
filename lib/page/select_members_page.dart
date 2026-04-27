@@ -4,6 +4,8 @@ import 'package:live_app/models/page_response.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/empty_widget.dart';
+import 'package:live_app/widgets/html_text_field.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 
 import '../provider/api_provider.dart';
 import '../provider/search_user_list_provider.dart';
@@ -19,8 +21,8 @@ class SelectMembersPage extends ConsumerStatefulWidget {
 
 class _SelectMembersPageState extends ConsumerState<SelectMembersPage>
     with SingleTickerProviderStateMixin {
-  final Set<int> _selectedUserIds = {};
-  final Map<int, UserInfo> _selectedUsers = {};
+  final Set<String> _selectedUserIds = {};
+  final Map<String, UserInfo> _selectedUsers = {};
   final ScrollController _followsScrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
 
@@ -175,9 +177,17 @@ class _SelectMembersPageState extends ConsumerState<SelectMembersPage>
                 ),
               ),
       ),
-      title: Text(
-        user.nickname ?? "User ${user.id}",
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              user.nickname ?? "User ${user.id}",
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          VipBadge(vip: user.vip),
+        ],
       ),
       subtitle: user.bio != null
           ? Text(
@@ -301,7 +311,7 @@ class _SelectMembersPageState extends ConsumerState<SelectMembersPage>
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: TextField(
+          child: HtmlTextField(
             controller: _searchController,
             cursorColor: Colors.white,
             style: const TextStyle(color: Colors.white),

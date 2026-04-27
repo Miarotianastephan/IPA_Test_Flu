@@ -8,10 +8,9 @@ part 'video_info.g.dart';
 
 @JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
 class VideoInfo {
-  @JsonKey(fromJson: parseInt)
-  final int id;
-  @JsonKey(name: 'user_id', fromJson: parseInt)
-  final int userId;
+  final String id;
+  @JsonKey(name: 'user_id')
+  final String userId;
   final String title;
   final String description;
   final int type;
@@ -39,6 +38,8 @@ class VideoInfo {
   final int viewCount;
   @JsonKey(defaultValue: false, fromJson: parseBool)
   final bool needVip;
+  @JsonKey(name: 'buyed', defaultValue: false, fromJson: parseBool)
+  final bool isBought;
   @JsonKey(name: 'v_key', defaultValue: 'fsjkey')
   final String? encryptionKey;
   @JsonKey(defaultValue: [])
@@ -68,6 +69,7 @@ class VideoInfo {
     this.favoriteCount = 0,
     this.viewCount = 0,
     this.needVip = false,
+    this.isBought = false,
     this.encryptionKey,
     this.tags = const [],
     this.categories = const [],
@@ -88,6 +90,7 @@ class VideoInfo {
     int? commentCount,
     int? viewCount,
     bool? needVip,
+    bool? isBought,
     String? encryptionKey,
     List<VideoTag>? tags,
     List<VideoCategory>? categories,
@@ -115,6 +118,7 @@ class VideoInfo {
       favoriteCount: favoriteCount ?? this.favoriteCount,
       viewCount: viewCount ?? this.viewCount,
       needVip: needVip ?? this.needVip,
+      isBought: isBought ?? this.isBought,
       encryptionKey: encryptionKey ?? this.encryptionKey,
       tags: tags ?? this.tags,
       categories: categories ?? this.categories,

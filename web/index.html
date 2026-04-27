@@ -28,15 +28,320 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="icon" type="image/png" href="favicon.png">
 
   <title>live_app</title>
-  <link rel="manifest" href="manifest.json">
+
+
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+  <script id="ios-safari-detector-script">
+    (function () {
+      window.__detectPureIosSafari = function () {
+        var ua = navigator.userAgent || "";
+        var normalizedUa = ua.toLowerCase();
+        var platform = navigator.platform || "";
+        var isIOS =
+          /iP(hone|od|ad)/.test(ua) ||
+          (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        var isAppleWebKit = /AppleWebKit/i.test(ua);
+        var isSafari = /Version\/[\d.]+.*Safari\//.test(ua);
+        var nonSafariTokens = [
+          "2345browser",
+          "360",
+          "360browser",
+          "360ee",
+          "360se",
+          "aloha",
+          "alipayclient",
+          "arc",
+          "arcsearch",
+          "aweme",
+          "baidubrowser",
+          "baiduboxapp",
+          "baiduhd",
+          "barcelona",
+          "bdapp",
+          "bdbrowser",
+          "biliapp",
+          "bilibili",
+          "brave",
+          "bytedance",
+          "crios",
+          "dianping",
+          "dingtalk",
+          "ddg",
+          "discord",
+          "duckduckgo",
+          "edge",
+          "edgios",
+          "edga",
+          "fban",
+          "fbav",
+          "fbios",
+          "fb_iab",
+          "fxios",
+          "gsa/",
+          "instagram",
+          "jdapp",
+          "kuaishou",
+          "kwai",
+          "lark",
+          "line/",
+          "little-red-book",
+          "littleredbook",
+          "linkedin",
+          "mailmaster",
+          "meituan",
+          "mercury",
+          "messenger",
+          "micromessenger",
+          "mqqbrowser",
+          "mttcustomua",
+          "musical",
+          "newsarticle",
+          "qhbrowser",
+          "qihoo",
+          "qihoobrowser",
+          "opios",
+          "pinterest",
+          "qbwebviewtype",
+          "qbwebviewua",
+          "qq/",
+          "qqbrowser",
+          "quark",
+          "reddit",
+          "shark",
+          "sharkbrowser",
+          "slack",
+          "snapchat",
+          "sogou",
+          "sogoumobilebrowser",
+          "sogousearch",
+          "sogoumse",
+          "telegram",
+          "telegram-ios",
+          "telegrambot",
+          "threads",
+          "tiktok",
+          "tmall",
+          "toutiao",
+          "twitter",
+          "ucbrowser",
+          "ucweb",
+          "viber",
+          "via/",
+          "viabrowser",
+          "vivaldi",
+          "whatsapp",
+          "weibo",
+          "wework",
+          "wxwork",
+          "xhs",
+          "xiaohongshu",
+          "yabrowser"
+        ];
+        var hasNonSafariToken = nonSafariTokens.some(function (token) {
+          return normalizedUa.indexOf(token) !== -1;
+        });
+        var hasTelegramRuntime =
+          typeof window.TelegramWebview !== "undefined" ||
+          typeof window.TelegramWebviewProxy !== "undefined" ||
+          typeof window.TelegramWebviewProxyProto !== "undefined" ||
+          !!(window.Telegram && window.Telegram.WebApp);
+        var isOtherIosBrowser = hasNonSafariToken || hasTelegramRuntime;
+
+        return isIOS && isAppleWebKit && isSafari && !isOtherIosBrowser;
+      };
+
+      var isPureIosSafari = window.__detectPureIosSafari();
+
+      window.__isPureIosSafari = isPureIosSafari;
+      window.__useMiniTex = !isPureIosSafari;
+      document.documentElement.dataset.iosSafari = isPureIosSafari ? "true" : "false";
+
+      if (isPureIosSafari) {
+        var preload = document.createElement("link");
+        preload.rel = "preload";
+        preload.as = "font";
+        preload.type = "font/woff2";
+        preload.href = "fonts/ios-safari-cjk-lite.woff2";
+        preload.crossOrigin = "anonymous";
+        document.head.appendChild(preload);
+      }
+    })();
+  </script>
+  <style id="ios-safari-font-style">
+    @font-face {
+      font-family: "IosSafariCJKLite";
+      src: url("fonts/ios-safari-cjk-lite.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
+
+    html[data-ios-safari="true"],
+    html[data-ios-safari="true"] body {
+      font-family: "IosSafariCJKLite", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    }
+  </style>
+  <style id="splash-screen-style">
+    html {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      background-color: #000000;
+      background-size: 100% 100%;
+    }
+
+    .center {
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+    }
+
+    .contain {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .stretch {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cover {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .bottom {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      -ms-transform: translate(-50%, 0);
+      transform: translate(-50%, 0);
+    }
+
+    .bottomLeft {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+
+    .bottomRight {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+    }
+  </style>
+  <script id="splash-screen-script">
+    function removeSplashFromWeb() {
+      document.getElementById("splash")?.remove();
+      document.getElementById("splash-branding")?.remove();
+      document.body.style.background = "transparent";
+    }
+  </script>
+  <script id="canvas-player-script">
+    /**
+     * Démarre une boucle requestAnimationFrame qui copie les frames
+     * du <video> caché vers le <canvas> visible (letterboxing).
+     * @param {HTMLVideoElement} video - élément de décodage (caché)
+     * @param {HTMLCanvasElement} canvas - surface de rendu (visible)
+     * @returns {Function} fonction stop() à appeler pour arrêter la boucle
+     */
+    function startCanvasRenderLoop(video, canvas) {
+      var rafId = null;
+      var stopped = false;
+
+      function drawFrame() {
+        if (stopped) return;
+
+        if (video.readyState >= 2) {
+          var vw = video.videoWidth;
+          var vh = video.videoHeight;
+
+          if (canvas.width !== vw || canvas.height !== vh) {
+            canvas.width  = vw || canvas.offsetWidth;
+            canvas.height = vh || canvas.offsetHeight;
+          }
+
+          if (vw > 0 && vh > 0) {
+            var ctx = canvas.getContext('2d');
+            var cw = canvas.width;
+            var ch = canvas.height;
+            var scale = Math.min(cw / vw, ch / vh);
+            var dw = vw * scale;
+            var dh = vh * scale;
+            var dx = (cw - dw) / 2;
+            var dy = (ch - dh) / 2;
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, cw, ch);
+            ctx.drawImage(video, dx, dy, dw, dh);
+          }
+        }
+
+        rafId = requestAnimationFrame(drawFrame);
+      }
+
+      rafId = requestAnimationFrame(drawFrame);
+
+      return function stopLoop() {
+        stopped = true;
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+      };
+    }
+  </script>
+  <script id="hls-loader-script">
+    window.loadMediaKitHls = function () {
+      if (window.Hls) {
+        return Promise.resolve();
+      }
+
+      if (window.__mediaKitHlsPromise) {
+        return window.__mediaKitHlsPromise;
+      }
+
+      window.__mediaKitHlsPromise = new Promise(function (resolve, reject) {
+        var script = document.createElement('script');
+        script.src = 'assets/packages/media_kit/assets/web/hls1.4.10.js';
+        script.type = 'application/javascript';
+        script.onload = function () {
+          resolve();
+        };
+        script.onerror = function () {
+          window.__mediaKitHlsPromise = null;
+          reject(new Error('Failed to load media_kit hls.js'));
+        };
+        document.body.appendChild(script);
+      });
+
+      return window.__mediaKitHlsPromise;
+    };
+  </script>
 </head>
 
 <body>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest" type="application/javascript"></script>
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    if (window.__useMiniTex !== false) {
+      document.write('<script src="minitex.min.js"><\/script>');
+    }
+  </script>
+  <script src="flutter_bootstrap.js" async=""></script>
   <script>
     function changeFavicon(url) {
       let link = document.querySelector("link[rel~='icon']");
@@ -49,6 +354,8 @@
       link.href = url;
     }
   </script>
+
+
 </body>
 
 </html>

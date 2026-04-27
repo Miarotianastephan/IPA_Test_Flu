@@ -9,4 +9,24 @@ mixin _$ConversationDaoMixin on DatabaseAccessor<AppDatabase> {
       attachedDatabase.conversationUsers;
   $UserInfosTable get userInfos => attachedDatabase.userInfos;
   $MessagesTable get messages => attachedDatabase.messages;
+  $AgentSupportsTable get agentSupports => attachedDatabase.agentSupports;
+  ConversationDaoManager get managers => ConversationDaoManager(this);
+}
+
+class ConversationDaoManager {
+  final _$ConversationDaoMixin _db;
+  ConversationDaoManager(this._db);
+  $$ConversationsTableTableManager get conversations =>
+      $$ConversationsTableTableManager(_db.attachedDatabase, _db.conversations);
+  $$ConversationUsersTableTableManager get conversationUsers =>
+      $$ConversationUsersTableTableManager(
+        _db.attachedDatabase,
+        _db.conversationUsers,
+      );
+  $$UserInfosTableTableManager get userInfos =>
+      $$UserInfosTableTableManager(_db.attachedDatabase, _db.userInfos);
+  $$MessagesTableTableManager get messages =>
+      $$MessagesTableTableManager(_db.attachedDatabase, _db.messages);
+  $$AgentSupportsTableTableManager get agentSupports =>
+      $$AgentSupportsTableTableManager(_db.attachedDatabase, _db.agentSupports);
 }

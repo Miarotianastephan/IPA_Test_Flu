@@ -21,10 +21,14 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await StorageService.instance.getValue("token");
-    if (token != null && token.isNotEmpty) {
+    if (options.extra['skipAuth'] == true) {
+      return handler.next(options);
+    }
+
+    final token = StorageService.instance.userToken;
+    if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
-    super.onRequest(options, handler);
+    handler.next(options);
   }
 }

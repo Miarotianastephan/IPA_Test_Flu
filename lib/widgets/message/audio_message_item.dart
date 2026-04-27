@@ -4,10 +4,12 @@ import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:live_app/models/vip.dart';
 
 import '../../repository/audio_repository.dart';
 import '../../utils/text_util.dart';
 import '../encrypted_image.dart';
+import '../vip_badge.dart';
 import 'waveform_widget.dart';
 
 class ChatAudioMessageItem extends ConsumerStatefulWidget {
@@ -16,7 +18,8 @@ class ChatAudioMessageItem extends ConsumerStatefulWidget {
   final bool isSelf;
   final String avatarUrl;
   final String? nickname;
-  final int? userId;
+  final Vip? vip;
+  final String? userId;
   final DateTime createdAt;
   final bool showFailed;
   final bool resending;
@@ -31,6 +34,7 @@ class ChatAudioMessageItem extends ConsumerStatefulWidget {
     required this.avatarUrl,
     required this.messageId,
     this.nickname,
+    this.vip,
     this.userId,
     required this.createdAt,
     this.showFailed = true,
@@ -205,6 +209,7 @@ class _ChatAudioMessageItemState extends ConsumerState<ChatAudioMessageItem> {
               child: UserAvatar(
                 url: widget.avatarUrl,
                 nickname: widget.nickname,
+                vip: widget.vip,
                 userId: widget.userId,
                 size: 40,
               ),
@@ -219,12 +224,21 @@ class _ChatAudioMessageItemState extends ConsumerState<ChatAudioMessageItem> {
                 if (!widget.isSelf && widget.nickname != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4, top: 10),
-                    child: Text(
-                      "@${widget.nickname}",
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            "@${widget.nickname}",
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        VipBadge(vip: widget.vip, size: 13),
+                      ],
                     ),
                   ),
                 Stack(
@@ -373,6 +387,7 @@ class _ChatAudioMessageItemState extends ConsumerState<ChatAudioMessageItem> {
               child: UserAvatar(
                 url: widget.avatarUrl,
                 nickname: widget.nickname,
+                vip: widget.vip,
                 userId: widget.userId,
                 size: 40,
               ),

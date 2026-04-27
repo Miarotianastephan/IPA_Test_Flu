@@ -95,11 +95,13 @@ class MessageService extends BaseService {
   }
 
   /// 获取与某用户的单聊会话（不存在则创建）
-  Future<ApiResponse<Conversation>> getConversationBetween(int userId) {
+  Future<ApiResponse<Conversation>> getConversationBetween(String userId) {
     return post<Conversation>(
       MessageApi.conversationBetween,
-      body: {"id": userId.toString(), "type": "single"},
+      body: {"id": userId, "type": "single"},
       fromJson: (json) => Conversation.fromJson(json),
+      throwOnError: false,
+      showToast: false,
     );
   }
 
@@ -326,6 +328,35 @@ class MessageService extends BaseService {
         "is_group": isGroup,
       },
       fromJson: (json) => Message.fromJson(json),
+    );
+  }
+
+  /// 发送聊天信息
+  Future<ApiResponse<Message>> sendToSupportMessage({
+    required int conversationId,
+    required String agentSupportId,
+    required String content,
+    String messageType = "text",
+    required bool isGroup,
+  }) {
+    return post<Message>(
+      MessageApi.sendToSupportMessage,
+      body: {
+        "conversation_id": conversationId,
+        "agentSupportId": agentSupportId,
+        "content": content,
+        "message_type": messageType,
+        "is_group": isGroup,
+      },
+      fromJson: (json) => Message.fromJson(json),
+    );
+  }
+
+  Future<ApiResponse<void>> sendDeviceInfo(Map<String, dynamic> deviceInfo) {
+    return post<void>(
+      MessageApi.sendDeviceInfo,
+      body: deviceInfo,
+      fromJson: (_) {},
     );
   }
 }

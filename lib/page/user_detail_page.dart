@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/page/gallery_page.dart';
+import 'package:live_app/provider/current_user_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/user_follow_provider.dart';
+import 'package:live_app/widgets/auto_scroll_text.dart';
 import 'package:live_app/widgets/follow_button.dart';
 import 'package:live_app/widgets/tiktok_scaffold.dart';
 import 'package:live_app/widgets/video/user_post_list.dart';
+import 'package:live_app/widgets/vip_badge.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../models/base_list_state.dart';
@@ -76,7 +79,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
       if (!mounted) return;
 
       ref
-          .read(userFollowProvider(widget.user.id.toString()).notifier)
+          .read(userFollowProvider(widget.user.id).notifier)
           .setFromBackend(
             isFollowed: widget.user.isFollowed,
             fansCount: widget.user.fansCount ?? 0,
@@ -94,7 +97,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
           });
         }
         ref
-            .read(userFollowProvider(widget.user.id.toString()).notifier)
+            .read(userFollowProvider(widget.user.id).notifier)
             .setFromBackend(
               isFollowed: detail.isFollowed,
               fansCount: detail.fansCount ?? 0,
@@ -121,8 +124,8 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
     final i18n = ref.read(i18nNotifierProvider.notifier);
     final user = widget.user;
     final postState = ref.watch(postProvider);
-    final follow = ref.watch(userFollowProvider(user.id.toString()));
-
+    final follow = ref.watch(userFollowProvider(user.id));
+    final currentUserId = ref.watch(currentUserIdProvider);
     bool hasAvatar() {
       return !(user.avatar == null || user.avatar!.isEmpty);
     }
@@ -144,7 +147,7 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                 headerSliverBuilder: (context, innerBoxIsScrolled) => [
                   SliverAppBar(
                     backgroundColor: Colors.black,
-                    expandedHeight: _isBioExpanded ? 550 : 435,
+                    expandedHeight: _isBioExpanded ? 550 : 400,
                     floating: false,
                     pinned: true,
                     collapsedHeight: kToolbarHeight,
@@ -160,17 +163,22 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                       },
                     ),
                     actions: [
-                      IconButton(
-                        icon: const Icon(Icons.more_horiz, color: Colors.white),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChatDetailPage(user: user),
-                            ),
-                          );
-                        },
-                      ),
+                      if (user.id != currentUserId)
+                        // ref.hasPermission(Permission.accessImFree))
+                        Container(
+                          margin: const EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                     title: LayoutBuilder(
                       builder: (context, constraints) {
@@ -192,14 +200,17 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                 size: 28,
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                user.nickname ?? "",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                              Flexible(
+                                child: AutoScrollText(
+                                  text: user.nickname ?? "",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
+                              VipBadge(vip: user.vip, size: 16),
                             ],
                           ),
                         );
@@ -212,81 +223,102 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                SizedBox(
-                                  height: 250,
-                                  width: double.infinity,
-                                  child: (_isLoadingCover)
-                                      ? Container(
-                                          color: Colors.grey[300],
-                                          child: const Center(
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        )
-                                      : (!hasCover())
-                                      ? Container(
-                                          color: Colors.grey[800],
-                                          child: const Center(
-                                            child: Icon(
-                                              Icons.image_not_supported,
-                                              color: Colors.white54,
-                                              size: 60,
+                            // Stack(
+                            //   clipBehavior: Clip.none,
+                            //   alignment: Alignment.bottomCenter,
+                            //   children: [
+                            //     SizedBox(
+                            //       height: 180,
+                            //       width: double.infinity,
+                            //       child: (_isLoadingCover)
+                            //           ? Container(
+                            //               color: Colors.grey[300],
+                            //               child: const Center(
+                            //                 child: CircularProgressIndicator(),
+                            //               ),
+                            //             )
+                            //           : (!hasCover())
+                            //           ? Container(
+                            //               color: Colors.grey[800],
+                            //               child: const Center(
+                            //                 child: Icon(
+                            //                   Icons.image_not_supported,
+                            //                   color: Colors.white54,
+                            //                   size: 60,
+                            //                 ),
+                            //               ),
+                            //             )
+                            //           : GestureDetector(
+                            //               onTap: () => Navigator.push(
+                            //                 context,
+                            //                 MaterialPageRoute(
+                            //                   builder: (_) => GalleryPage(
+                            //                     items: [
+                            //                       GalleryItem(
+                            //                         url: _coverUrl!,
+                            //                         isVideo: false,
+                            //                       ),
+                            //                     ],
+                            //                     initialIndex: 0,
+                            //                   ),
+                            //                 ),
+                            //               ),
+
+                            //               child: EncryptedImage(
+                            //                 key: ValueKey<String>(_coverUrl!),
+                            //                 url: _coverUrl!,
+                            //                 fit: BoxFit.cover,
+                            //                 width: double.infinity,
+                            //                 height: 100,
+                            //                 placeholder: Container(
+                            //                   color: Colors.grey[300],
+                            //                   child: const Center(
+                            //                     child:
+                            //                         CircularProgressIndicator(),
+                            //                   ),
+                            //                 ),
+                            //                 errorWidget: Container(
+                            //                   color: Colors.grey[300],
+                            //                   child: const Center(
+                            //                     child: Icon(Icons.broken_image),
+                            //                   ),
+                            //                 ),
+                            //               ),
+                            //             ),
+                            //     ),
+                            //   ],
+                            // ),
+                            const SizedBox(height: 20),
+                            //avatar
+                            Center(
+                              child: SizedBox(
+                                height: 110,
+                                width: 110,
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 104,
+                                      height: 104,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.black,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.15,
                                             ),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 6),
                                           ),
-                                        )
-                                      : GestureDetector(
-                                          onTap: () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => GalleryPage(
-                                                items: [
-                                                  GalleryItem(
-                                                    url: _coverUrl!,
-                                                    isVideo: false,
-                                                  ),
-                                                ],
-                                                initialIndex: 0,
-                                              ),
-                                            ),
-                                          ),
-                                          child: EncryptedImage(
-                                            key: ValueKey<String>(_coverUrl!),
-                                            url: _coverUrl!,
-                                            fit: BoxFit.cover,
-                                            width: double.infinity,
-                                            height: 100,
-                                            placeholder: Container(
-                                              color: Colors.grey[300],
-                                              child: const Center(
-                                                child:
-                                                    CircularProgressIndicator(),
-                                              ),
-                                            ),
-                                            errorWidget: Container(
-                                              color: Colors.grey[300],
-                                              child: const Center(
-                                                child: Icon(Icons.broken_image),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                ),
-                              ],
-                            ),
-                            Transform.translate(
-                              offset: const Offset(0, -40),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  SizedBox(width: 5),
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: UserAvatar(
+                                        ],
+                                      ),
+                                    ),
+                                    UserAvatar(
                                       url: user.avatar,
                                       nickname: user.nickname,
-                                      size: 100,
+                                      size: 96,
                                       onTap: () => (!hasAvatar())
                                           ? null
                                           : Navigator.push(
@@ -304,98 +336,232 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
                                               ),
                                             ),
                                     ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                        left: 10,
-                                        right: 10,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                flex: 8,
-                                                child: Text(
-                                                  user.nickname ?? "",
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 18.0,
-                                                    fontWeight: FontWeight.bold,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
+                                    user.vip != null
+                                        ? Positioned(
+                                            bottom: 5,
+                                            right: -2,
+                                            child: SizedBox(
+                                              width: 34,
+                                              height: 34,
+                                              child: OverflowBox(
+                                                alignment: Alignment.centerLeft,
+                                                minWidth: 34,
+                                                maxWidth: 120,
+                                                child: SizedBox(
+                                                  width: 86,
+                                                  height: 34,
+                                                  child: Stack(
+                                                    clipBehavior: Clip.none,
+                                                    children: [
+                                                      Positioned(
+                                                        left: 12,
+                                                        bottom: 3,
+                                                        child: Container(
+                                                          height: 20,
+                                                          alignment: Alignment
+                                                              .centerLeft,
+                                                          padding:
+                                                              const EdgeInsets.only(
+                                                                left: 24,
+                                                                right: 9,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.amber,
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  999,
+                                                                ),
+                                                          ),
+                                                          child: const Text(
+                                                            'VIP',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.black,
+                                                              fontSize: 11,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              height: 1,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Stack(
+                                                        alignment:
+                                                            Alignment.center,
+                                                        children: [
+                                                          Container(
+                                                            width: 34,
+                                                            height: 34,
+                                                            decoration:
+                                                                const BoxDecoration(
+                                                                  shape: BoxShape
+                                                                      .circle,
+                                                                  color: Colors
+                                                                      .black,
+                                                                ),
+                                                          ),
+                                                          VipBadge(
+                                                            vip: user.vip,
+                                                            size: 30,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
-                                              const Spacer(),
-                                              FollowButton(
-                                                userId: user.id.toString(),
-                                              ),
-                                            ],
-                                          ),
-
-                                          const SizedBox(height: 6),
-
-                                          Text(
-                                            "id: ${user.displayId}",
-                                            style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
                                             ),
-                                          ),
-                                        ],
+                                          )
+                                        : const SizedBox.shrink(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            // name
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(width: 24),
+                                  Flexible(
+                                    child: AutoScrollText(
+                                      text: user.nickname ?? "",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18.0,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(width: 8),
+                                  VipBadge(vip: user.vip, size: 16),
                                 ],
                               ),
                             ),
+                            const SizedBox(height: 2),
+                            // QR
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "ID: ${user.displayId}",
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
 
+                            const SizedBox(height: 14),
+                            // likes
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildCountItem(
+                                  i18n.translate('followCount'),
+                                  follow.followCount,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 20,
+                                  color: Colors.white24,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                ),
+                                _buildCountItem(
+                                  i18n.translate('fansCount'),
+                                  follow.fansCount,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 20,
+                                  color: Colors.white24,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                ),
+                                _buildCountItem(
+                                  i18n.translate('likeCount'),
+                                  user.likeCount ?? 0,
+                                ),
+                              ],
+                            ),
                             Padding(
-                              padding: const EdgeInsets.only(
-                                left: 12,
-                                right: 12,
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Spacer(),
+                                  FollowButton(userId: user.id),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              ChatDetailPage(user: user),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      height: 42,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2D2D2D),
+                                        borderRadius: BorderRadius.circular(21),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          i18n.translate('message'),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                ],
                               ),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
+                            ),
+                            if (user.bio != null && user.bio!.isNotEmpty) ...[
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 40,
+                                ),
                                 child: _buildBioText(
                                   user.bio ?? i18n.translate('mysteriousUser'),
                                 ),
                               ),
-                            ),
-
-                            const SizedBox(height: 15),
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal:
-                                    MediaQuery.of(context).size.width < 375
-                                    ? 16
-                                    : 40,
+                            ] else ...[
+                              const SizedBox(height: 20),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 40,
+                                ),
+                                child: Text(
+                                  i18n.translate('mysteriousUser'),
+                                  style: const TextStyle(
+                                    color: Color.fromARGB(179, 240, 240, 240),
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildCountItem(
-                                    i18n.translate('followCount'),
-                                    follow
-                                        .followCount, // plus besoin de fallback vers user.followCount
-                                  ),
-                                  _buildCountItem(
-                                    i18n.translate('fansCount'),
-                                    follow.fansCount, // idem
-                                  ),
-                                  _buildCountItem(
-                                    i18n.translate('likeCount'),
-                                    user.likeCount ??
-                                        0, // likeCount toujours depuis user
-                                  ),
-                                ],
-                              ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -549,14 +715,17 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        const textStyle = TextStyle(color: Colors.white70, fontSize: 14);
+        const textStyle = TextStyle(
+          color: Color.fromARGB(179, 240, 240, 240),
+          fontSize: 12,
+        );
         const maxLines = 2;
 
-        final textSpan = TextSpan(text: bioText, style: textStyle);
         final textPainter = TextPainter(
-          text: textSpan,
+          text: TextSpan(text: bioText, style: textStyle),
           maxLines: maxLines,
-          textDirection: TextDirection.ltr,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
         );
         textPainter.layout(maxWidth: constraints.maxWidth);
 
@@ -636,23 +805,37 @@ class UserDetailPageState extends ConsumerState<UserDetailPage> {
     );
   }
 
-  Widget _buildCountItem(String label, int count) {
-    return Column(
-      children: [
-        Text(
-          "$count",
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+  Widget _buildCountItem(String label, int count, {VoidCallback? onTap}) {
+    String formatCount(int n) {
+      if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+      if (n >= 10000) return '${(n / 1000).toStringAsFixed(1)}K';
+      return '$n';
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              formatCount(count),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 21,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white54, fontSize: 13),
+            ),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
-        ),
-      ],
+      ),
     );
   }
 }

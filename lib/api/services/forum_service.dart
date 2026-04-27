@@ -1,6 +1,9 @@
+import 'package:live_app/models/category_tag.dart';
+
 import '../../models/api_response.dart';
 import '../../models/forum_category.dart';
 import '../../models/forum_comment.dart';
+import '../../models/forum_filter.dart';
 import '../../models/forum_post.dart';
 import '../../models/forum_tag.dart';
 import '../../models/page_params.dart';
@@ -46,6 +49,7 @@ class ForumService extends BaseService {
     int? tagId,
     int? categoryId,
     String? sort,
+    ForumFilter? forumFilter,
   }) {
     final body = <String, dynamic>{
       ...pageParams.toJson(),
@@ -53,6 +57,7 @@ class ForumService extends BaseService {
       if (tagId != null) "tag_id": tagId,
       if (categoryId != null) "categoryId": categoryId,
       if (sort != null && sort.isNotEmpty) "sort": sort,
+      if (forumFilter != null) "forumFilter": forumFilter.toJson(),
     };
 
     return post<PageResponse<ForumPost>>(
@@ -66,11 +71,11 @@ class ForumService extends BaseService {
   /// 获取指定用户的帖子
   Future<ApiResponse<PageResponse<ForumPost>>> userPosts(
     PageParams params,
-    int userId,
+    String userId,
   ) {
     return post<PageResponse<ForumPost>>(
       ForumApi.userPosts,
-      body: {...params.toJson(), "id": userId.toString()},
+      body: {...params.toJson(), "id": userId},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => ForumPost.fromJson(item)),
     );
@@ -220,6 +225,17 @@ class ForumService extends BaseService {
       body: {...params.toJson(), "id": commentId},
       fromJson: (json) =>
           PageResponse.fromJson(json, (item) => ForumComment.fromJson(item)),
+    );
+  }
+
+  Future<ApiResponse<PageResponse<CategoryTag>>> forumCategoryTag({
+    String? categoryId,
+  }) {
+    return post<PageResponse<CategoryTag>>(
+      ForumApi.postCategoryTag,
+      body: {"category_id": categoryId},
+      fromJson: (json) =>
+          PageResponse.fromJson(json, (item) => CategoryTag.fromJson(item)),
     );
   }
 }

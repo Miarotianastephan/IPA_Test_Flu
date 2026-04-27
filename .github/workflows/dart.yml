@@ -59,6 +59,27 @@ jobs:
           pod install --repo-update
           echo "✅ pod install done"
 
+      # 🔍 Deep diagnosis
+      - name: Diagnose pod state
+        run: |
+          echo "=== Podfile ==="
+          cat ios/Podfile
+          echo ""
+          echo "=== Podfile.lock (Firebase lines) ==="
+          grep -i "firebase" ios/Podfile.lock || echo "⚠️ No Firebase in Podfile.lock"
+          echo ""
+          echo "=== Pods directory ==="
+          ls ios/Pods/ || echo "⚠️ Pods folder empty or missing"
+          echo ""
+          echo "=== Firebase pod folder ==="
+          ls ios/Pods/Firebase/ || echo "⚠️ No Firebase pod"
+          echo ""
+          echo "=== xcworkspace exists? ==="
+          ls ios/Runner.xcworkspace/contents.xcworkspacedata || echo "⚠️ xcworkspace missing"
+          echo ""
+          echo "=== AppDelegate.swift ==="
+          cat ios/Runner/AppDelegate.swift
+
       # 🔍 Verify Firebase pods are present
       - name: Verify Firebase pods
         run: |

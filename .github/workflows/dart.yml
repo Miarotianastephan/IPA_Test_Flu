@@ -44,15 +44,26 @@ jobs:
       - name: Verify device_info_plus version
         run: flutter pub deps | grep device_info_plus
 
+      # 🧹 Full CocoaPods reset
       - name: Clean CocoaPods cache
         run: |
           cd ios
-          rm -rf Podfile.lock Pods
+          rm -rf Podfile.lock Pods .symlinks
+          pod cache clean --all
 
+      # 🔄 Install CocoaPods with deintegrate + reinstall
       - name: Install CocoaPods dependencies
         run: |
           cd ios
+          pod deintegrate || true
           pod install --repo-update
+          echo "✅ pod install done"
+
+      # 🔍 Verify Firebase pods are present
+      - name: Verify Firebase pods
+        run: |
+          ls ios/Pods/Firebase || echo "⚠️ Firebase pod folder not found!"
+          grep -r "Firebase" ios/Podfile.lock | head -10
 
       - name: Build iOS Release
         run: flutter build ios --release --no-codesign

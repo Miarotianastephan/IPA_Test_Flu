@@ -30,9 +30,25 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # 🔥 IMPORTANT : génère les fichiers iOS (xcconfig inclus)
-      - name: Prepare iOS build
-        run: flutter build ios --debug --no-codesign
+      # Clean CocoaPods cache and lockfile
+      - name: Clean CocoaPods cache
+        run: |
+          cd ios
+          rm -rf Podfile.lock Pods
+
+      # Update CocoaPods repos
+      - name: Update CocoaPods repos
+        run: pod repo update
+        working-directory: ios
+
+      # Install CocoaPods dependencies (with repo-update for freshness)
+      - name: Install CocoaPods dependencies
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - run: pod repo update
+        working-directory: ios
 
       # ✅ Build final release
       - name: Build iOS Release

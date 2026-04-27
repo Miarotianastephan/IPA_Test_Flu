@@ -1,5 +1,4 @@
 name: iOS-ipa-build
-
 on:
   workflow_dispatch:
 
@@ -22,39 +21,36 @@ jobs:
           dart --version
           xcodebuild -version
 
-      # ✅ Nettoyage AVANT pub get
       - name: Clean project
         run: flutter clean
 
-      # ✅ Installer les dépendances
+      # ✅ Force safe version of device_info_plus before resolving deps
+      - name: Pin device_info_plus to safe version
+        run: |
+          sed -i '' 's/device_info_plus:.*/device_info_plus: ^10.1.2/' pubspec.yaml
+          echo "--- device_info_plus line after patch ---"
+          grep device_info_plus pubspec.yaml
+
       - name: Install dependencies
         run: flutter pub get
 
-      # Clean CocoaPods cache and lockfile
+      # Verify the pinned version is effectively used
+      - name: Verify device_info_plus version
+        run: flutter pub deps | grep device_info_plus
+
       - name: Clean CocoaPods cache
         run: |
           cd ios
           rm -rf Podfile.lock Pods
 
-      # Update CocoaPods repos
-      - name: Update CocoaPods repos
-        run: pod repo update
-        working-directory: ios
-
-      # Install CocoaPods dependencies (with repo-update for freshness)
       - name: Install CocoaPods dependencies
         run: |
           cd ios
           pod install --repo-update
 
-      - run: pod repo update
-        working-directory: ios
-
-      # ✅ Build final release
       - name: Build iOS Release
         run: flutter build ios --release --no-codesign
 
-      # 📦 Création IPA
       - name: Create Payload
         run: mkdir Payload
         working-directory: build/ios/iphoneos
@@ -67,12 +63,10 @@ jobs:
         run: zip -qq -r -9 FlutterIpaExport.ipa Payload
         working-directory: build/ios/iphoneos
 
-      # 🏷 Tag dynamique
       - name: Get timestamp
         id: timestamp
         run: echo "timestamp=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      # 🚀 Upload
       - name: Upload IPA
         uses: svenstaro/upload-release-action@v2
         with:

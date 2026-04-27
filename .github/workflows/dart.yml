@@ -2,48 +2,36 @@ name: iOS-ipa-build
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - main
-  #   paths-ignore:
-  #     - '**.md'
-  #     - '.gitignore'
-  #     - '.github'
 
 jobs:
   build-ios:
     name: 🎉 iOS Build
-    runs-on: macos-latest
+    runs-on: macos-14
+
     steps:
       - uses: actions/checkout@v3
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          architecture: x64
-      - run: flutter pub get
-      
-      # Clean CocoaPods cache and lockfile
-      - name: Clean CocoaPods cache
+          flutter-version: '3.19.0'
+
+      - name: Check Xcode version
+        run: xcodebuild -version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Clean project
+        run: flutter clean
+
+      - name: Install CocoaPods
         run: |
           cd ios
-          rm -rf Podfile.lock Pods
+          pod install
 
-      # Update CocoaPods repos
-      - name: Update CocoaPods repos
-        run: pod repo update
-        working-directory: ios
-
-      # Install CocoaPods dependencies (with repo-update for freshness)
-      - name: Install CocoaPods dependencies
-        run: |
-          cd ios
-          pod install --repo-update
-
-      - run: pod repo update
-        working-directory: ios
-
-      - run: flutter build ios --release --no-codesign
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign
 
       - run: mkdir Payload
         working-directory: build/ios/iphoneos
@@ -55,25 +43,14 @@ jobs:
         run: zip -qq -r -9 FlutterIpaExport.ipa Payload
         working-directory: build/ios/iphoneos
 
-        # ✨ Tag dynamique basé sur la date
       - name: Get current timestamp
         id: timestamp
         run: echo "timestamp=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      - name: Upload binaries to release
+      - name: Upload IPA
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/ios/iphoneos/FlutterIpaExport.ipa
           tag: v1.0-${{ steps.timestamp.outputs.timestamp }}
           overwrite: true
-          body: "iOS Build - ${{ steps.timestamp.outputs.timestamp }}"
-      - name: Upload binaries to latest-ios release (lien stable)
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: latest-ios
-          release_name: "Latest iOS build"
-          overwrite: true
-          body: "Dernier build iOS - ${{ steps.timestamp.outputs.timestamp }}"

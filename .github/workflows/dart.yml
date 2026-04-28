@@ -55,29 +55,7 @@ jobs:
 
       # 🔍 Build with full error capture
       - name: Build iOS Release
-        run: |
-          set -o pipefail
-          flutter build ios --release --no-codesign 2>&1 | tee build_log.txt || true
-          echo ""
-          echo "=== ERRORS ONLY ==="
-          grep -iE "error:|BUILD FAILED|fatal:" build_log.txt | grep -v "warning:" | grep -v "note:" || echo "No explicit error lines found"
-          echo ""
-          echo "=== XCODE RESULT BUNDLE ==="
-          BUNDLE=$(grep "result bundle at path" build_log.txt | sed 's/.*path://' | tr -d '[:space:]')
-          if [ -n "$BUNDLE" ]; then
-            xcrun xcresulttool get --path "$BUNDLE" --format json 2>/dev/null | python3 -c "
-          import json,sys
-          d=json.load(sys.stdin)
-          issues=d.get('issues',{}).get('errorSummaries',{}).get('_values',[])
-          for i in issues:
-            print('ERROR:', i.get('message',{}).get('_value',''))
-            print('  at:', i.get('documentLocationInCreatingWorkspace',{}).get('url',{}).get('_value',''))
-          " || echo "Could not parse xcresult"
-          fi
-          echo ""
-          echo "=== LAST 30 LINES ==="
-          tail -30 build_log.txt
-          grep -q "Built build/ios" build_log.txt || exit 1
+        run: flutter build ios --release --no-codesign
           
       - name: Create Payload
         run: mkdir Payload

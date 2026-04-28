@@ -5,7 +5,6 @@ import 'package:live_app/models/group.dart';
 import 'package:live_app/page/group_chat_detail_page.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/utils/toast_util.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 
 import '../models/base_list_state.dart';
 import '../provider/api_provider.dart';
@@ -248,7 +247,7 @@ class _SearchGroupsPageState extends ConsumerState<SearchGroupsPage> {
           // Search bar
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: HtmlTextField(
+            child: TextField(
               cursorColor: Colors.white,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(

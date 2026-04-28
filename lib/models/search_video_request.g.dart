@@ -18,14 +18,23 @@ SearchVideoRequest _$SearchVideoRequestFromJson(Map<String, dynamic> json) =>
       city: json['city'] as String?,
     );
 
-Map<String, dynamic> _$SearchVideoRequestToJson(SearchVideoRequest instance) =>
-    <String, dynamic>{
-      'page': instance.page,
-      'keyword': ?instance.keyword,
-      'category_id': ?instance.categoryId,
-      'tag_id': ?instance.tagId,
-      'type': ?instance.type,
-      'sort': ?instance.sort,
-      'province': ?instance.province,
-      'city': ?instance.city,
-    };
+Map<String, dynamic> _$SearchVideoRequestToJson(SearchVideoRequest instance) {
+  final val = <String, dynamic>{
+    'page': instance.page,
+  };
+
+  void writeNotNull(String key, dynamic value) {
+    if (value != null) {
+      val[key] = value;
+    }
+  }
+
+  writeNotNull('keyword', instance.keyword);
+  writeNotNull('category_id', instance.categoryId);
+  writeNotNull('tag_id', instance.tagId);
+  writeNotNull('type', instance.type);
+  writeNotNull('sort', instance.sort);
+  writeNotNull('province', instance.province);
+  writeNotNull('city', instance.city);
+  return val;
+}

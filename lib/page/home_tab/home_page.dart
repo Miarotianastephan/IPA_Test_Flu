@@ -104,10 +104,8 @@ class HomeTabPageState extends ConsumerState<HomeTabPage>
   int _getRealVideoIndex(int displayIndex, int type) {
     final config = ref.read(appConfigProvider);
     final int adsAfter = config.data?.adsAfter ?? 10;
-    final adCount = ref
-        .read(adListProvider(AdPlacement.videoFeedInFeed))
-        .list
-        .length;
+    final adCount =
+        ref.read(adListProvider(AdPlacement.videoFeedInFeed)).list.length;
     if (adCount <= 0) return displayIndex;
     final adsBefore = (displayIndex + 1) ~/ (adsAfter + 1);
     return displayIndex - adsBefore;
@@ -116,10 +114,8 @@ class HomeTabPageState extends ConsumerState<HomeTabPage>
   bool _isAdPage(int displayIndex) {
     final config = ref.read(appConfigProvider);
     final int adsAfter = config.data?.adsAfter ?? 10;
-    final adCount = ref
-        .read(adListProvider(AdPlacement.videoFeedInFeed))
-        .list
-        .length;
+    final adCount =
+        ref.read(adListProvider(AdPlacement.videoFeedInFeed)).list.length;
     if (adCount <= 0) return false;
     return (displayIndex + 1) % (adsAfter + 1) == 0;
   }
@@ -166,7 +162,7 @@ class HomeTabPageState extends ConsumerState<HomeTabPage>
       child: Scaffold(
         backgroundColor: Colors.black,
         body: Padding(
-          padding: EdgeInsetsGeometry.only(
+          padding: EdgeInsets.only(
             bottom: PlatformCheck.isWebIOS ? 73 : 53,
           ),
           child: Stack(
@@ -184,8 +180,7 @@ class HomeTabPageState extends ConsumerState<HomeTabPage>
                   top: true,
                   bottom: false,
                   child: AnimatedOpacity(
-                    opacity:
-                        1.0 -
+                    opacity: 1.0 -
                         (_refreshHeaderHeight / _maxHeaderHeight).clamp(
                           0.0,
                           1.0,
@@ -243,9 +238,9 @@ class HomeTabPageState extends ConsumerState<HomeTabPage>
           setState(() {
             _refreshHeaderHeight =
                 (_refreshHeaderHeight - scrollNotification.overscroll).clamp(
-                  0.0,
-                  _maxHeaderHeight,
-                );
+              0.0,
+              _maxHeaderHeight,
+            );
           });
         }
 

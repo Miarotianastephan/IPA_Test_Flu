@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/models/vip.dart';
 import 'package:live_app/provider/i18n_provider.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 import '../vip_badge.dart';
 
 class CommentInputBar extends ConsumerStatefulWidget {
@@ -85,7 +84,7 @@ class _CommentInputBarState extends ConsumerState<CommentInputBar> {
         Row(
           children: [
             Expanded(
-              child: HtmlTextField(
+              child: TextField(
                 controller: widget.controller,
                 enabled: !_isSending,
                 style: TextStyle(color: textColor),

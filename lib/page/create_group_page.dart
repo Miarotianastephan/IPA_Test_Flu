@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/page/select_members_page.dart';
 import 'package:live_app/provider/i18n_provider.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 import 'package:live_app/widgets/vip_badge.dart';
 
 import '../provider/api_provider.dart';
@@ -347,8 +346,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                             backgroundImage: _groupAvatarFile != null
                                 ? FileImage(_groupAvatarFile!)
                                 : null,
-                            child:
-                                _groupAvatarFile == null &&
+                            child: _groupAvatarFile == null &&
                                     _selectedDefaultAvatar == null
                                 ? const Icon(
                                     Icons.group,
@@ -392,7 +390,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  HtmlTextField(
+                  TextField(
                     controller: _groupNameController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
@@ -419,7 +417,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  HtmlTextField(
+                  TextField(
                     controller: _descriptionController,
                     style: const TextStyle(color: Colors.white),
                     maxLines: 3,
@@ -478,7 +476,7 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                               () => _isPublic = value ? "public" : "private",
                             );
                           },
-                          activeThumbColor: Colors.white,
+                          activeColor: Colors.white,
                         ),
                       ],
                     ),
@@ -571,18 +569,18 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
                                         fit: BoxFit.cover,
                                         errorBuilder:
                                             (context, error, stackTrace) {
-                                              return Text(
-                                                user.nickname?.substring(
-                                                      0,
-                                                      1,
-                                                    ) ??
-                                                    "?",
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 16,
-                                                ),
-                                              );
-                                            },
+                                          return Text(
+                                            user.nickname?.substring(
+                                                  0,
+                                                  1,
+                                                ) ??
+                                                "?",
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
                             ),
@@ -627,7 +625,6 @@ class _CreateGroupPageState extends ConsumerState<CreateGroupPage> {
               ),
             ),
           ),
-
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

@@ -8,6 +8,7 @@ android {
     namespace = "live.bogo.app.live_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    val releaseKeystoreFile = file("key.jks")
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -31,7 +32,7 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("key.jks")
+            storeFile = releaseKeystoreFile
             storePassword = "liveappflu"
             keyAlias = "key"
             keyPassword = "liveappflu"
@@ -40,7 +41,12 @@ android {
 
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (releaseKeystoreFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                logger.warn("Release keystore key.jks not found; signing release APK with debug key for local build.")
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -57,5 +63,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("com.google.android.gms:play-services-tasks:18.3.0")
     implementation("me.pushy:sdk:1.0.72")
 }

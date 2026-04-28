@@ -5,7 +5,6 @@ import 'package:live_app/constants/ad_placement.dart';
 import 'package:live_app/provider/ad_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/ad_banner_carousel.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 
 import '../config/storage_config.dart';
 import '../widgets/empty_widget.dart';
@@ -119,7 +118,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     return Row(
       children: [
         Expanded(
-          child: HtmlTextField(
+          child: TextField(
             controller: _controller,
             autofocus: true,
             cursorColor: Colors.white,
@@ -175,7 +174,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               ref.read(i18nNotifierProvider.notifier).translate("historyTitle"),
               style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
-
             TextButton(
               onPressed: _clearHistory,
               child: Row(

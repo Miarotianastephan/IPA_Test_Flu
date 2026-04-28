@@ -142,7 +142,8 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
         Navigator.of(context, rootNavigator: true).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, _, _) => ForceUpdatePage(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                ForceUpdatePage(
               version: result.version!,
               currentVersion: result.currentVersion,
               landingUrl: landingUrl,

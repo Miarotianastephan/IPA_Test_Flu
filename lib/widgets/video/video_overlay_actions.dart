@@ -103,7 +103,7 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
 
     // Listen for watch time running out to start preview countdown
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.listenManual(cumulativeWatchTimeProvider, (_, _) {
+      ref.listenManual(cumulativeWatchTimeProvider, (previous, next) {
         _onWatchTimeChanged();
       });
     });
@@ -122,9 +122,8 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
   void _initPreviewCountdown() {
     if (!_isBasePaidVideo) return;
 
-    final isAlreadyExpired = ref
-        .read(expiredPreviewProvider.notifier)
-        .isExpired(widget.video.id);
+    final isAlreadyExpired =
+        ref.read(expiredPreviewProvider.notifier).isExpired(widget.video.id);
     if (isAlreadyExpired) {
       _previewExpired = true;
       _previewCountdown = 0;
@@ -359,8 +358,7 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
   Widget build(BuildContext context) {
     final watchTimeState = ref.watch(cumulativeWatchTimeProvider);
     final hasWatchTime = watchTimeState.remainingSeconds > 0;
-    final isPaid =
-        widget.video.price > 0 &&
+    final isPaid = widget.video.price > 0 &&
         !widget.video.isBought &&
         !ref.hasPermission(Permission.accessShortFree);
 
@@ -497,15 +495,14 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                         ),
                       ),
                       const SizedBox(height: 15),
-
                       Builder(
                         builder: (btnContext) => _buildAction(
                           icon: Icons.favorite,
                           color: widget.isLike
                               ? Colors.red
                               : isTapLike == true
-                              ? Colors.transparent
-                              : Colors.white,
+                                  ? Colors.transparent
+                                  : Colors.white,
                           onTap: () async {
                             var value = !widget.isLike;
                             if (value) {
@@ -532,7 +529,6 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                         ),
                       ),
                       const SizedBox(height: 15),
-
                       _buildAction(
                         icon: Icons.comment,
                         color: Colors.white,
@@ -543,7 +539,6 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                         count: _commentCount,
                       ),
                       const SizedBox(height: 15),
-
                       _buildAction(
                         icon: widget.isFavorite
                             ? Icons.bookmark
@@ -566,7 +561,6 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                         count: _favoriteCount,
                       ),
                       const SizedBox(height: 15),
-
                       if (!kIsWeb)
                         StreamBuilder<Download?>(
                           stream: ref
@@ -654,7 +648,6 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                           },
                         ),
                     ],
-
                     GestureDetector(
                       onTap: () {
                         widget.onHidden(!_showActions);
@@ -715,11 +708,11 @@ class _VideoOverlayActionsState extends ConsumerState<VideoOverlayActions>
                   ),
                 )
               : (widget.video.isBought && widget.video.price > 0)
-              ? const Padding(
-                  padding: EdgeInsets.only(right: 10, bottom: 15),
-                  child: PurchasedBadge(),
-                )
-              : const SizedBox.shrink(),
+                  ? const Padding(
+                      padding: EdgeInsets.only(right: 10, bottom: 15),
+                      child: PurchasedBadge(),
+                    )
+                  : const SizedBox.shrink(),
         ),
       ],
     );
@@ -744,7 +737,6 @@ class _ExpandableTextState extends State<ExpandableText>
       onTap: () => setState(() => expanded = !expanded),
       child: AnimatedSize(
         duration: const Duration(milliseconds: 300),
-
         curve: Curves.fastLinearToSlowEaseIn,
         child: Text(
           widget.text,

@@ -57,6 +57,19 @@ class AppLangVersionUtils {
     }
   }
 
+  static String getAppId() {
+    switch (getLangVersion()) {
+      case 1:
+        return "live.bogo.app.live_app.cn";
+      case 2:
+        return "live.bogo.app.live_app.xo";
+      case 3:
+        return "live.bogo.app.live_app.tk";
+      default:
+        return "live.bogo.app.live_app.cn";
+    }
+  }
+
   static String getAppFullName() {
     switch (getLangVersion()) {
       case 1:

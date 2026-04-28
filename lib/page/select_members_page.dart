@@ -4,7 +4,6 @@ import 'package:live_app/models/page_response.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/empty_widget.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 import 'package:live_app/widgets/vip_badge.dart';
 
 import '../provider/api_provider.dart';
@@ -265,41 +264,42 @@ class _SelectMembersPageState extends ConsumerState<SelectMembersPage>
       child: !_followLoaded && _followLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : _followResults.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.people_outline,
-                    size: 64,
-                    color: Colors.white38,
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.people_outline,
+                        size: 64,
+                        color: Colors.white38,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        translate("noFollowsFound"),
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 16),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    translate("noFollowsFound"),
-                    style: const TextStyle(color: Colors.white54, fontSize: 16),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              controller: _followsScrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: _followResults.length + (_followLoading ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _followResults.length) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-                  );
-                }
+                )
+              : ListView.builder(
+                  controller: _followsScrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: _followResults.length + (_followLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _followResults.length) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      );
+                    }
 
-                final user = _followResults[index];
-                return _buildUserTile(user);
-              },
-            ),
+                    final user = _followResults[index];
+                    return _buildUserTile(user);
+                  },
+                ),
     );
   }
 
@@ -311,7 +311,7 @@ class _SelectMembersPageState extends ConsumerState<SelectMembersPage>
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: HtmlTextField(
+          child: TextField(
             controller: _searchController,
             cursorColor: Colors.white,
             style: const TextStyle(color: Colors.white),
@@ -342,7 +342,6 @@ class _SelectMembersPageState extends ConsumerState<SelectMembersPage>
             },
           ),
         ),
-
         Expanded(
           child: !_hasSearched
               ? Center(
@@ -356,47 +355,46 @@ class _SelectMembersPageState extends ConsumerState<SelectMembersPage>
                   onRefresh: () async => _fetchSearchUsers(),
                   child:
                       searchUserState.list.isEmpty && !searchUserState.loading
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.search_off,
-                                size: 64,
-                                color: Colors.white38,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                translate("noResultsFound"),
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount:
-                              searchUserState.list.length +
-                              (searchUserState.loading ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == searchUserState.list.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.search_off,
+                                    size: 64,
+                                    color: Colors.white38,
                                   ),
-                                ),
-                              );
-                            }
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    translate("noResultsFound"),
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: searchUserState.list.length +
+                                  (searchUserState.loading ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index == searchUserState.list.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  );
+                                }
 
-                            final user = searchUserState.list[index];
-                            return _buildUserTile(user);
-                          },
-                        ),
+                                final user = searchUserState.list[index];
+                                return _buildUserTile(user);
+                              },
+                            ),
                 ),
         ),
       ],

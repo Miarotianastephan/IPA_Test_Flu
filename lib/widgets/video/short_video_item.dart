@@ -33,8 +33,7 @@ import 'bw_progress.dart';
 import 'deposit_promo_overlay.dart';
 import 'short_video_item_stub.dart'
     if (dart.library.io) 'short_video_item_mobile_impl.dart'
-    if (dart.library.html) 'short_video_item_web_impl.dart'
-    as platform_impl;
+    if (dart.library.html) 'short_video_item_web_impl.dart' as platform_impl;
 import 'video_overlay_actions.dart';
 
 class ShortVideoItemController extends ChangeNotifier {
@@ -273,9 +272,7 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
         ref.read(webVideoMuteProvider.notifier).setMuted(true);
       },
       onWatchPercentReached: (watchDuration, videoDuration) {
-        ref
-            .read(userProvider.notifier)
-            .userInterest(
+        ref.read(userProvider.notifier).userInterest(
               videoId: widget.videoInfo.id,
               watchDuration: watchDuration,
               videoDuration: videoDuration,
@@ -323,8 +320,7 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
     if (!mounted || _platformPlayer == null) return;
 
     final video = widget.videoInfo;
-    final isPaid =
-        video.price > 0 &&
+    final isPaid = video.price > 0 &&
         !video.isBought &&
         !ref.hasPermission(Permission.accessShortFree);
     if (!isPaid) return;
@@ -357,8 +353,7 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
     if (!mounted || _platformPlayer == null) return;
 
     final video = widget.videoInfo;
-    final isPaid =
-        video.price > 0 &&
+    final isPaid = video.price > 0 &&
         !video.isBought &&
         !ref.hasPermission(Permission.accessShortFree);
     if (!isPaid) return;
@@ -370,8 +365,7 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
     }
 
     final player = _platformPlayer!;
-    final isActuallyPlaying =
-        player.isInitializedListenable.value &&
+    final isActuallyPlaying = player.isInitializedListenable.value &&
         player.isPlayingListenable.value &&
         !player.isBufferingListenable.value;
     if (!isActuallyPlaying) {
@@ -608,15 +602,14 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
 
     return ValueListenableBuilder<Duration>(
       valueListenable: _platformPlayer!.positionListenable,
-      builder: (_, position, _) {
+      builder: (context, position, child) {
         final duration = Duration(
           milliseconds: (widget.videoInfo.duration).toInt(),
         );
         final progress = duration.inMilliseconds == 0
             ? 0.0
             : position.inMilliseconds / duration.inMilliseconds;
-        final isPaidVideo =
-            widget.videoInfo.price > 0 &&
+        final isPaidVideo = widget.videoInfo.price > 0 &&
             !widget.videoInfo.isBought &&
             !ref.hasPermission(Permission.accessShortFree);
         return _buildSlider(context, position, duration, progress, isPaidVideo);
@@ -743,12 +736,11 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
                         errorWidget: const Icon(Icons.broken_image, size: 40),
                       ),
                     ),
-
                     Positioned.fill(
                       child: ValueListenableBuilder<bool>(
                         valueListenable:
                             _platformPlayer!.isInitializedListenable,
-                        builder: (_, ready, _) {
+                        builder: (context, ready, child) {
                           if (!ready) return const SizedBox.shrink();
 
                           if (!_hasCalledOnInitialized) {
@@ -777,9 +769,8 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
                                     .stopTracking(videoId: video.id);
                               } else if (info.visibleFraction > 0.65) {
                                 ref
-                                        .read(currentVideoUserProvider.notifier)
-                                        .state =
-                                    video.user;
+                                    .read(currentVideoUserProvider.notifier)
+                                    .state = video.user;
                                 ref.read(currentVideoProvider.notifier).state =
                                     video;
 
@@ -801,14 +792,13 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
                         },
                       ),
                     ),
-
                     Positioned.fill(
                       child: IgnorePointer(
                         child: Center(
                           child: ValueListenableBuilder<bool>(
                             valueListenable:
                                 _platformPlayer!.isBufferingListenable,
-                            builder: (_, isBuffering, _) {
+                            builder: (context, isBuffering, child) {
                               return isBuffering
                                   ? const BWProgress()
                                   : const SizedBox.shrink();
@@ -822,7 +812,6 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
               );
             },
           ),
-
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -845,7 +834,7 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
               child: Center(
                 child: ValueListenableBuilder<bool>(
                   valueListenable: _platformPlayer!.isPlayingListenable,
-                  builder: (_, isPlaying, _) {
+                  builder: (context, isPlaying, child) {
                     return AnimatedOpacity(
                       opacity: (!_manuallyPaused || isPlaying) ? 0.0 : 1.0,
                       duration: const Duration(milliseconds: 200),
@@ -860,7 +849,6 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
               ),
             ),
           ),
-
           Positioned(
             left: 0,
             right: 0,
@@ -905,7 +893,6 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
 
                   widget.onVideoInfoChange(video.copyWith(isFollow: v));
                 },
-
                 onLikeChanged: (v) async {
                   v
                       ? await videoService.likeVideo(video.id)
@@ -934,9 +921,8 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
                   widget.onVideoInfoChange(
                     video.copyWith(
                       isFavorite: v,
-                      favoriteCount: v
-                          ? video.favoriteCount + 1
-                          : video.favoriteCount - 1,
+                      favoriteCount:
+                          v ? video.favoriteCount + 1 : video.favoriteCount - 1,
                     ),
                   );
                 },
@@ -995,8 +981,8 @@ class _ShortVideoItemState extends ConsumerState<ShortVideoItem>
               DepositPromoOverlay(
                 onDepositPressed: () =>
                     (AppLangVersionUtils.isCn() || AppLangVersionUtils.isTk())
-                    ? null
-                    : _navigateToGame(),
+                        ? null
+                        : _navigateToGame(),
               ),
         ],
       ),

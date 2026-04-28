@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
     as fln;
-import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../models/version.dart';
+import '../../utils/app_package_info.dart';
 import '../version_api.dart';
 import './base_service.dart';
 
@@ -90,8 +90,7 @@ class VersionService extends BaseService {
   }
 
   static Future<String> getCurrentVersion() async {
-    final info = await PackageInfo.fromPlatform();
-    return info.version;
+    return AppPackageInfoUtil.getCurrentVersion();
   }
 
   Future<Version?> fetchVersion() async {
@@ -113,14 +112,10 @@ class VersionService extends BaseService {
   }
 
   static bool isUpdateAvailable(String latest, String current) {
-    final latestParts = latest
-        .split('.')
-        .map((e) => int.tryParse(e) ?? 0)
-        .toList();
-    final currentParts = current
-        .split('.')
-        .map((e) => int.tryParse(e) ?? 0)
-        .toList();
+    final latestParts =
+        latest.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    final currentParts =
+        current.split('.').map((e) => int.tryParse(e) ?? 0).toList();
 
     final maxLength = latestParts.length > currentParts.length
         ? latestParts.length

@@ -63,16 +63,18 @@ class AdService extends BaseService {
     String? ip,
     String? agentCode,
   }) {
+    final body = <String, dynamic>{
+      "rule_code": ruleCode,
+    };
+    if (triggerRuleId != null) body["trigger_rule_id"] = triggerRuleId;
+    if (deviceType != null) body["device_type"] = deviceType;
+    if (appVersion != null) body["app_version"] = appVersion;
+    if (ip != null) body["ip"] = ip;
+    if (agentCode != null) body["agent_code"] = agentCode;
+
     return post<Ad>(
       AdApi.adsByRuleCode,
-      body: {
-        "rule_code": ruleCode,
-        "trigger_rule_id": ?triggerRuleId,
-        "device_type": ?deviceType,
-        "app_version": ?appVersion,
-        "ip": ?ip,
-        "agent_code": ?agentCode,
-      },
+      body: body,
       fromJson: (json) => Ad.fromJson(json),
     );
   }

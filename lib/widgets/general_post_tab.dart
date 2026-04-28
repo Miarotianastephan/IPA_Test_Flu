@@ -44,11 +44,13 @@ class GeneralPostTab extends ConsumerWidget {
       child: !isLoaded
           ? _buildFirstLoading() // 只有首次、且确实在 loading 时全屏转圈
           : loading && results.isEmpty
-          ? _buildFirstLoading()
-          : NotificationListener<ScrollNotification>(
-              onNotification: (scroll) => _handleScroll(scroll),
-              child: results.isEmpty ? _buildEmpty() : _buildList(context, ref),
-            ),
+              ? _buildFirstLoading()
+              : NotificationListener<ScrollNotification>(
+                  onNotification: (scroll) => _handleScroll(scroll),
+                  child: results.isEmpty
+                      ? _buildEmpty()
+                      : _buildList(context, ref),
+                ),
     );
   }
 
@@ -68,7 +70,7 @@ class GeneralPostTab extends ConsumerWidget {
           : PageStorageKey<String>(scrollStorageKey!),
       addAutomaticKeepAlives: false,
       itemCount: results.length + (loading ? 1 : 0) + (finished ? 1 : 0),
-      separatorBuilder: (_, _) => showSeparators
+      separatorBuilder: (context, index) => showSeparators
           ? const Divider(color: Colors.white12)
           : const SizedBox.shrink(),
       itemBuilder: (context, index) {

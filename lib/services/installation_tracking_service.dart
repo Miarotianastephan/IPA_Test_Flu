@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
 import '../api/user_api.dart';
 import '../models/api_response.dart';
 import '../models/installation_stats.dart';
+import '../utils/app_package_info.dart';
 import '../utils/device_info_helper.dart';
 
 class InstallationTrackingService {
@@ -30,15 +30,15 @@ class InstallationTrackingService {
         }
       }
 
-      final hasConnectivity = await DeviceInfoHelper.instance
-          .hasInternetConnectivity();
+      final hasConnectivity =
+          await DeviceInfoHelper.instance.hasInternetConnectivity();
 
       if (!hasConnectivity) {
         return;
       }
 
-      final deviceFingerprint = await DeviceInfoHelper.instance
-          .getDeviceFingerprint();
+      final deviceFingerprint =
+          await DeviceInfoHelper.instance.getDeviceFingerprint();
 
       final platform = DeviceInfoHelper.instance.getPlatform();
       final deviceType = _mapPlatformToDeviceType(platform);
@@ -52,8 +52,7 @@ class InstallationTrackingService {
         }
       }
 
-      final packageInfo = await PackageInfo.fromPlatform();
-      final appVersion = packageInfo.version;
+      final appVersion = await AppPackageInfoUtil.getCurrentVersion();
 
       await _trackInstallation(
         deviceType: finalDeviceType,

@@ -24,7 +24,6 @@ import 'utils/agent_tracking.dart';
 import 'utils/app_route_observer.dart';
 import 'utils/deferred_route_generator.dart';
 import 'utils/toast_util.dart';
-import 'utils/web_text_font.dart';
 import 'utils/window_manager_wrapper.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -107,11 +106,6 @@ Future<void> main() async {
       }
       await initWindowManager();
       if (!kIsWeb) await PlatformCheck.initMediaKitIfHuawei();
-      try {
-        await loadIosSafariCjkLiteFontIfNeeded();
-      } catch (error, stackTrace) {
-        _logUnhandledError('WebFontLoader', error, stackTrace);
-      }
       runApp(const ProviderScope(child: MyApp()));
     },
     (error, stackTrace) {

@@ -28,7 +28,6 @@ import 'package:live_app/widgets/message/message_item_gif.dart';
 import 'package:live_app/widgets/message/video_message_item.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:photo_view/photo_view.dart';
 
@@ -38,6 +37,7 @@ import '../models/vip.dart';
 import '../provider/api_provider.dart';
 import '../provider/conversation_provider.dart';
 import '../provider/current_user_provider.dart';
+import '../utils/app_package_info.dart';
 import '../utils/conversation_utils.dart';
 import '../widgets/message/action_panel.dart';
 
@@ -207,14 +207,11 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     ));
 
     ref.invalidate(provider);
-    ref
-        .read(provider.future)
-        .then((value) {
-          debugPrint('chatLog loaded: ${value?.id}');
-        })
-        .catchError((e, st) {
-          debugPrint('chatLog error: $e\n$st');
-        });
+    ref.read(provider.future).then((value) {
+      debugPrint('chatLog loaded: ${value?.id}');
+    }).catchError((e, st) {
+      debugPrint('chatLog error: $e\n$st');
+    });
   }
 
   Future<void> _sendDeviceInfo() async {
@@ -229,7 +226,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
   Future<Map<String, dynamic>> _collectDeviceInfo() async {
     final deviceInfoPlugin = DeviceInfoPlugin();
     final deviceHelper = DeviceInfoHelper.instance;
-    final packageInfo = await PackageInfo.fromPlatform();
+    final packageInfo = await AppPackageInfoUtil.getInfo();
 
     String platform = deviceHelper.getPlatform();
     String? osVersion;
@@ -295,9 +292,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     final adState = ref.watch(adListProvider(AdPlacement.chatList));
     final adsAfter = ref.watch(appConfigProvider).data?.adsAfter ?? 5;
     final int adCount = adState.list.length;
-    final int adsToInsert = adsAfter > 0
-        ? _getAdsToInsert(messages.length, adCount, adsAfter)
-        : 0;
+    final int adsToInsert =
+        adsAfter > 0 ? _getAdsToInsert(messages.length, adCount, adsAfter) : 0;
     final int totalItemCount = messages.length + adsToInsert;
 
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
@@ -385,7 +381,6 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
           ),
           actions: [ChatMenuButton(user: widget.user)],
         ),
-
         body: Column(
           children: [
             Expanded(
@@ -446,8 +441,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                               senderConvUser?.agentSupport?.username ?? "客服白兔";
                           nickname = translate(agentUsername);
                         } else {
-                          nickname =
-                              senderUserInfo?.nickname ??
+                          nickname = senderUserInfo?.nickname ??
                               senderUserInfo?.username ??
                               widget.user.username ??
                               '';
@@ -474,7 +468,6 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                                       ),
                                     ),
                                   ),
-
                                   _buildMessage(
                                     msg,
                                     senderUserInfo,
@@ -505,8 +498,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                       right: 20,
                       child: GestureDetector(
                         onTap: () {
-                          final totalHeight =
-                              _scroll.position.maxScrollExtent +
+                          final totalHeight = _scroll.position.maxScrollExtent +
                               _scroll.position.viewportDimension;
                           _scroll.jumpTo(totalHeight);
                           setState(() {
@@ -592,9 +584,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
   Widget _buildKeyboardOrPanelSpace() {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final panelHeight = keyboardHeight > 0
-        ? keyboardHeight.ceilToDouble()
-        : 360;
+    final panelHeight =
+        keyboardHeight > 0 ? keyboardHeight.ceilToDouble() : 360;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
@@ -602,8 +593,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       height: _showActionPanel
           ? panelHeight.toDouble()
           : keyboardHeight > 0
-          ? keyboardHeight.ceilToDouble()
-          : bottomPadding,
+              ? keyboardHeight.ceilToDouble()
+              : bottomPadding,
       child: _showActionPanel
           ? GestureDetector(
               onTap: () {},
@@ -668,9 +659,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       final userService = ref.read(userServiceProvider);
       final response = await userService.uploadFile(
         path,
-        bytes: kIsWeb && audioFile != null
-            ? await audioFile.readAsBytes()
-            : null,
+        bytes:
+            kIsWeb && audioFile != null ? await audioFile.readAsBytes() : null,
         fileName: kIsWeb && audioFile != null ? audioFile.name : null,
         type: 'audio',
       );
@@ -706,9 +696,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       final userService = ref.read(userServiceProvider);
       final response = await userService.uploadFile(
         path,
-        bytes: kIsWeb && imageFile != null
-            ? await imageFile.readAsBytes()
-            : null,
+        bytes:
+            kIsWeb && imageFile != null ? await imageFile.readAsBytes() : null,
         fileName: kIsWeb && imageFile != null ? imageFile.name : null,
         type: 'image',
       );
@@ -879,8 +868,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         avatarUrl = getSupportAgentAvatar(senderConvUser) ?? "";
         vip = null;
       } else {
-        nickname =
-            senderUserInfo?.nickname ??
+        nickname = senderUserInfo?.nickname ??
             senderUserInfo?.username ??
             widget.user.username ??
             '';
@@ -1051,9 +1039,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       final userService = ref.read(userServiceProvider);
       final response = await userService.uploadFile(
         path,
-        bytes: kIsWeb && videoFile != null
-            ? await videoFile.readAsBytes()
-            : null,
+        bytes:
+            kIsWeb && videoFile != null ? await videoFile.readAsBytes() : null,
         fileName: kIsWeb && videoFile != null ? videoFile.name : null,
         type: 'video',
       );
@@ -1203,9 +1190,8 @@ class _ImagePreviewDialogState extends State<_ImagePreviewDialog> {
                         color: Colors.white70,
                         size: 28,
                       ),
-                      onPressed: _isUploading
-                          ? null
-                          : () => Navigator.pop(context),
+                      onPressed:
+                          _isUploading ? null : () => Navigator.pop(context),
                     ),
                   ),
                   CircleAvatar(
@@ -1466,13 +1452,13 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
             child: Center(
               child: _isInitialized
                   ? (kIsWeb
-                        ? _webVideoPlaceholder()
-                        : (_useMediaKit && _mediaKitVideoController != null
-                              ? Video(
-                                  controller: _mediaKitVideoController!,
-                                  controls: null,
-                                )
-                              : _videoPlayerController != null
+                      ? _webVideoPlaceholder()
+                      : (_useMediaKit && _mediaKitVideoController != null
+                          ? Video(
+                              controller: _mediaKitVideoController!,
+                              controls: null,
+                            )
+                          : _videoPlayerController != null
                               ? AspectRatio(
                                   aspectRatio:
                                       _videoPlayerController!.value.aspectRatio,
@@ -1482,7 +1468,6 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
                   : const CircularProgressIndicator(color: Colors.white),
             ),
           ),
-
           if (_isInitialized && !_isUploading && !kIsWeb)
             Positioned.fill(
               child: GestureDetector(
@@ -1509,7 +1494,6 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
                 ),
               ),
             ),
-
           if (_isUploading)
             Positioned.fill(
               child: Container(
@@ -1532,7 +1516,6 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
                 ),
               ),
             ),
-
           Positioned(
             bottom: 0,
             left: 0,
@@ -1563,9 +1546,8 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
                         color: Colors.white70,
                         size: 28,
                       ),
-                      onPressed: _isUploading
-                          ? null
-                          : () => Navigator.pop(context),
+                      onPressed:
+                          _isUploading ? null : () => Navigator.pop(context),
                     ),
                   ),
                   CircleAvatar(
@@ -1626,7 +1608,7 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
               value: event == null
                   ? 0
                   : event.cumulativeBytesLoaded /
-                        (event.expectedTotalBytes ?? 1),
+                      (event.expectedTotalBytes ?? 1),
               color: Colors.white,
             ),
           ),

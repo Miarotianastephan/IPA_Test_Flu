@@ -28,9 +28,8 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
     String translate(String key) => i18nNotifier.translate(key);
     return downloadsStream.when(
       data: (items) {
-        final filteredItems = items
-            .where((item) => item.type == currentType)
-            .toList();
+        final filteredItems =
+            items.where((item) => item.type == currentType).toList();
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -161,7 +160,7 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
                                   loading: () => Text(
                                     "${translate("calculatingSpace")}...",
                                   ),
-                                  error: (_, _) =>
+                                  error: (error, stackTrace) =>
                                       Text(translate("spaceUnavailable")),
                                 ),
                               ),
@@ -185,8 +184,8 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
                                                   TextButton(
                                                     onPressed: () =>
                                                         Navigator.of(
-                                                          context,
-                                                        ).pop(),
+                                                      context,
+                                                    ).pop(),
                                                     child: const Text(
                                                       "OK",
                                                       style: TextStyle(
@@ -202,7 +201,8 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
                                       )
                                     : const SizedBox.shrink(),
                                 loading: () => const SizedBox.shrink(),
-                                error: (_, _) => const SizedBox.shrink(),
+                                error: (error, stackTrace) =>
+                                    const SizedBox.shrink(),
                               ),
                             ],
                           ),
@@ -226,7 +226,7 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
       },
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (_, _) =>
+      error: (error, stackTrace) =>
           Scaffold(body: Center(child: Text(translate("loadingError")))),
     );
   }
@@ -291,7 +291,6 @@ class _DownloadTileState extends State<_DownloadTile> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       elevation: 6,
-
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
@@ -323,25 +322,29 @@ class _DownloadTileState extends State<_DownloadTile> {
                 item.status == "downloading" || item.status == "paused"
                     ? const SizedBox.shrink()
                     : widget.isDeleteOneTile
-                    ? IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.white),
-                        onPressed: () async {
-                          final repo = ref.read(offlineRepoProvider);
-                          await repo.deleteResource(item.id);
-                          ref.read(preparedProvider(itemId).notifier).state =
-                              false;
-                          ref.read(preparingProvider(itemId).notifier).state =
-                              false;
-                          ref.read(progressProvider(itemId).notifier).state = 0;
-                          ref.invalidate(isStorageSaturatedProvider);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(translate("contentDeleted")),
-                            ),
-                          );
-                        },
-                      )
-                    : const SizedBox.shrink(),
+                        ? IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.white),
+                            onPressed: () async {
+                              final repo = ref.read(offlineRepoProvider);
+                              await repo.deleteResource(item.id);
+                              ref
+                                  .read(preparedProvider(itemId).notifier)
+                                  .state = false;
+                              ref
+                                  .read(preparingProvider(itemId).notifier)
+                                  .state = false;
+                              ref
+                                  .read(progressProvider(itemId).notifier)
+                                  .state = 0;
+                              ref.invalidate(isStorageSaturatedProvider);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(translate("contentDeleted")),
+                                ),
+                              );
+                            },
+                          )
+                        : const SizedBox.shrink(),
                 if (widget.isDeleteOneTile) const SizedBox(width: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -388,7 +391,6 @@ class _DownloadTileState extends State<_DownloadTile> {
                 ),
               ],
             ),
-
             if (item.status == "downloading" || item.status == "paused")
               const SizedBox(height: 8),
             if (item.status == "downloading" || item.status == "paused") ...[
@@ -404,7 +406,6 @@ class _DownloadTileState extends State<_DownloadTile> {
                       ),
                     ),
                   ),
-
                   IconButton(
                     icon: Icon(
                       isPaused == "paused" ? Icons.play_arrow : Icons.pause,

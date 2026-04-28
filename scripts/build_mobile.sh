@@ -6,33 +6,148 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 LANG_FILE_PATH="$PROJECT_ROOT/lib/utils/app_lang_version_utils.dart"
 PUBSPEC_PATH="$PROJECT_ROOT/pubspec.yaml"
+PUBSPEC_LOCK_PATH="$PROJECT_ROOT/pubspec.lock"
+VSCODE_SETTINGS_PATH="$PROJECT_ROOT/.vscode/settings.json"
 MANIFEST="$PROJECT_ROOT/android/app/src/main/AndroidManifest.xml"
 GRADLE="$PROJECT_ROOT/android/app/build.gradle.kts"
+L10N_DIR="$PROJECT_ROOT/lib/l10n"
+MOBILE_FLUTTER_VERSION="${MOBILE_FLUTTER_VERSION:-3.41.7}"
+FVM_CACHE_DIR="${FVM_CACHE_DIR:-$HOME/fvm/versions}"
+CONTENT_BACKUP_DIR=$(mktemp -d)
+FVM_STATE_BACKUP_DIR=$(mktemp -d)
+FVM_STATE_BACKED_UP=false
 
-BACKUP_DIR="$(mktemp -d)"
-cp "$LANG_FILE_PATH" "$BACKUP_DIR/app_lang_version_utils.dart"
-cp "$PUBSPEC_PATH" "$BACKUP_DIR/pubspec.yaml"
-cp "$MANIFEST" "$BACKUP_DIR/AndroidManifest.xml"
-cp "$GRADLE" "$BACKUP_DIR/build.gradle.kts"
+cp "$LANG_FILE_PATH" "$CONTENT_BACKUP_DIR/app_lang_version_utils.dart"
+cp "$PUBSPEC_PATH" "$CONTENT_BACKUP_DIR/pubspec.yaml"
+[ -f "$VSCODE_SETTINGS_PATH" ] && cp "$VSCODE_SETTINGS_PATH" "$CONTENT_BACKUP_DIR/vscode_settings.json"
+cp "$MANIFEST" "$CONTENT_BACKUP_DIR/AndroidManifest.xml"
+cp "$GRADLE" "$CONTENT_BACKUP_DIR/build.gradle.kts"
+mkdir -p "$CONTENT_BACKUP_DIR/l10n"
+cp "$L10N_DIR"/app_localizations*.dart "$CONTENT_BACKUP_DIR/l10n/" 2>/dev/null || true
+
+backup_fvm_state() {
+  mkdir -p "$FVM_STATE_BACKUP_DIR"
+  FVM_STATE_BACKED_UP=true
+
+  [ -f "$PROJECT_ROOT/.fvmrc" ] && cp "$PROJECT_ROOT/.fvmrc" "$FVM_STATE_BACKUP_DIR/.fvmrc"
+  [ -f "$PROJECT_ROOT/.fvm/fvm_config.json" ] && cp "$PROJECT_ROOT/.fvm/fvm_config.json" "$FVM_STATE_BACKUP_DIR/fvm_config.json"
+  [ -f "$PROJECT_ROOT/.fvm/release" ] && cp "$PROJECT_ROOT/.fvm/release" "$FVM_STATE_BACKUP_DIR/release"
+  [ -f "$PROJECT_ROOT/.fvm/version" ] && cp "$PROJECT_ROOT/.fvm/version" "$FVM_STATE_BACKUP_DIR/version"
+
+  if [ -L "$PROJECT_ROOT/.fvm/flutter_sdk" ]; then
+    readlink "$PROJECT_ROOT/.fvm/flutter_sdk" > "$FVM_STATE_BACKUP_DIR/flutter_sdk.link"
+  fi
+
+  if [ -d "$PROJECT_ROOT/.fvm/versions" ]; then
+    find "$PROJECT_ROOT/.fvm/versions" -maxdepth 1 -mindepth 1 -type l | while read -r link_path; do
+      printf '%s\t%s\n' "$(basename "$link_path")" "$(readlink "$link_path")"
+    done > "$FVM_STATE_BACKUP_DIR/version_links.tsv"
+  fi
+}
+
+restore_fvm_state() {
+  if [ "$FVM_STATE_BACKED_UP" != true ]; then
+    rm -rf "$FVM_STATE_BACKUP_DIR"
+    return
+  fi
+
+  if [ -f "$FVM_STATE_BACKUP_DIR/.fvmrc" ]; then
+    cp "$FVM_STATE_BACKUP_DIR/.fvmrc" "$PROJECT_ROOT/.fvmrc"
+  else
+    rm -f "$PROJECT_ROOT/.fvmrc"
+  fi
+
+  mkdir -p "$PROJECT_ROOT/.fvm"
+
+  if [ -f "$FVM_STATE_BACKUP_DIR/fvm_config.json" ]; then
+    cp "$FVM_STATE_BACKUP_DIR/fvm_config.json" "$PROJECT_ROOT/.fvm/fvm_config.json"
+  else
+    rm -f "$PROJECT_ROOT/.fvm/fvm_config.json"
+  fi
+
+  if [ -f "$FVM_STATE_BACKUP_DIR/release" ]; then
+    cp "$FVM_STATE_BACKUP_DIR/release" "$PROJECT_ROOT/.fvm/release"
+  else
+    rm -f "$PROJECT_ROOT/.fvm/release"
+  fi
+
+  if [ -f "$FVM_STATE_BACKUP_DIR/version" ]; then
+    cp "$FVM_STATE_BACKUP_DIR/version" "$PROJECT_ROOT/.fvm/version"
+  else
+    rm -f "$PROJECT_ROOT/.fvm/version"
+  fi
+
+  rm -f "$PROJECT_ROOT/.fvm/flutter_sdk"
+  if [ -f "$FVM_STATE_BACKUP_DIR/flutter_sdk.link" ]; then
+    ln -s "$(cat "$FVM_STATE_BACKUP_DIR/flutter_sdk.link")" "$PROJECT_ROOT/.fvm/flutter_sdk"
+  fi
+
+  mkdir -p "$PROJECT_ROOT/.fvm/versions"
+  find "$PROJECT_ROOT/.fvm/versions" -maxdepth 1 -mindepth 1 -type l -delete
+  if [ -f "$FVM_STATE_BACKUP_DIR/version_links.tsv" ]; then
+    while IFS=$'\t' read -r link_name link_target; do
+      [ -n "$link_name" ] && ln -s "$link_target" "$PROJECT_ROOT/.fvm/versions/$link_name"
+    done < "$FVM_STATE_BACKUP_DIR/version_links.tsv"
+  fi
+
+  rm -rf "$FVM_STATE_BACKUP_DIR"
+}
+
+ensure_fvm_version() {
+  local version="$1"
+
+  if ! command -v fvm >/dev/null 2>&1; then
+    echo "fvm is required to build mobile with Flutter $version."
+    exit 1
+  fi
+
+  if [ ! -d "$FVM_CACHE_DIR/$version" ]; then
+    echo "Flutter $version is not installed in FVM. Installing..."
+    fvm install "$version"
+  fi
+}
+
+use_fvm_version() {
+  local version="$1"
+
+  ensure_fvm_version "$version"
+  echo "Running: fvm use $version --skip-pub-get"
+  fvm use "$version" --skip-pub-get
+}
+
+replace_in_file() {
+  local pattern="$1"
+  local replacement="$2"
+  local file="$3"
+  PATTERN="$pattern" REPLACEMENT="$replacement" perl -0pi -e 's{$ENV{PATTERN}}{$ENV{REPLACEMENT}}g' "$file"
+}
+
+clear_pubspec_lock() {
+  rm -f "$PUBSPEC_LOCK_PATH"
+  echo "[OK] removed pubspec.lock; dependencies will be resolved again"
+}
 
 restore_original() {
-  cp "$BACKUP_DIR/app_lang_version_utils.dart" "$LANG_FILE_PATH"
-  cp "$BACKUP_DIR/pubspec.yaml" "$PUBSPEC_PATH"
-  cp "$BACKUP_DIR/AndroidManifest.xml" "$MANIFEST"
-  cp "$BACKUP_DIR/build.gradle.kts" "$GRADLE"
-  rm -rf "$BACKUP_DIR"
+  cp "$CONTENT_BACKUP_DIR/app_lang_version_utils.dart" "$LANG_FILE_PATH"
+  cp "$CONTENT_BACKUP_DIR/pubspec.yaml" "$PUBSPEC_PATH"
+  if [ -f "$CONTENT_BACKUP_DIR/vscode_settings.json" ]; then
+    mkdir -p "$(dirname "$VSCODE_SETTINGS_PATH")"
+    cp "$CONTENT_BACKUP_DIR/vscode_settings.json" "$VSCODE_SETTINGS_PATH"
+  else
+    rm -f "$VSCODE_SETTINGS_PATH"
+  fi
+  cp "$CONTENT_BACKUP_DIR/AndroidManifest.xml" "$MANIFEST"
+  cp "$CONTENT_BACKUP_DIR/build.gradle.kts" "$GRADLE"
+  if compgen -G "$CONTENT_BACKUP_DIR/l10n/app_localizations*.dart" >/dev/null; then
+    mkdir -p "$L10N_DIR"
+    cp "$CONTENT_BACKUP_DIR"/l10n/app_localizations*.dart "$L10N_DIR/"
+  fi
+  restore_fvm_state
+  rm -rf "$CONTENT_BACKUP_DIR"
   echo "Restored original files"
 }
 
 trap restore_original EXIT
-
-sed_in_place() {
-  local expression="$1"
-  local file="$2"
-
-  sed -i.bak "$expression" "$file"
-  rm -f "$file.bak"
-}
 
 cd "$PROJECT_ROOT"
 
@@ -77,25 +192,31 @@ esac
 
 echo ""
 echo "Building Flutter mobile: version=$choice  appName=$APP_NAME  appId=$APP_ID"
+echo "Flutter SDK: $MOBILE_FLUTTER_VERSION"
 echo ""
 
+backup_fvm_state
+use_fvm_version "$MOBILE_FLUTTER_VERSION"
+FLUTTER_CMD=(fvm flutter)
+
 # 1. Patch app_lang_version_utils.dart
-sed_in_place "s/return [123];/return $choice;/" "$LANG_FILE_PATH"
+replace_in_file 'return [123];' "return $choice;" "$LANG_FILE_PATH"
 echo "[OK] $LANG_FILE_PATH  -> getLangVersion() = $choice"
 
 # 2. Patch AndroidManifest.xml: android:label
-sed_in_place "s/android:label=\"[^\"]*\"/android:label=\"$APP_NAME\"/" "$MANIFEST"
+replace_in_file 'android:label="[^"]*"' "android:label=\"$APP_NAME\"" "$MANIFEST"
 echo "[OK] $MANIFEST  -> android:label = \"$APP_NAME\""
 
 # 3. Patch AndroidManifest.xml: android:icon
-sed_in_place "s|android:icon=\"@mipmap/[^\"]*\"|android:icon=\"$APP_ICON\"|" "$MANIFEST"
+replace_in_file 'android:icon="@mipmap/[^"]*"' "android:icon=\"$APP_ICON\"" "$MANIFEST"
 echo "[OK] $MANIFEST  -> android:icon = \"$APP_ICON\""
 
 # 4. Patch build.gradle.kts applicationId
-sed_in_place "s|applicationId = \"live\.bogo\.app\.live_app\.[a-z]*\"|applicationId = \"$APP_ID\"|" "$GRADLE"
+replace_in_file 'applicationId = "live\.bogo\.app\.live_app\.[a-z]*"' "applicationId = \"$APP_ID\"" "$GRADLE"
 echo "[OK] $GRADLE  -> applicationId = \"$APP_ID\""
 
 echo ""
+clear_pubspec_lock
 
 BUILD_ARGS=("$@")
 
@@ -134,11 +255,11 @@ if [ "${BUILD_ARGS[0]}" = "build" ] && [ "${BUILD_ARGS[1]:-}" = "apk" ]; then
     BASE_ARGS+=(--split-per-abi)
   fi
 
-  echo "Running: flutter ${BASE_ARGS[*]}"
-  flutter "${BASE_ARGS[@]}"
+  echo "Running: ${FLUTTER_CMD[*]} ${BASE_ARGS[*]}"
+  "${FLUTTER_CMD[@]}" "${BASE_ARGS[@]}"
 else
-  echo "Running: flutter ${BUILD_ARGS[*]}"
-  flutter "${BUILD_ARGS[@]}"
+  echo "Running: ${FLUTTER_CMD[*]} ${BUILD_ARGS[*]}"
+  "${FLUTTER_CMD[@]}" "${BUILD_ARGS[@]}"
 fi
 
 echo ""

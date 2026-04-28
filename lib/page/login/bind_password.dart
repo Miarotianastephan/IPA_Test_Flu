@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/config/storage_config.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/utils/username_formatter.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 import '../../provider/api_provider.dart';
 import '../../utils/toast_util.dart';
 
@@ -88,7 +87,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
               ),
               const SizedBox(height: 32),
               // 账号输入
-              HtmlTextField(
+              TextField(
                 controller: _usernameController,
                 inputFormatters: [UsernameFormatter()],
                 cursorColor: theme.colorScheme.onSurface,
@@ -119,7 +118,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
               ),
               const SizedBox(height: 16),
               // 账号输入
-              HtmlTextField(
+              TextField(
                 controller: _nicknameController,
                 cursorColor: theme.colorScheme.onSurface,
                 decoration: InputDecoration(
@@ -150,7 +149,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
               const SizedBox(height: 16),
 
               // 密码输入
-              HtmlTextField(
+              TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,
@@ -193,7 +192,7 @@ class _BindPasswordPageState extends ConsumerState<BindPasswordPage> {
               ),
               const SizedBox(height: 16),
               // 密码输入
-              HtmlTextField(
+              TextField(
                 controller: _checkPasswordController,
                 obscureText: _obscurePassword,
                 cursorColor: theme.colorScheme.onSurface,

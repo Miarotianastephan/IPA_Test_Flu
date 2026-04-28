@@ -1,7 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-import '../utils/web_text_font.dart';
 
 class AppTheme {
   final String name;
@@ -60,26 +57,14 @@ class AppTheme {
     final baseTypography = Typography.material2021(
       platform: TargetPlatform.android,
     );
-    final baseTextTheme =
-        textTheme ??
+    final baseTextTheme = textTheme ??
         (brightness == Brightness.dark
             ? baseTypography.white
             : baseTypography.black);
-    final webFontFamily = kIsWeb ? getEffectiveWebTextFontFamily() : null;
-    final webFontFamilyFallback = webFontFamily == null
-        ? null
-        : <String>[webFontFamily];
-    final effectiveTextTheme = webFontFamily == null
-        ? baseTextTheme
-        : baseTextTheme.apply(
-            fontFamily: webFontFamily,
-            fontFamilyFallback: webFontFamilyFallback,
-          );
+    final effectiveTextTheme = baseTextTheme;
 
     return ThemeData(
       typography: baseTypography,
-      fontFamily: webFontFamily,
-      fontFamilyFallback: webFontFamilyFallback,
       tabBarTheme: TabBarThemeData(dividerColor: Colors.transparent),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: Colors.white,
@@ -104,7 +89,6 @@ class AppTheme {
           fontSize: 15,
           fontWeight: FontWeight.bold,
         ),
-
         unselectedLabelStyle: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.normal,
@@ -159,9 +143,8 @@ class AppTheme {
 
     return AppTheme(
       name: json['name'],
-      brightness: json['brightness'] == 'dark'
-          ? Brightness.dark
-          : Brightness.light,
+      brightness:
+          json['brightness'] == 'dark' ? Brightness.dark : Brightness.light,
       primary: parseColor(json['primary']),
       onPrimary: parseColor(json['onPrimary']),
       secondary: parseColor(json['secondary']),
@@ -173,8 +156,8 @@ class AppTheme {
       themeMode: json['themeMode'] == 'dark'
           ? ThemeMode.dark
           : json['themeMode'] == 'light'
-          ? ThemeMode.light
-          : ThemeMode.system,
+              ? ThemeMode.light
+              : ThemeMode.system,
       shadowColor: parseColor(json['shadowColor'] ?? '#000000'),
       backgroundImage: json['backgroundImage'],
       isDefault: json['isDefault'] ?? false,

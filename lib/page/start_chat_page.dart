@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/widgets/empty_widget.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 
 import '../models/userinfo.dart';
 import '../provider/conversation_list_provider.dart';
@@ -82,7 +81,7 @@ class _StartChatPageState extends ConsumerState<StartChatPage> {
           children: [
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: HtmlTextField(
+              child: TextField(
                 cursorColor: Colors.white,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
@@ -109,7 +108,6 @@ class _StartChatPageState extends ConsumerState<StartChatPage> {
                 },
               ),
             ),
-
             Expanded(
               child: !_hasSearched
                   ? Center(

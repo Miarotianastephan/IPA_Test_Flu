@@ -44,7 +44,6 @@ class _WebVideoControlsOverlayState extends State<WebVideoControlsOverlay> {
             ),
           ),
         ),
-
         Positioned(
           bottom: 0,
           left: 16,
@@ -56,22 +55,14 @@ class _WebVideoControlsOverlayState extends State<WebVideoControlsOverlay> {
                 builder: (_, value, __) {
                   final pos = value.position;
                   final dur = value.duration;
-                  final posMin = pos.inMinutes
-                      .remainder(60)
-                      .toString()
-                      .padLeft(2, '0');
-                  final posSec = pos.inSeconds
-                      .remainder(60)
-                      .toString()
-                      .padLeft(2, '0');
-                  final durMin = dur.inMinutes
-                      .remainder(60)
-                      .toString()
-                      .padLeft(2, '0');
-                  final durSec = dur.inSeconds
-                      .remainder(60)
-                      .toString()
-                      .padLeft(2, '0');
+                  final posMin =
+                      pos.inMinutes.remainder(60).toString().padLeft(2, '0');
+                  final posSec =
+                      pos.inSeconds.remainder(60).toString().padLeft(2, '0');
+                  final durMin =
+                      dur.inMinutes.remainder(60).toString().padLeft(2, '0');
+                  final durSec =
+                      dur.inSeconds.remainder(60).toString().padLeft(2, '0');
 
                   return Row(
                     children: [
@@ -94,7 +85,6 @@ class _WebVideoControlsOverlayState extends State<WebVideoControlsOverlay> {
                   );
                 },
               ),
-
               IconButton(
                 icon: const Icon(Icons.replay_10, color: Colors.white),
                 onPressed: () {
@@ -102,7 +92,6 @@ class _WebVideoControlsOverlayState extends State<WebVideoControlsOverlay> {
                   controller.seekTo(current - const Duration(seconds: 10));
                 },
               ),
-
               IconButton(
                 icon: const Icon(Icons.forward_10, color: Colors.white),
                 onPressed: () {
@@ -110,11 +99,10 @@ class _WebVideoControlsOverlayState extends State<WebVideoControlsOverlay> {
                   controller.seekTo(current + const Duration(seconds: 10));
                 },
               ),
-
               Spacer(),
               PopupMenuButton<double>(
                 color: Color(0x00000000),
-                menuPadding: EdgeInsetsGeometry.all(0.0),
+                menuPadding: EdgeInsets.all(0.0),
                 icon: GestureDetector(
                   onDoubleTap: () {
                     setState(() {
@@ -176,7 +164,6 @@ class _WebVideoControlsOverlayState extends State<WebVideoControlsOverlay> {
                   ),
                 ],
               ),
-
               IconButton(
                 icon: Icon(
                   widget.flickManager.flickControlManager?.isFullscreen == true

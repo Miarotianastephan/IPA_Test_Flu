@@ -3,8 +3,8 @@ description: A lightweight video player wrapper for Flutter (minimal fork withou
 version: 1.13.0
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
-  flutter: ">=3.32.0"
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.27.0"
 
 dependencies:
   flutter:

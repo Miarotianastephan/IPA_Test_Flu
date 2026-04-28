@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import '../../config/storage_config.dart';
@@ -271,13 +270,10 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
         ..fromUser = Int64(int.parse(_userInfo!.id))
         ..toTarget = Int64(0)
         ..scope = TargetScope.SCOPE_USER
-        ..nodeId =
-            "" // 如有需要可填
-        ..timestamp =
-            Int64(nowMs) // 若后端按“秒”，改为 Int64(nowMs ~/ 1000)
+        ..nodeId = "" // 如有需要可填
+        ..timestamp = Int64(nowMs) // 若后端按“秒”，改为 Int64(nowMs ~/ 1000)
         ..traceId = "trace-$nowMs"
-        ..version =
-            1 // 建议维护一个协议版本号
+        ..version = 1 // 建议维护一个协议版本号
         ..category = MessageCategory.CATEGORY_CONTROL)
       ..body = (MessageBody()
         ..control = (ControlBody()
@@ -310,8 +306,7 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
         ..fromUser = Int64(int.parse(_userInfo!.id))
         ..toTarget = Int64(0)
         ..scope = TargetScope.SCOPE_USER
-        ..timestamp =
-            Int64(nowMs) // 若后端按“秒”，改为 Int64(nowMs ~/ 1000)
+        ..timestamp = Int64(nowMs) // 若后端按“秒”，改为 Int64(nowMs ~/ 1000)
         ..traceId = "trace-$nowMs"
         ..version = 1
         ..category = MessageCategory.CATEGORY_CONTROL)
@@ -347,8 +342,8 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
                 color: _socketStatus == SocketStatus.connected
                     ? Colors.green
                     : _socketStatus == SocketStatus.error
-                    ? Colors.red
-                    : Colors.grey,
+                        ? Colors.red
+                        : Colors.grey,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -380,7 +375,7 @@ class _MessageTabPageTestState extends ConsumerState<MessageTabPageTest> {
             Row(
               children: [
                 Expanded(
-                  child: HtmlTextField(
+                  child: TextField(
                     controller: _targetUserController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(labelText: "目标用户ID"),

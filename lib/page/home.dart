@@ -78,9 +78,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     final defaultInterval =
         ref.read(appConfigProvider).data?.reductionInterval ?? 60;
     final configuredInterval = reduction.gameReduction?.time ?? defaultInterval;
-    final interval = configuredInterval > 0
-        ? configuredInterval
-        : defaultInterval;
+    final interval =
+        configuredInterval > 0 ? configuredInterval : defaultInterval;
 
     _reductionTimers[reductionId] = Timer(
       Duration(seconds: interval),
@@ -258,17 +257,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                   reverseTransitionDuration: const Duration(milliseconds: 250),
                   pageBuilder: (context, animation, secondaryAnimation) {
                     return SlideTransition(
-                      position:
-                          Tween<Offset>(
-                            begin: const Offset(1, 0),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeOutCubic,
-                              reverseCurve: Curves.easeInCubic,
-                            ),
-                          ),
+                      position: Tween<Offset>(
+                        begin: const Offset(1, 0),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                          reverseCurve: Curves.easeInCubic,
+                        ),
+                      ),
                       child: Align(
                         alignment: Alignment.centerRight,
                         child: FractionallySizedBox(
@@ -299,10 +297,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     final i18nAsync = ref.watch(i18nNotifierProvider);
     final i18n = ref.read(i18nNotifierProvider.notifier);
     String translate(String key) => i18nAsync.when(
-      data: (translations) => i18n.translate(key),
-      loading: () => key,
-      error: (_, _) => key,
-    );
+          data: (translations) => i18n.translate(key),
+          loading: () => key,
+          error: (error, stackTrace) => key,
+        );
     List<Map<String, dynamic>> navItems = [
       if (widget.config?['enable_video'] == true)
         {"icon": Icons.home, "label": translate("home"), "key": "home"},

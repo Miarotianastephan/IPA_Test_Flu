@@ -6,13 +6,13 @@ import 'package:live_app/models/user_behavior_stats.dart';
 import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/provider/my_user_provider.dart';
 import 'package:live_app/utils/agent_tracking.dart';
+import 'package:live_app/utils/app_package_info.dart';
 import 'package:live_app/utils/device_info_helper.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 final userBehaviorStatsProvider =
     StateNotifierProvider<UserBehaviorStatsNotifier, UserBehaviorStats>((ref) {
-      return UserBehaviorStatsNotifier();
-    });
+  return UserBehaviorStatsNotifier();
+});
 
 class UserBehaviorStatsNotifier extends StateNotifier<UserBehaviorStats> {
   UserBehaviorStatsNotifier() : super(UserBehaviorStats());
@@ -48,8 +48,8 @@ final behaviorTriggerRulesProvider = StateProvider<List<BehaviorTriggerRule>>((
 
 final behaviorTrackerProvider =
     StateNotifierProvider<BehaviorTrackerNotifier, BehaviorTrackerState>((ref) {
-      return BehaviorTrackerNotifier(ref);
-    });
+  return BehaviorTrackerNotifier(ref);
+});
 
 class BehaviorTrackerState {
   final Set<String> triggeredRules;
@@ -155,8 +155,7 @@ class BehaviorTrackerNotifier extends StateNotifier<BehaviorTrackerState> {
 
     try {
       final deviceType = DeviceInfoHelper.instance.getPlatform();
-      final packageInfo = await PackageInfo.fromPlatform();
-      final appVersion = packageInfo.version;
+      final appVersion = await AppPackageInfoUtil.getCurrentVersion();
       final ip = await DeviceInfoHelper.instance.getPublicIpAddress();
       final agentCode = AgentTracking.getStoredAgentCode();
 

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
 import 'package:live_app/provider/wingtop_game_provider.dart';
 import 'package:live_app/utils/toast_util.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 
 import '../../provider/currency_provider.dart';
 import '../../provider/wallet_provider.dart';
@@ -213,9 +212,7 @@ class _WalletPageState extends ConsumerState<WalletPage>
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 20),
-
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Container(
@@ -287,11 +284,10 @@ class _WalletPageState extends ConsumerState<WalletPage>
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 20),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: HtmlTextField(
+                        child: TextField(
                           controller: amountController,
                           keyboardType: TextInputType.numberWithOptions(
                             decimal: true,
@@ -336,9 +332,7 @@ class _WalletPageState extends ConsumerState<WalletPage>
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
                       Padding(
                         padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                         child: SizedBox(
@@ -406,7 +400,7 @@ class _WalletPageState extends ConsumerState<WalletPage>
                                       Text(
                                         isValidAmount
                                             ? translate('transfer') +
-                                                  ' ${enteredAmount.toStringAsFixed(2)}'
+                                                ' ${enteredAmount.toStringAsFixed(2)}'
                                             : translate('enterAmount'),
                                         style: const TextStyle(
                                           color: Colors.white,
@@ -554,7 +548,6 @@ class _WalletPageState extends ConsumerState<WalletPage>
               ),
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -594,9 +587,7 @@ class _WalletPageState extends ConsumerState<WalletPage>
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
-
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -631,7 +622,6 @@ class _WalletPageState extends ConsumerState<WalletPage>
                       ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.only(right: 60),
@@ -790,9 +780,8 @@ class _WalletPageState extends ConsumerState<WalletPage>
                 theme,
                 icon: Icons.calendar_today,
                 label: translate('playDays'),
-                value: gameState.playDays != null
-                    ? '${gameState.playDays}'
-                    : '--',
+                value:
+                    gameState.playDays != null ? '${gameState.playDays}' : '--',
                 color: Colors.white,
               ),
             ),
@@ -924,9 +913,8 @@ class _WalletPageState extends ConsumerState<WalletPage>
                       ? translate('completed')
                       : translate('makeFirstRecharge'),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: hasFirstRecharge
-                        ? Colors.green
-                        : Colors.grey.shade500,
+                    color:
+                        hasFirstRecharge ? Colors.green : Colors.grey.shade500,
                   ),
                 ),
               ],

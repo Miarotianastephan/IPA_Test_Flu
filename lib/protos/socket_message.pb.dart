@@ -69,13 +69,18 @@ class MessageMeta extends $pb.GeneratedMessage {
     ..a<$fixnum.Int64>(
         3, _omitFieldNames ? '' : 'toTarget', $pb.PbFieldType.OU6,
         defaultOrMaker: $fixnum.Int64.ZERO)
-    ..aE<TargetScope>(4, _omitFieldNames ? '' : 'scope',
+    ..e<TargetScope>(4, _omitFieldNames ? '' : 'scope', $pb.PbFieldType.OE,
+        defaultOrMaker: TargetScope.SCOPE_UNKNOWN,
+        valueOf: TargetScope.valueOf,
         enumValues: TargetScope.values)
     ..aOS(5, _omitFieldNames ? '' : 'nodeId')
     ..aInt64(6, _omitFieldNames ? '' : 'timestamp')
     ..aOS(7, _omitFieldNames ? '' : 'traceId')
-    ..aI(8, _omitFieldNames ? '' : 'version')
-    ..aE<MessageCategory>(9, _omitFieldNames ? '' : 'category',
+    ..a<$core.int>(8, _omitFieldNames ? '' : 'version', $pb.PbFieldType.O3)
+    ..e<MessageCategory>(
+        9, _omitFieldNames ? '' : 'category', $pb.PbFieldType.OE,
+        defaultOrMaker: MessageCategory.CATEGORY_UNKNOWN,
+        valueOf: MessageCategory.valueOf,
         enumValues: MessageCategory.values)
     ..hasRequiredFields = false;
 

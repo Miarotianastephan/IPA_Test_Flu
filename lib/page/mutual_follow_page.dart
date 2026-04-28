@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:live_app/provider/i18n_provider.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 
 import '../models/api_response.dart';
 import '../models/page_response.dart';
@@ -44,8 +43,8 @@ class _MutualFollowPageState extends ConsumerState<MutualFollowPage> {
 
     final userService = ref.read(userServiceProvider);
 
-    ApiResponse<PageResponse<UserInfo>> resp = await userService
-        .mutualFollowings(page, 20, keyword);
+    ApiResponse<PageResponse<UserInfo>> resp =
+        await userService.mutualFollowings(page, 20, keyword);
 
     if (resp.code == 1 && resp.data != null) {
       final list = resp.data!.list;
@@ -85,7 +84,7 @@ class _MutualFollowPageState extends ConsumerState<MutualFollowPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: HtmlTextField(
+            child: TextField(
               cursorColor: Colors.white,
               decoration: InputDecoration(
                 hintText: translate("pleaseEnterYourUsernameOrId"),

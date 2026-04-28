@@ -573,11 +573,14 @@ class _DownloadedContentState extends ConsumerState<DownloadedContent>
       case "downloading":
         return i18n.translate("downloadInProgress", fallback: "Downloading");
       case "paused":
-        return _translateByCandidates(i18n, const [
-          "downloadPaused",
-          "paused",
-          "pause",
-        ], fallback: "Paused");
+        return _translateByCandidates(
+            i18n,
+            const [
+              "downloadPaused",
+              "paused",
+              "pause",
+            ],
+            fallback: "Paused");
       case "completed":
         return i18n.translate("downloadComplete", fallback: "Completed");
       case "failed":
@@ -727,11 +730,10 @@ class _DownloadedContentState extends ConsumerState<DownloadedContent>
     return downloadsAsync.when(
       loading: () =>
           const Center(child: CircularProgressIndicator(color: Colors.white)),
-      error: (_, _) =>
+      error: (error, stackTrace) =>
           Center(child: EmptyWidget(message: i18n.translate("error"))),
       data: (items) {
-        final allItems = [...items]
-          ..sort((a, b) {
+        final allItems = [...items]..sort((a, b) {
             final comparePriority = _statusPriority(
               a.status,
             ).compareTo(_statusPriority(b.status));
@@ -813,7 +815,7 @@ class _DownloadedContentState extends ConsumerState<DownloadedContent>
     return ListView.separated(
       padding: EdgeInsets.fromLTRB(8, 8, 8, bottomSafePadding),
       itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final item = items[index];
         return DownloadedListItem(
@@ -909,9 +911,7 @@ class DownloadAppCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 Text(
                   i18n.translate("downloadApp"),
                   textAlign: TextAlign.center,
@@ -922,9 +922,7 @@ class DownloadAppCard extends ConsumerWidget {
                     letterSpacing: 0.3,
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
                 Text(
                   i18n.translate("downloadAppDesc"),
                   textAlign: TextAlign.center,
@@ -934,9 +932,7 @@ class DownloadAppCard extends ConsumerWidget {
                     height: 1.6,
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     elevation: 8,

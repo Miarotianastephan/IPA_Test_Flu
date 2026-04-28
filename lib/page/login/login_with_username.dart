@@ -7,7 +7,6 @@ import 'package:live_app/models/api_response.dart';
 import 'package:live_app/models/userinfo.dart';
 import 'package:live_app/provider/api_provider.dart';
 import 'package:live_app/provider/i18n_provider.dart';
-import 'package:live_app/widgets/html_text_field.dart';
 
 import '../../provider/current_user_provider.dart';
 import '../../utils/toast_util.dart';
@@ -112,7 +111,6 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text(""), centerTitle: true),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -134,7 +132,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                       const SizedBox(height: 32),
 
                       // 账号输入
-                      HtmlTextField(
+                      TextField(
                         controller: _usernameController,
                         cursorColor: theme.colorScheme.onSurface,
                         decoration: InputDecoration(
@@ -154,7 +152,7 @@ class _LoginWithUsernamePageState extends ConsumerState<LoginWithUsernamePage> {
                       const SizedBox(height: 16),
 
                       // 密码输入
-                      HtmlTextField(
+                      TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         cursorColor: theme.colorScheme.onSurface,

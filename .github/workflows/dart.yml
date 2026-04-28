@@ -4,7 +4,7 @@ on:
 
 jobs:
   build-ios:
-    name: 🎉 iOS Build
+    name: 🎉 IPA iOS Build
     runs-on: macos-15
 
     steps:
@@ -53,35 +53,18 @@ jobs:
           pod install --repo-update
           echo "✅ pod install done"
 
-      # 🔍 Deep diagnosis
-      - name: Diagnose pod state
-        run: |
-          echo "=== Podfile ==="
-          cat ios/Podfile
-          echo ""
-          echo "=== Podfile.lock (Firebase lines) ==="
-          grep -i "firebase" ios/Podfile.lock || echo "⚠️ No Firebase in Podfile.lock"
-          echo ""
-          echo "=== Pods directory ==="
-          ls ios/Pods/ || echo "⚠️ Pods folder empty or missing"
-          echo ""
-          echo "=== Firebase pod folder ==="
-          ls ios/Pods/Firebase/ || echo "⚠️ No Firebase pod"
-          echo ""
-          echo "=== xcworkspace exists? ==="
-          ls ios/Runner.xcworkspace/contents.xcworkspacedata || echo "⚠️ xcworkspace missing"
-          echo ""
-          echo "=== AppDelegate.swift ==="
-          cat ios/Runner/AppDelegate.swift
-
-      # 🔍 Verify Firebase pods are present
-      - name: Verify Firebase pods
-        run: |
-          ls ios/Pods/Firebase || echo "⚠️ Firebase pod folder not found!"
-          grep -r "Firebase" ios/Podfile.lock | head -10
-
+      # 🔍 Build with full error capture
       - name: Build iOS Release
-        run: flutter build ios --release --no-codesign 2>&1 | tail -50
+        run: |
+          set -o pipefail
+          flutter build ios --release --no-codesign 2>&1 | tee build_log.txt || true
+          echo ""
+          echo "=== ERRORS ONLY ==="
+          grep -E "error:|Error \(Xcode\)|BUILD FAILED" build_log.txt || echo "No explicit error lines found"
+          echo ""
+          echo "=== LAST 20 LINES ==="
+          tail -20 build_log.txt
+          grep -q "Built build/ios" build_log.txt || exit 1
 
       - name: Create Payload
         run: mkdir Payload

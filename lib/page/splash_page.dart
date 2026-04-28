@@ -149,7 +149,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
               landingUrl: landingUrl,
             ),
             transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder: (_, animation, _, child) {
+            transitionsBuilder: (_ctx, animation, _anim, child) {
               return FadeTransition(opacity: animation, child: child);
             },
           ),
@@ -222,9 +222,9 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       void navigateTo(Widget page) {
         navigator.pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, _, _) => page,
+            pageBuilder: (_ctx, _anim, _child) => page,
             transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder: (_, animation, _, child) {
+            transitionsBuilder: (_ctx, animation, _anim, child) {
               return FadeTransition(opacity: animation, child: child);
             },
           ),
@@ -289,9 +289,9 @@ class _SplashPageState extends ConsumerState<SplashPage> {
           final navigator = Navigator.of(context, rootNavigator: true);
           navigator.pushReplacement(
             PageRouteBuilder(
-              pageBuilder: (_, _, _) => home.HomePage(config: configData),
+              pageBuilder: (_ctx, _anim, _child) => home.HomePage(config: configData),
               transitionDuration: const Duration(milliseconds: 500),
-              transitionsBuilder: (_, animation, _, child) {
+              transitionsBuilder: (_ctx, animation, _anim, child) {
                 return FadeTransition(opacity: animation, child: child);
               },
             ),
